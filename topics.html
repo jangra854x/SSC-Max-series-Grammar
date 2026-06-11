@@ -594,6 +594,57 @@
                 }
             });
         });
+
+        // CORE LOGIC: लेवल बटन क्लिक होने पर Apps Script से डेटा मंगाना
+        document.querySelectorAll('.lvl-start-btn').forEach(btn => {
+            btn.addEventListener('click', function(e) {
+                e.preventDefault(); // पेज को तुरंत रीडायरेक्ट होने से रोकें
+                
+                // लोडर को वापस दिखाएं
+                const loader = document.getElementById('loader');
+                loader.style.display = 'flex';
+                loader.style.opacity = '1';
+
+                // पेरेंट एलिमेंट से Topic का नाम और Level नंबर निकालें
+                const gridItem = this.closest('.topic-grid-item');
+                const topicName = gridItem.querySelector('h3').innerText.trim();
+                const levelNum = this.innerText.includes('2') || this.classList.contains('variant-hard') ? 2 : 1;
+
+                console.log("Fetching questions for:", topicName, "Level:", levelNum);
+
+                // Google Apps Script के 'getGrammarQuestions' फंक्शन को कॉल करना
+                google.script.run
+                    .withSuccessHandler(function(response) {
+                        // लोडर हटाएँ
+                        loader.style.opacity = '0';
+                        setTimeout(() => loader.style.display = 'none', 400);
+
+                        if (response.status === "success") {
+                            console.log("Questions Loaded Successfully:", response.questions);
+                            
+                            if(response.questions.length === 0) {
+                                alert("इस टॉपिक और लेवल के लिए अभी शीट में कोई प्रश्न नहीं हैं!");
+                                return;
+                            }
+
+                            // [FUTURE ACTION]: यहाँ से हम ग्लोबल वेरिएबल में डेटा सेव करके क्विज़ UI स्क्रीन रेंडर करेंगे
+                            alert(topicName + " Level " + levelNum + " के " + response.questions.length + " प्रश्न मिल गए हैं! अब क्विज़ स्क्रीन का काम शुरू कर सकते हैं।");
+                            
+                        } else if (response.status === "locked") {
+                            // भविष्य का प्रीमियम लॉक अलर्ट
+                            alert(response.message);
+                        } else {
+                            alert("Error: " + response.message);
+                        }
+                    })
+                    .withFailureHandler(function(error) {
+                        loader.style.opacity = '0';
+                        setTimeout(() => loader.style.display = 'none', 400);
+                        alert("Network Error: " + error.toString());
+                    })
+                    .getGrammarQuestions(topicName, levelNum, false); // डिफ़ॉल्ट 'false' यानी फ्री यूज़र
+            });
+        });
     </script>
 </body>
 </html>
