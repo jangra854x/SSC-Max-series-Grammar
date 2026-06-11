@@ -3,371 +3,282 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
-    <title>Vocab Elite Platform - Crimson Void Core</title>
+    <title>Vocabulary Max Elite Engine - Platinum Edition</title>
     
     <script src="https://telegram.org/js/telegram-web-app.js"></script>
     
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     
-    <link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@400;600;800;900&family=Rajdhani:wght@500;600;700;800&display=swap" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@500;700;900&family=Rajdhani:wght@500;600;700&display=swap" rel="stylesheet">
     
     <link rel="stylesheet" href="style.css">
 </head>
 <body>
 
-    <div class="magma-live-wallpaper-container">
-        <div class="fluid-plasma-orb plasma-alpha"></div>
-        <div class="fluid-plasma-orb plasma-beta"></div>
-        <div class="fluid-plasma-orb plasma-gamma"></div>
-        <div class="digital-grid-mesh-overlay"></div>
-    </div>
-
-    <div id="loader" class="global-engine-loader-screen">
-        <div class="loader-matrix-core">
-            <div class="kinetic-ring ring-outer-crimson"></div>
-            <div class="kinetic-ring ring-inner-orange"></div>
-            <div class="central-plasma-pulse-node">
-                <i class="fa-solid fa-radiation"></i>
-            </div>
-            <div class="telemetry-status-text-glow">INITIALIZING CRIMSON CORE ENGINE...</div>
-            <div class="telemetry-sub-bar"><div class="telemetry-sub-fill"></div></div>
+    <div id="loader" class="loader-container">
+        <div class="cyber-loader-core">
+            <div class="spinner-ring cyan-ring"></div>
+            <div class="spinner-ring orange-ring"></div>
+            <div class="pulse-logo"><i class="fa-solid fa-bolt"></i></div>
+            <div class="loader-status">INITIALIZING PLATINUM MATRIX...</div>
         </div>
     </div>
 
-    <div class="master-app-canvas-container">
+    <div class="liquid-orb orb-cyan"></div>
+    <div class="liquid-orb orb-orange"></div>
+    <div class="liquid-orb orb-purple"></div>
 
-        <section id="view-dashboard" class="app-view-matrix active-view">
+    <div class="app-canvas">
+        
+        <div class="telemetry-top-bar">
+            <div id="user-streak-badge" class="streak-badge" onclick="triggerSystemPulse('light')">
+                <i class="fa-solid fa-fire neon-fire"></i>
+                <span id="streak-counter-value">05 DAYS STREAK</span>
+            </div>
+            <div class="batch-identity-tag">PLATINUM BATCH v2.0</div>
+        </div>
+
+        <div class="main-header">
+            <h1 class="hologram-text">VOCABULARY MAX</h1>
+            <div class="elite-platinum-badge">
+                <i class="fa-solid fa-shield-halved"></i> ELITE PLATINUM
+            </div>
+        </div>
+
+        <div class="profile-card">
+            <div class="profile-avatar-wrapper">
+                <img id="user-avatar-element" class="profile-avatar" src="https://images.unsplash.com/photo-1618005182384-a83a8bd57fbe?auto=format&fit=crop&w=150&q=80" alt="Avatar">
+                <div class="avatar-glow-ring"></div>
+            </div>
+            <div class="profile-info">
+                <h3 id="user-display-name">Loading Profile...</h3>
+                <p id="user-status-label"><i class="fa-solid fa-crown text-orange"></i> PLATINUM ACCESS</p>
+            </div>
+            <div class="profile-rank">
+                <span>GLOBAL RANK</span>
+                <div id="user-global-rank-tag" class="text-orange-glow">#01</div>
+            </div>
+        </div>
+
+        <div id="view-dashboard" class="app-view active-view fade-in">
             
-            <div class="cyberpunk-user-profile-widget" onclick="triggerNativeHapticPulse('light')">
-                <div class="avatar-glow-shield">
-                    <img id="user-avatar-node" src="https://via.placeholder.com/150/080505/ff003c?text=WARRIOR" alt="Elite Profile Avatar" class="profile-avatar-img">
+            <div class="radar-analysis-widget">
+                <div class="widget-header">
+                    <h3><i class="fa-solid fa-chart-simple text-cyan"></i> PERFORMANCE TELEMETRY</h3>
+                    <div class="live-pulse-dot"></div>
                 </div>
-                <div class="profile-identity-metadata-block">
-                    <h3 id="user-display-name-node">SYNCHRONIZING...</h3>
-                    <span id="user-telegram-handle-node">LOGGING TELEGRAM CORE IDENTITY</span>
-                </div>
-                <div class="profile-telemetry-streak-badge">
-                    <div class="streak-flame-icon-glow"><i class="fa-solid fa-fire-flame-curved"></i></div>
-                    <span id="user-live-streak-counter">STREAK: 0D</span>
+                <div class="stats-grid-layout">
+                    <div class="stat-mini-node">
+                        <label>ACCURACY INDEX</label>
+                        <span id="telemetry-accuracy-percentage" class="text-cyan">94.2%</span>
+                    </div>
+                    <div class="stat-mini-node">
+                        <label>NET METRIC SCORE</label>
+                        <span id="telemetry-net-score" class="text-orange">148.50</span>
+                    </div>
                 </div>
             </div>
 
-            <header class="master-header-branding-block">
-                <h1 class="holographic-neon-title-text" data-text="VOCAB ELITE ENGINE">VOCAB ELITE ENGINE</h1>
-                <div class="platinum-badge-spacing-alignment-layer">
-                    <div class="elite-platinum-premium-badge-node">
-                        <i class="fa-solid fa-gem-fluid fa-shake"></i> ELITE PLATINUM PLATFORM
-                    </div>
-                </div>
-            </header>
-
-            <main class="dashboard-menu-action-grid-layer">
+            <div class="menu-grid-layer">
                 
-                <div class="volcanic-interactive-mega-card-node" onclick="executeViewTransitionSequence('Free')">
-                    <div class="card-floating-category-tag-pill tag-free">PUBLIC DOMAIN ACCESS</div>
-                    <div class="card-structural-content-title-layout">
-                        <div class="icon-vector-shield-frame frame-crimson">
-                            <i class="fa-solid fa-bolt-lightning"></i>
-                        </div>
-                        <div class="card-textual-meta-wrapper">
-                            <h2>Daily Free Arena</h2>
-                            <p>High-yield standard SSC verification matrices & daily mix compounds.</p>
+                <div class="cyber-mega-card premium-blue-border" onclick="openMonthSelection('Free')">
+                    <span class="card-status-pill cyan-pill">LIVE SESSIONS</span>
+                    <div class="card-title-set">
+                        <div class="icon-frame cyan-frame"><i class="fa-solid fa-graduationcap"></i></div>
+                        <div>
+                            <h2>DAILY FREE ARENA</h2>
+                            <p>Access daily mock vocabulary grids seamlessly.</p>
                         </div>
                     </div>
-                    <div class="card-footer-action-trigger-row">
-                        <button class="native-action-trigger-btn btn-style-crimson">
-                            ENGAGE FREE STREAM <i class="fa-solid fa-arrow-right-to-bracket"></i>
-                        </button>
+                    <div class="card-action-bar-strip">
+                        <span>ENTER FREE LABS</span>
+                        <i class="fa-solid fa-arrow-right-long icon-bounce"></i>
                     </div>
                 </div>
 
-                <div class="volcanic-interactive-mega-card-node premium-high-glow-border" onclick="executeViewTransitionSequence('Premium')">
-                    <div class="card-floating-category-tag-pill tag-premium"><i class="fa-solid fa-crown"></i> RESTRICTED VAULT</div>
-                    <div class="card-structural-content-title-layout">
-                        <div class="icon-vector-shield-frame frame-orange">
-                            <i class="fa-solid fa-biohazard"></i>
-                        </div>
-                        <div class="card-textual-meta-wrapper">
-                            <h2>Premium Elite Vault</h2>
-                            <p>Advanced high-tier structural compounds, 20-year targeted arrays & TCS logic patterns.</p>
+                <div class="cyber-mega-card premium-orange-border" onclick="openMonthSelection('Premium')">
+                    <span class="card-status-pill orange-pill">UNLOCKED</span>
+                    <div class="card-title-set">
+                        <div class="icon-frame orange-frame"><i class="fa-solid fa-vault"></i></div>
+                        <div>
+                            <h2>PREMIUM VAULT ARCHIVE</h2>
+                            <p>Deep analytical datewise logs and high-tier concepts.</p>
                         </div>
                     </div>
-                    <div class="card-footer-action-trigger-row">
-                        <button class="native-action-trigger-btn btn-style-orange">
-                            UNLOCK RESTRICTED CORE <i class="fa-solid fa-unlock-keyhole"></i>
-                        </button>
+                    <div class="card-action-bar-strip">
+                        <span class="text-orange">OPEN ELITE VAULT</span>
+                        <i class="fa-solid fa-crown text-orange"></i>
                     </div>
                 </div>
-            </main>
 
-            <div class="fast-access-vault-shortcut-dock-strip" onclick="openPersonalSmartVaultHub()">
-                <i class="fa-solid fa-box-archive-boxes"></i>
-                <span>ACCESS ARCHIVED SMART VAULT CACHE</span>
-                <div class="vault-count-indicator-tag" id="dashboard-vault-count-badge">2 ITEMS</div>
             </div>
 
-            <div class="deep-layout-root-heavy-data-block">
+            <div class="quick-nav-dock">
+                <button class="dock-btn active-dock" onclick="switchView('view-dashboard')">
+                    <i class="fa-solid fa-house-chimney"></i>
+                    <span>DASHBOARD</span>
+                </button>
+                <div class="dock-separator"></div>
+                <button class="dock-btn" onclick="openLeaderboardHub()">
+                    <i class="fa-solid fa-trophy"></i>
+                    <span>LEADERBOARD</span>
+                </button>
+                <div class="dock-separator"></div>
+                <button class="dock-btn" onclick="openUniversalBookmarkedVault()">
+                    <i class="fa-solid fa-bookmark"></i>
+                    <span>SAVED VAULT</span>
+                </button>
+            </div>
+        </div>
+
+        <div id="view-month-selector" class="app-view fade-in">
+            <div class="navigation-view-header">
+                <button class="view-back-icon-btn" onclick="handleBackNavigation()"><i class="fa-solid fa-arrow-left"></i></button>
+                <h2 id="target-zone-title-tag" class="zone-tag">ZONE SELECTOR</h2>
+            </div>
+            
+            <div id="accordion-months-root" class="accordion-layout-wrapper"></div>
+        </div>
+
+        <div id="view-premium-topics" class="app-view fade-in">
+            <div class="navigation-view-header">
+                <button class="view-back-icon-btn" onclick="handleBackNavigation()"><i class="fa-solid fa-arrow-left"></i></button>
+                <div class="topic-meta-wrapper">
+                    <h2>ELITE STUDY SCHEMES</h2>
+                    <p id="premium-topic-date-subtitle">Selected Date Matrix</p>
+                </div>
+            </div>
+
+            <div class="topics-vertical-stack">
+                <div class="topic-selection-row" onclick="triggerPremiumTargetConfig('High-Frequency Words', 'HF_WORDS')">
+                    <div class="topic-icon-bullet blue-bullet"><i class="fa-solid fa-fire-lightning"></i></div>
+                    <div class="topic-details">
+                        <h4>High-Frequency Words Matrix</h4>
+                        <p>Most repeated exam vocabularies.</p>
+                    </div>
+                    <i class="fa-solid fa-chevron-right arrow-indicator"></i>
+                </div>
                 
-                <div class="data-block-section-divider-header-text">
-                    <i class="fa-solid fa-gantt-chart"></i> NATIONAL TELEMETRY LEADERBOARD (LIVE SYNC)
-                </div>
-                <div class="national-leaderboard-preview-container-card" onclick="openNationalLeaderboardDetailedHub()">
-                    <div class="preview-leaderboard-row tier-gold-glow">
-                        <div class="rank-index-badge">1</div>
-                        <span class="user-identity-string">Aman Sharma [NEW DELHI]</span>
-                        <span class="metric-value-string">9,840 PTS</span>
+                <div class="topic-selection-row" onclick="triggerPremiumTargetConfig('Idioms & Phrases Lab', 'IDIOMS')">
+                    <div class="topic-icon-bullet orange-bullet"><i class="fa-solid fa-wand-magic-sparkles"></i></div>
+                    <div class="topic-details">
+                        <h4>Idioms & Phrases Vault</h4>
+                        <p>Advanced context structural idioms.</p>
                     </div>
-                    <div class="preview-leaderboard-row tier-silver-glow">
-                        <div class="rank-index-badge">2</div>
-                        <span class="user-identity-string">Rahul Kumar Verma</span>
-                        <span class="metric-value-string">8,910 PTS</span>
-                    </div>
-                    <div class="preview-leaderboard-row tier-bronze-glow">
-                        <div class="rank-index-badge">3</div>
-                        <span class="user-identity-string">Priya Singh Chandel</span>
-                        <span class="metric-value-string">8,855 PTS</span>
-                    </div>
-                    <div class="leaderboard-card-interactive-action-prompt-bar">
-                        EXPAND COMPREHENSIVE NATIONAL RANKINGS MATRIX <i class="fa-solid fa-angles-right"></i>
-                    </div>
+                    <i class="fa-solid fa-chevron-right arrow-indicator"></i>
                 </div>
 
-                <div class="data-block-section-divider-header-text">
-                    <i class="fa-solid fa-brain-circuit"></i> REAL-TIME INTERACTIVE RADAR EVALUATION
-                </div>
-                <div class="ai-performance-radar-double-grid-scaffold">
-                    
-                    <div class="radar-diagnostic-heavy-box">
-                        <div class="diagnostic-label-row">
-                            <i class="fa-solid fa-crosshairs text-color-orange"></i>
-                            <span>ACCURACY RATING</span>
-                        </div>
-                        <div class="diagnostic-main-value-string text-color-white" id="radar-live-accuracy-metric">94.8%</div>
-                        <div class="diagnostic-horizontal-progress-bar-track">
-                            <div class="progress-bar-fill-node progress-bg-orange" style="width: 94.8%;"></div>
-                        </div>
+                <div class="topic-selection-row" onclick="triggerPremiumTargetConfig('Advanced Sentence Errors', 'GRAMMAR')">
+                    <div class="topic-icon-bullet purple-bullet"><i class="fa-solid fa-circle-exclamation"></i></div>
+                    <div class="topic-details">
+                        <h4>Contextual Error Spotting</h4>
+                        <p>Grammar conceptual parameters.</p>
                     </div>
-
-                    <div class="radar-diagnostic-heavy-box">
-                        <div class="diagnostic-label-row">
-                            <i class="fa-solid fa-skull-crossbones text-color-crimson"></i>
-                            <span>CRITICAL WEAKNESS AREA</span>
-                        </div>
-                        <div class="diagnostic-main-value-string text-color-crimson" id="radar-live-weakness-metric">PHRASAL</div>
-                        <div class="diagnostic-horizontal-progress-bar-track">
-                            <div class="progress-bar-fill-node progress-bg-crimson" style="width: 42%;"></div>
-                        </div>
-                    </div>
-                    
+                    <i class="fa-solid fa-chevron-right arrow-indicator"></i>
                 </div>
             </div>
-        </section>
+        </div>
 
-        <section id="view-months-directory" class="app-view-matrix hidden-view-state">
-            <div class="navigation-view-meta-header-strip">
-                <span id="zone-indicator-tag-months-view" class="dynamic-zone-indicator-tag">ZONE REGISTER</span>
-            </div>
-            <div class="screen-hero-descriptive-text-container-block">
-                <h2>TEMPORAL MONTH ARCHIVES</h2>
-                <p>Select specific month segment to load archived daily parameter blocks.</p>
-            </div>
+        <div id="view-quiz-arena" class="app-view fade-in">
             
-            <div class="isometric-high-density-2col-grid-scaffold" id="months-injection-root-grid">
+            <div class="quiz-hud-panel">
+                <div class="hud-score-block">
+                    <span class="hud-label">NET SCORE</span>
+                    <span id="quiz-live-score" class="hud-val score-cyan">0.00</span>
                 </div>
-        </section>
-
-        <section id="view-dates-directory" class="app-view-matrix hidden-view-state">
-            <div class="navigation-view-meta-header-strip">
-                <span id="zone-indicator-tag-dates-view" class="dynamic-zone-indicator-tag">DATES ROOT MATRIX</span>
-            </div>
-            <div class="screen-hero-descriptive-text-container-block">
-                <h2>CHRONOLOGICAL DATABASE PAYLOAD</h2>
-                <p>Select target chronological index to compile localized execution queues.</p>
-            </div>
-            
-            <div class="vertical-high-density-list-stack-scaffold" id="dates-injection-root-stack">
-                </div>
-        </section>
-
-        <section id="view-premium-topics-dashboard" class="app-view-matrix hidden-view-state">
-            <div class="navigation-view-meta-header-strip">
-                <span class="dynamic-zone-indicator-tag text-color-orange"><i class="fa-solid fa-crown"></i> ELITE TOPIC CONTROLLER</span>
-            </div>
-
-            <div class="ultimate-mega-mix-premium-challenge-hero-card" onclick="triggerPremiumTargetSelectionConfiguration('Ultimate Daily Mega Mix Compilation', 'Mega Mix')">
-                <div class="premium-badge-row-layout">
-                    <span class="status-fire-pill bg-color-crimson">🔥 CRITICAL RUNTIME</span> 
-                    <span class="payload-size-pill">100 QUESTIONS MATCH</span>
-                </div>
-                <h2>Ultimate Daily Mega Mix Challenge</h2>
-                <p>Simulates continuous comprehensive structural vocabulary loops under extreme conditions.</p>
-                <div class="launch-sequence-arrow-indicator-text-prompt">
-                    INITIALIZE RUNTIME CHALLENGE LOOP <i class="fa-solid fa-circle-chevron-right"></i>
+                <div id="quiz-progress-txt" class="hud-mid-progress">Q 1/3</div>
+                <div class="hud-score-block text-right">
+                    <span class="hud-label">PENALTY METRIC</span>
+                    <span id="quiz-live-penalty" class="hud-val penalty-orange">0.00</span>
                 </div>
             </div>
 
-            <div class="data-block-section-divider-header-text">🗂️ TARGETED SPECIFIC DATA SECTOR DRILLS (50 Qs PACK)</div>
-            
-            <div class="isometric-high-density-2col-grid-scaffold">
-                <div class="topic-specific-grid-selection-cell" onclick="triggerPremiumTargetSelectionConfiguration('Synonyms & Antonyms Master Drill', 'Syno-Anto')">
-                    <i class="fa-solid fa-arrows-split-up-and-left grid-cell-vector-icon"></i> 
-                    <h3>Synonyms & Antonyms</h3>
-                </div>
-                <div class="topic-specific-grid-selection-cell" onclick="triggerPremiumTargetSelectionConfiguration('One Word Substitution Complete Core', 'OWS')">
-                    <i class="fa-solid fa-list-ol grid-cell-vector-icon"></i> 
-                    <h3>OWS Mastery Core</h3>
-                </div>
-                <div class="topic-specific-grid-selection-cell" onclick="triggerPremiumTargetSelectionConfiguration('Idioms & Phrases Advanced Matrix', 'Idioms')">
-                    <i class="fa-solid fa-masks-theater grid-cell-vector-icon"></i> 
-                    <h3>Idioms & Phrases</h3>
-                </div>
-                <div class="topic-specific-grid-selection-cell" onclick="triggerPremiumTargetSelectionConfiguration('Phrasal Verbs Lethal Elimination Track', 'Phrasal')">
-                    <i class="fa-solid fa-dna grid-cell-vector-icon"></i> 
-                    <h3>Phrasal Verbs Track</h3>
-                </div>
-            </div>
-        </section>
-
-        <section id="view-quiz-arena-runtime" class="app-view-matrix hidden-view-state">
-            <div class="quiz-hud-telemetry-panel-card">
-                <div class="hud-live-metrics-row-layout">
-                    <div class="hud-internal-metric-box">
-                        <span class="hud-label-string">NET METRIC SCORE</span>
-                        <span id="live-score-value-node" class="hud-value-string text-color-orange">0.00</span>
-                    </div>
-                    <div class="hud-internal-metric-box">
-                        <span class="hud-label-string">ACCUMULATED PENALTY</span>
-                        <span id="live-penalty-value-node" class="hud-value-string text-color-crimson">0.00</span>
-                    </div>
-                    <div class="hud-live-counter-badge-box">
-                        <span id="quiz-progress-counter-text-node">1/20</span>
-                    </div>
-                </div>
-                <div class="quiz-countdown-timer-line-track">
-                    <div id="quiz-countdown-timer-line-fill-node"></div>
-                </div>
+            <div class="timer-strip-container">
+                <div id="quiz-kinetic-timer-bar" class="timer-progress-fill"></div>
             </div>
 
-            <div class="question-presentation-layer-card">
-                <div class="question-meta-header-row-layout">
-                    <span id="question-type-classification-badge-node" class="question-type-pill-tag">SYNONYM LAYER</span>
-                    <button class="bookmark-vault-toggle-action-btn" onclick="toggleCurrentQuestionInsideMemoryVaultCache()">
-                        <i id="bookmark-vault-icon-status-target" class="fa-regular fa-bookmark"></i>
+            <div class="question-display-shield">
+                <div class="q-header-meta">
+                    <span id="question-type-badge" class="q-type-pill">SYNONYM</span>
+                    <button id="bookmark-vault-icon-status-target" class="bookmark-action-toggle" onclick="toggleCurrentQuestionBookmark()">
+                        <i class="fa-regular fa-bookmark"></i>
                     </button>
                 </div>
-                <h2 id="live-arena-question-text-payload-node" class="question-main-body-text-string">
-                    System synchronizing targeting matrix arrays...
-                </h2>
+                <p id="main-question-text-field">Loading question data matrix pipeline...</p>
             </div>
 
-            <div id="live-quiz-options-injection-root-stack" class="quiz-options-vertical-button-stack-scaffold">
-                </div>
+            <div id="quiz-options-container" class="options-vertical-grid"></div>
 
-            <div class="quiz-arena-footer-action-controls-scaffold">
-                <button class="abort-session-danger-action-btn" onclick="abortLiveQuizArenaSessionSequence()">
-                    <i class="fa-solid fa-power-off"></i> ABORT RUNTIME
-                </button>
-                <button id="next-sequence-trigger-action-btn" class="advance-sequence-action-btn" onclick="advanceLiveQuizArenaSequenceStep()">
-                    SKIP SECTOR <i class="fa-solid fa-angles-right"></i>
-                </button>
+            <div class="quiz-action-footer-row">
+                <button class="abort-session-btn" onclick="abortQuizArenaSession()"><i class="fa-solid fa-xmark"></i> Abort</button>
+                <button id="next-q-trigger-btn" class="next-step-btn-disabled" onclick="advanceQuizArenaSequence()" disabled>Next Question <i class="fa-solid fa-chevron-right"></i></button>
             </div>
-        </section>
+        </div>
 
-        <section id="view-result-summary-panel" class="app-view-matrix hidden-view-state">
-            <div class="result-celebration-graphics-canvas">
-                <div class="holographic-badge-glow-ring-wrapper">
-                    <div class="badge-content-inner-core-layout">
-                        <span id="result-badge-allocation-title" class="badge-status-title-string">EVALUATING</span>
-                        <div id="result-badge-allocation-vector-icon" class="badge-graphic-vector-node">
-                            <i class="fa-solid fa-shield-halved"></i>
-                        </div>
-                    </div>
-                </div>
-            </div>
-            
-            <div class="data-block-section-divider-header-text" style="justify-content:center; margin-top:20px;">
-                SESSION TELEMETRY LOG ANALYSIS RECORD
-            </div>
-
-            <div class="ai-performance-radar-double-grid-scaffold" style="margin-top:10px;">
-                <div class="radar-diagnostic-heavy-box">
-                    <div class="diagnostic-label-row"><i class="fa-solid fa-coins text-color-orange"></i> <span>NET SCORE ACQUIRED</span></div>
-                    <div id="res-summary-final-score-node" class="diagnostic-main-value-string text-color-orange">0.00</div>
-                </div>
-                <div class="radar-diagnostic-heavy-box">
-                    <div class="diagnostic-label-row"><i class="fa-solid fa-chart-line text-color-white"></i> <span>RAW ACCURACY INDEX</span></div>
-                    <div id="res-summary-raw-accuracy-node" class="diagnostic-main-value-string text-color-white">0%</div>
-                </div>
-                <div class="radar-diagnostic-heavy-box">
-                    <div class="diagnostic-label-row"><i class="fa-solid fa-hourglass-half text-color-white"></i> <span>TOTAL TIME DURATION</span></div>
-                    <div id="res-summary-time-duration-node" class="diagnostic-main-value-string text-color-slate" style="font-size:1.2rem; margin-top:5px;">0m 0s</div>
-                </div>
-                <div class="radar-diagnostic-heavy-box">
-                    <div class="diagnostic-label-row"><i class="fa-solid fa-check-double text-color-white"></i> <span>CORRECT VERIFICATIONS</span></div>
-                    <div id="res-summary-correct-count-node" class="diagnostic-main-value-string text-color-slate" style="font-size:1.2rem; margin-top:5px;">0/0</div>
+        <div id="view-leaderboard" class="app-view fade-in">
+            <div class="navigation-view-header">
+                <button class="view-back-icon-btn" onclick="switchView('view-dashboard')"><i class="fa-solid fa-arrow-left"></i></button>
+                <div>
+                    <h2>CHRONO LEADERBOARD</h2>
+                    <p>Microsecond Response Tie-Breaker Active</p>
                 </div>
             </div>
 
-            <button class="native-action-trigger-btn btn-style-crimson" style="width:100%; margin-top:25px; padding:18px; border-radius:14px; font-weight:900; font-size:1rem; letter-spacing:1px;" onclick="forceResetToDashboardHomeState()">
-                DISMISS SUMMARY & FLUSH CACHE
-            </button>
-        </section>
+            <div id="leaderboard-dynamic-list" class="leaderboard-container-list"></div>
+        </div>
 
-        <section id="view-vault-hub-detailed" class="app-view-matrix hidden-view-state">
-            <div class="navigation-view-meta-header-strip">
-                <span class="dynamic-zone-indicator-tag text-color-crimson"><i class="fa-solid fa-vault"></i> SECURE VAULT ENGINE</span>
-            </div>
-            <div class="screen-hero-descriptive-text-container-block">
-                <h2>PERSONAL ENCRYPTED VAULT</h2>
-                <p>Review flagged items, incorrect extractions, and high-priority volatile vocab variables.</p>
-            </div>
-            
-            <div class="vertical-high-density-list-stack-scaffold" id="vault-dynamic-injection-stack-root">
+        <div id="view-bookmarks" class="app-view fade-in">
+            <div class="navigation-view-header">
+                <button class="view-back-icon-btn" onclick="switchView('view-dashboard')"><i class="fa-solid fa-arrow-left"></i></button>
+                <div>
+                    <h2>SAVED WORD CRYPT</h2>
+                    <p>Review & Purge Persistent Records</p>
                 </div>
-        </section>
+            </div>
 
-        <section id="view-leaderboard-hub-detailed" class="app-view-matrix hidden-view-state">
-            <div class="navigation-view-meta-header-strip">
-                <span class="dynamic-zone-indicator-tag text-color-orange"><i class="fa-solid fa-trophy"></i> LIVE RECORD MATRIX</span>
-            </div>
-            <div class="screen-hero-descriptive-text-container-block">
-                <h2>ALL INDIA LIVE LEADERBOARD</h2>
-                <p>Real-time macro performance indicators mapped down to microsecond execution speed differentials.</p>
-            </div>
-            
-            <div class="vertical-high-density-list-stack-scaffold" id="leaderboard-detailed-dynamic-injection-root">
-                </div>
-        </section>
+            <div id="bookmarks-dynamic-list" class="bookmarks-container-list"></div>
+        </div>
 
     </div>
 
-    <div id="bottom-sheet-modal-container" class="bottom-sheet-modal-backdrop-layer" onclick="closeQuizConfigSheetDrawer()">
-        <div class="bottom-sheet-drawer-sliding-body-structure" onclick="event.stopPropagation()">
-            <div class="sheet-drag-kinetic-handle-bar"></div>
-            <div class="sheet-content-header-text-block">
-                <h3 id="sheet-target-parameter-main-title">Configure Engine Parameters</h3>
-                <p id="sheet-target-parameter-sub-subtitle">Target Execution Segment Lock</p>
-            </div>
+    <div id="bottom-sheet-modal" class="bottom-sheet-scaffold-overlay">
+        <div class="bottom-sheet-backdrop" onclick="closeQuizConfigSheet()"></div>
+        <div class="bottom-sheet-window">
+            <div class="sheet-drag-handle"></div>
             
-            <div class="config-parameters-structural-scaffold">
-                <div class="config-parameter-interactive-row-card">
-                    <div class="parameter-meta-label-wrapper">
-                        <label><i class="fa-solid fa-stopwatch-20"></i> Countdown Timer Throttle</label>
-                        <p>Imposes systematic execution window limit constraints per individual question unit.</p>
+            <div class="sheet-content-header">
+                <h3 id="sheet-target-title">Daily Free Mix</h3>
+                <p id="sheet-target-subtitle">00 Month 2026 • Configuration Parameters</p>
+            </div>
+
+            <div class="config-parameters-scaffold">
+                <div class="config-param-row">
+                    <div class="param-meta">
+                        <label><i class="fa-solid fa-stopwatch text-cyan"></i> SPRINT COOLDOWN TIMING</label>
+                        <p>Time allocated per question response field.</p>
                     </div>
-                    <div class="segmented-control-option-picker-wrapper">
-                        <button id="timer-opt-10" class="segmented-option-btn" onclick="setTimerConfigurationInternalState(10)">10S</button>
-                        <button id="timer-opt-15" class="segmented-option-btn active-segmented-option-state" onclick="setTimerConfigurationInternalState(15)">15S</button>
-                        <button id="timer-opt-0" class="segmented-option-btn" onclick="setTimerConfigurationInternalState(0)">OFF</button>
+                    <div class="segmented-control-picker">
+                        <button id="timer-opt-10" class="seg-btn" onclick="setTimerConfigState(10)">10s</button>
+                        <button id="timer-opt-15" class="seg-btn active-seg" onclick="setTimerConfigState(15)">15s</button>
+                        <button id="timer-opt-0" class="seg-btn" onclick="setTimerConfigState(0)">No Limit</button>
                     </div>
                 </div>
+
+                <div class="config-param-row">
+                    <div class="param-meta">
+                        <label><i class="fa-solid fa-triangle-exclamation text-orange"></i> MARKING SYSTEM PENALTY</label>
+                        <p>Negative constraints applied on failure logs.</p>
+                    </div>
+                    <span class="toggle-display-badge">-0.50 Metrics</span>
+                </div>
+                
+                <button class="master-ignite-trigger-btn" onclick="igniteQuizArenaSession()">
+                    IGNITE CORE SESSION <i class="fa-solid fa-bolt-lightning"></i>
+                </button>
             </div>
-            
-            <button class="sheet-ignition-master-action-trigger-btn" onclick="igniteLiveQuizArenaSessionCore()">
-                IGNITE LIVE ARENA RUNTIME RUN <i class="fa-solid fa-fire-burner"></i>
-            </button>
         </div>
     </div>
 
+    <script src="script.js"></script>
 </body>
 </html>

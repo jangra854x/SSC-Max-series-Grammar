@@ -1,21 +1,18 @@
 /**
- * ==========================================================================
- * VOCAB ELITE CORE ENGINE - VOLCANIC CRIMSON STATE MACHINE v3.0.0
- * Architecture: High-Density Monolithic Single Page Engine Framework
- * Synchronization Mapping Baseline: June 11, 2026
- * ==========================================================================
+ * VOCABULARY MAX ELITE PLATINUM PLATFORM CORE ENGINE
+ * Synchronization Baseline: June 11, 2026
+ * Architecture Matrix: Unified Single Page Application (SPA)
  */
 
-// Global Immutable System Tracker Matrix Configuration
+// Global System Configuration State Machine Matrix Tracker
 let engineState = {
-    currentZone: 'Free',            // State Key Tracking: Free | Premium
-    selectedMonth: '',              // State Key Tracking: Explicit Month Record Bound
-    selectedDate: '',               // State Key Tracking: Chronological Target Bound
-    selectedTopic: '',              // State Key Tracking: Categorical Subject Key
-    timerSetting: 15,               // Runtime Metric: Integer Seconds Max Time Allocation
-    negativeMarking: 0.50,          // Penalization Constant Metric Format Rule
+    currentZone: 'Free',         // Free or Premium
+    selectedTopic: 'Mega Mix',   // Stores target key context
+    selectedDate: '',            // Mapped on click trigger
+    timerSetting: 15,            // Custom time allocation per question
+    negativeMarking: 0.50,       // Strict standard penalty format
     
-    // Test Arena Active Runtime Variable Cache Roll
+    // Test Arena Session Cache
     questionsPool: [],
     currentQIdx: 0,
     userScore: 0.0,
@@ -26,315 +23,269 @@ let engineState = {
     sessionTimerInterval: null,
     isOptionLocked: false,
     
-    // High-Persistence Smart Vault Emulated Array Cache Mappings
+    // History Stack for Physical Back Button Overrides
+    navigationViewHistoryStack: ['view-dashboard'],
+    
+    // Global User Database Emulation Mappings
     bookmarksVault: [
-        { word: "Ambiguous Element", definition: "Possessing multiple optional interpretations; functionally unclear context.", wrongCount: 3 },
-        { word: "Ephemeral Variable", definition: "Sustaining initialization state logs for an extremely localized short duration.", wrongCount: 1 }
-    ],
-
-    // Comprehensive Native Leaderboard Data Arrays Mapped Meticulously
-    leaderboardDataset: [
-        { name: "Aman Sharma", location: "NEW DELHI", score: 9840.00, time: "1m 02s", date: "11 June 2026", rank: 1 },
-        { name: "Rahul Kumar Verma", location: "UTTAR PRADESH", score: 8910.00, time: "1m 05s", date: "11 June 2026", rank: 2 },
-        { name: "Priya Singh Chandel", location: "RAJASTHAN", score: 8855.00, time: "1m 45s", date: "11 June 2026", rank: 3 },
-        { name: "Vikramaditya Rao", location: "MAHARASHTRA", score: 8210.00, time: "1m 12s", date: "10 June 2026", rank: 4 },
-        { name: "Ananya Iyer", location: "TAMIL NADU", score: 7990.00, time: "1m 19s", date: "10 June 2026", rank: 5 }
+        { word: "Ambiguous", definition: "Having a double meaning or unclear framework configuration." },
+        { word: "Ephemeral", definition: "Lasting for a very short duration of chronological ticks." }
     ]
 };
 
-// 🧭 Advanced Multi-Layer Navigation History Stack Array Tracker
-let viewHistoryNavigationStack = ['view-dashboard'];
-const tg = window.Telegram.WebApp;
+// Initialize Telegram WebApp Sandbox Binding
+const tg = window.Telegram && window.Telegram.WebApp ? window.Telegram.WebApp : null;
 
-/**
- * Global App Hook Initialization Event Sequence Trigger
- */
 document.addEventListener('DOMContentLoaded', () => {
-    initializeTelegramHardwareIntegrationMatrix();
-    executeGlobalEngineBootSequence();
-    renderLocalizedSmartVaultTelemetryBadges();
+    // Android Boot Freeze Failsafe System Protection Launcher
+    executeGlobalEngineBoot();
 });
 
 /**
- * 🛠️ TELEGRAM NATIVE WEBAPP PLATFORM EXPANSION & HOOK ENGINES
+ * 🛡️ ANDROID ENGINE SAFESHIELED BOOT
+ * Prevents loader loop from turning forever if native events race or crash
  */
-function initializeTelegramHardwareIntegrationMatrix() {
-    try {
-        tg.ready();
-        tg.expand(); // Requests native application frame scaling expansion to full mobile view boundary
-        
-        // Impose Emissive Volcanic Color Directives to Native Telegram Header Anchors
-        tg.setHeaderColor('#050508');
-        tg.setBackgroundColor('#050508');
-        
-        // Register Native System Hardware Back Button Activation Mappings
-        tg.BackButton.onClick(() => {
-            executeHardwareBackNavigationSequence();
-        });
-        
-        synchronizeUserTelegramProfileTelemetry();
-    } catch (hardwareInitializationException) {
-        console.error("[HARDWARE ERROR] Native Telegram Engine SDK link faulted or context missing.", hardwareInitializationException);
-    }
-}
-
-/**
- * Extracts and Maps Native Telegram User Context Fields onto Live Profile Component View Blocks
- */
-function synchronizeUserTelegramProfileTelemetry() {
-    try {
-        const nativeUserContext = tg.initDataUnsafe?.user;
-        if (nativeUserContext) {
-            const calculatedFullName = `${nativeUserContext.first_name || ''} ${nativeUserContext.last_name || ''}`.trim();
-            document.getElementById('user-display-name-node').innerText = calculatedFullName ? calculatedFullName.toUpperCase() : "ELITE WARRIOR";
-            document.getElementById('user-telegram-handle-node').innerText = nativeUserContext.username ? `@${nativeUserContext.username}` : `USER_ID: ${nativeUserContext.id}`;
-            
-            if (nativeUserContext.photo_url) {
-                document.getElementById('user-avatar-node').src = nativeUserContext.photo_url;
-            }
-            document.getElementById('user-live-streak-counter').innerText = "STREAK: 14D";
-        } else {
-            // Emulated Fallback Data Mappings for External Local Browsing Environments
-            document.getElementById('user-display-name-node').innerText = "VON CRON CORE";
-            document.getElementById('user-telegram-handle-node').innerText = "@developer_sandbox";
-            document.getElementById('user-live-streak-counter').innerText = "STREAK: 5D";
-        }
-    } catch (profileSyncException) {
-        console.warn("[METADATA WARN] Failed to fetch native user records. Spoofing active.", profileSyncException);
-    }
-}
-
-/**
- * High-Performance Native Physical Vibration Feedback Interface
- */
-function triggerNativeHapticPulse(hapticStylePattern = 'medium') {
-    try {
-        if (tg.HapticFeedback) {
-            switch (hapticStylePattern) {
-                case 'light':
-                    tg.HapticFeedback.impactOccurred('light');
-                    break;
-                case 'medium':
-                    tg.HapticFeedback.impactOccurred('medium');
-                    break;
-                case 'heavy':
-                    tg.HapticFeedback.impactOccurred('heavy');
-                    break;
-                case 'success':
-                    tg.HapticFeedback.notificationOccurred('success');
-                    break;
-                case 'error':
-                    tg.HapticFeedback.notificationOccurred('error');
-                    break;
-            }
-        } else {
-            console.log(`[SIMULATED HAPTIC] Pulse Pattern: ${hapticStylePattern.toUpperCase()}`);
-        }
-    } catch (hapticException) {
-        // Silent catch to prevent script execution blockages inside generic desktop viewports
-    }
-}
-
-/**
- * 🧭 SPA HIGH-SPEED STATE ROUTING ARCHITECTURE WITH TELEGRAM HISTORY TRACKER
- */
-function transitionApplicationActiveViewFrame(targetViewIdString, stateRoutingDirection = 'forward') {
-    if (stateRoutingDirection === 'forward') {
-        triggerNativeHapticPulse('medium');
-        viewHistoryNavigationStack.push(targetViewIdString);
-    }
+function executeGlobalEngineBoot() {
+    const loaderNode = document.getElementById('loader');
     
-    // Dynamic Evaluation Layer Controlling Physical Hardware Back Action Display Toggles
-    if (viewHistoryNavigationStack.length > 1) {
+    // Absolute Failsafe: Android WebViews often drop window.onload triggers. Force clear after 800ms max.
+    const fallbackTimer = setTimeout(() => {
+        if (loaderNode && loaderNode.style.display !== 'none') {
+            clearLoaderOverlay(loaderNode);
+        }
+    }, 800);
+
+    window.addEventListener('load', () => {
+        clearTimeout(fallbackTimer);
+        clearLoaderOverlay(loaderNode);
+    });
+
+    if (document.readyState === 'complete') {
+        clearTimeout(fallbackTimer);
+        clearLoaderOverlay(loaderNode);
+    }
+
+    // Bind Telegram App Configurations
+    initTelegramProfileData();
+    setupNativeHardwareBackButton();
+}
+
+function clearLoaderOverlay(node) {
+    if (!node) return;
+    node.style.opacity = '0';
+    setTimeout(() => { 
+        node.style.display = 'none'; 
+    }, 400);
+}
+
+/**
+ * 👥 NATIVE TELEGRAM PROFILE LINKER (iOS Fixed sizing fallback metrics)
+ */
+function initTelegramProfileData() {
+    const avatarImg = document.getElementById('user-avatar-element');
+    const nameField = document.getElementById('user-display-name');
+
+    if (tg && tg.initDataUnsafe && tg.initDataUnsafe.user) {
+        const uData = tg.initDataUnsafe.user;
+        nameField.innerText = `${uData.first_name} ${uData.last_name || ''}`.trim();
+        if (uData.photo_url) {
+            avatarImg.src = uData.photo_url;
+        }
+    } else {
+        // Fallback for local sandbox testing environment logs
+        nameField.innerText = "ELITE COMMANDER";
+    }
+}
+
+/**
+ * 🛜 NATIVE HARDWARE BACK BUTTON PROTOCOLS
+ */
+function setupNativeHardwareBackButton() {
+    if (!tg || !tg.BackButton) return;
+
+    tg.BackButton.onClick(() => {
+        handleBackNavigation();
+    });
+
+    updateTelegramHardwareBackButtonVisibility();
+}
+
+function updateTelegramHardwareBackButtonVisibility() {
+    if (!tg || !tg.BackButton) return;
+    
+    if (engineState.navigationViewHistoryStack.length > 1) {
         tg.BackButton.show();
     } else {
         tg.BackButton.hide();
     }
-
-    // Trigger Screen Transition Animation Loader Rings
-    const overlayLoaderNode = document.getElementById('loader');
-    overlayLoaderNode.style.display = 'flex';
-    overlayLoaderNode.style.opacity = '1';
-
-    setTimeout(() => {
-        const operationalViewsList = document.querySelectorAll('.app-view-matrix');
-        operationalViewsList.forEach(viewNode => viewNode.classList.remove('active-view'));
-
-        const actualTargetNodeFrame = document.getElementById(targetViewIdString);
-        if (actualTargetNodeFrame) {
-            actualTargetNodeFrame.classList.add('active-view');
-            window.scrollTo({ top: 0, behavior: 'smooth' });
-        }
-
-        overlayLoaderNode.style.opacity = '0';
-        setTimeout(() => { overlayLoaderNode.style.display = 'none'; }, 200);
-    }, 120);
 }
 
 /**
- * Intercepts Physical Back Swipes or Native Top Left Navigation Hits
+ * SPA Route Switch Engine with History Trace
  */
-function executeHardwareBackNavigationSequence() {
-    if (viewHistoryNavigationStack.length > 1) {
-        triggerNativeHapticPulse('medium');
-        viewHistoryNavigationStack.pop(); // Evacuate active frame reference from stack logs
-        const scheduledTargetDestView = viewHistoryNavigationStack[viewHistoryNavigationStack.length - 1];
-        transitionApplicationActiveViewFrame(scheduledTargetDestView, 'backward');
+function switchView(targetViewId) {
+    triggerSystemPulse('medium');
+    
+    const views = document.querySelectorAll('.app-view');
+    views.forEach(v => v.classList.remove('active-view'));
+
+    const activeTarget = document.getElementById(targetViewId);
+    if (activeTarget) {
+        activeTarget.classList.add('active-view');
+        window.scrollTo({ top: 0 });
+    }
+
+    updateTelegramHardwareBackButtonVisibility();
+}
+
+function navigateTo(targetViewId) {
+    engineState.navigationViewHistoryStack.push(targetViewId);
+    switchView(targetViewId);
+}
+
+function handleBackNavigation() {
+    if (engineState.navigationViewHistoryStack.length > 1) {
+        // Stop active interval systems if exiting quiz runtime arena
+        if (engineState.navigationViewHistoryStack[engineState.navigationViewHistoryStack.length - 1] === 'view-quiz-arena') {
+            clearInterval(engineState.quizTimerRef);
+            clearInterval(engineState.sessionTimerInterval);
+        }
+        
+        engineState.navigationViewHistoryStack.pop();
+        const prevView = engineState.navigationViewHistoryStack[engineState.navigationViewHistoryStack.length - 1];
+        switchView(prevView);
     }
 }
 
 /**
- * Flushes Active Routing State Records, Forcing Absolute Dashboard Jump Mechanics
+ * Generates Adaptive Date Directory Sequences without Dropdowns
  */
-function forceResetToDashboardHomeState() {
-    viewHistoryNavigationStack = ['view-dashboard'];
-    transitionApplicationActiveViewFrame('view-dashboard', 'backward');
+function compileEngineDateStructures() {
+    return [
+        { monthName: "JUNE 2026", isActive: true, dates: ["11 June 2026", "10 June 2026", "09 June 2026", "08 June 2026"] },
+        { monthName: "MAY 2026", isActive: false, dates: ["31 May 2026", "25 May 2026", "18 May 2026", "12 May 2026"] },
+        { monthName: "APRIL 2026", isActive: false, dates: ["30 April 2026", "20 April 2026", "10 April 2026", "01 April 2026"] }
+    ];
 }
 
 /**
- * Handles Global Engine Boot Execution Closures
+ * Populates Dynamic Folder Accordions for Month Screen Transitions
  */
-function executeGlobalEngineBootSequence() {
-    const mainLoaderOverlayNode = document.getElementById('loader');
-    if (mainLoaderOverlayNode) {
-        if (document.readyState === 'complete') {
-            clearInitialLoaderOverlayStructure(mainLoaderOverlayNode);
-        } else {
-            window.addEventListener('load', () => { clearInitialLoaderOverlayStructure(mainLoaderOverlayNode); });
-        }
-    }
-}
-
-function clearInitialLoaderOverlayStructure(loaderTargetElement) {
-    setTimeout(() => {
-        loaderTargetElement.style.opacity = '0';
-        setTimeout(() => { loaderTargetElement.style.display = 'none'; }, 350);
-    }, 550);
-}
-
-/**
- * 🗂️ NESTED LAYER ROUTING 1: INDEPENDENT MONTHS VIEW DIRECTORY GENERATION ENGINE
- */
-function executeViewTransitionSequence(zoneTypeIdentifier) {
-    engineState.currentZone = zoneTypeIdentifier;
+function openMonthSelection(zoneType) {
+    engineState.currentZone = zoneType;
+    const rootContainer = document.getElementById('accordion-months-root');
+    const headerTitle = document.getElementById('target-zone-title-tag');
     
-    const contextIndicatorNode = document.getElementById('zone-indicator-tag-months-view');
-    contextIndicatorNode.innerText = zoneTypeIdentifier === 'Free' ? 'CRIMSON FREE ARENA' : 'ELITE PLATINUM VAULT';
-    contextIndicatorNode.className = zoneTypeIdentifier === 'Free' ? 'dynamic-zone-indicator-tag text-color-crimson' : 'dynamic-zone-indicator-tag text-color-orange';
-    
-    const operationalGridRootNode = document.getElementById('months-injection-root-grid');
-    operationalGridRootNode.innerHTML = ''; // Sanitize framework nodes completely
+    if (!rootContainer) return;
+    rootContainer.innerHTML = ''; 
 
-    const calendarMonthsDataset = ['June 2026', 'May 2026', 'April 2026', 'March 2026', 'February 2026', 'January 2026'];
+    headerTitle.innerText = zoneType === 'Free' ? 'FREE ARENA' : 'PREMIUM ARCHIVE';
+    headerTitle.className = zoneType === 'Free' ? 'zone-tag text-cyan' : 'zone-tag text-gold';
 
-    calendarMonthsDataset.forEach(monthItemString => {
-        const monthSelectionGridElement = document.createElement('div');
-        monthSelectionGridElement.className = 'directory-grid-item-node-card fade-in';
-        monthSelectionGridElement.innerText = monthItemString.toUpperCase();
+    const directoryDataset = compileEngineDateStructures();
+
+    directoryDataset.forEach((monthData, index) => {
+        const itemShell = document.createElement('div');
+        itemShell.className = `accordion-month-item ${index === 0 ? 'expanded' : ''}`;
         
-        // Link Event Actions Bound to Dedicated Deeper Routing Steps
-        monthSelectionGridElement.onclick = () => {
-            triggerNativeHapticPulse('light');
-            compileAndOpenDatesDirectoryViewScreen(monthItemString);
-        };
-        
-        operationalGridRootNode.appendChild(monthSelectionGridElement);
+        let datesHTML = '';
+        monthData.dates.forEach(dateStr => {
+            if (zoneType === 'Free') {
+                datesHTML += `
+                    <div class="date-drill-row">
+                        <div class="date-drill-meta">
+                            <span class="primary-d-text">${dateStr}</span>
+                            <span class="secondary-d-text"><i class="fa-solid fa-layer-group text-cyan"></i> Free Daily Mix (20 Qs)</span>
+                        </div>
+                        <button class="launch-sprint-trigger-btn" onclick="openQuizConfigSheet('${dateStr}', 'Daily Free Mix')">Start</button>
+                    </div>`;
+            } else {
+                datesHTML += `
+                    <div class="date-drill-row">
+                        <div class="date-drill-meta">
+                            <span class="primary-d-text">${dateStr}</span>
+                            <span class="secondary-d-text"><i class="fa-solid fa-crown text-gold"></i> Premium Study Segments Mapped</span>
+                        </div>
+                        <button class="launch-sprint-trigger-btn btn-premium-launch" onclick="navigateToPremiumTopicDashboard('${dateStr}')">Open ➔</button>
+                    </div>`;
+            }
+        });
+
+        itemShell.innerHTML = `
+            <div class="accordion-month-header" onclick="toggleAccordionFolderNode(this)">
+                <h3>${monthData.monthName}</h3>
+                <div class="month-status-indicators">
+                    ${monthData.isActive ? '<span class="active-month-dot-tag">ACTIVE</span>' : ''}
+                    <i class="fa-solid fa-chevron-down chevron-rotate-icon"></i>
+                </div>
+            </div>
+            <div class="accordion-dates-drawer">
+                ${datesHTML}
+            </div>
+        `;
+        rootContainer.appendChild(itemShell);
     });
 
-    transitionApplicationActiveViewFrame('view-months-directory');
+    navigateTo('view-month-selector');
+}
+
+function toggleAccordionFolderNode(headerElement) {
+    triggerSystemPulse('light');
+    const parentNode = headerElement.parentElement;
+    parentNode.classList.toggle('expanded');
+}
+
+function navigateToPremiumTopicDashboard(targetDate) {
+    engineState.selectedDate = targetDate;
+    document.getElementById('premium-topic-date-subtitle').innerText = `${targetDate} • ELITE VAULT MAP`;
+    navigateTo('view-premium-topics');
+}
+
+function triggerPremiumTargetConfig(displayTitle, internalKey) {
+    engineState.selectedTopic = internalKey;
+    openQuizConfigSheet(engineState.selectedDate, displayTitle);
 }
 
 /**
- * 🗂️ NESTED LAYER ROUTING 2: INDEPENDENT DATES VIEW LAYER STACK COMPILER
+ * 🎫 BOTTOM SHEET TIMING MODAL PROTOCOLS
  */
-function compileAndOpenDatesDirectoryViewScreen(targetSelectedMonthNameString) {
-    engineState.selectedMonth = targetSelectedMonthNameString;
-    
-    const contextIndicatorNode = document.getElementById('zone-indicator-tag-dates-view');
-    contextIndicatorNode.innerText = `${targetSelectedMonthNameString.toUpperCase()} DATA SECTORS`;
-    
-    const operationalStackRootNode = document.getElementById('dates-injection-root-stack');
-    operationalStackRootNode.innerHTML = ''; // Absolute clean flush of existing elements
-
-    // Set Loop Iteration Mappings to Synthesize Chronological Arrays Meticulously
-    for (let dayIndex = 12; dayIndex >= 1; dayIndex--) {
-        const paddedDayString = dayIndex < 10 ? `0${dayIndex}` : `${dayIndex}`;
-        const unifiedCompiledDateString = `${paddedDayString} ${targetSelectedMonthNameString}`;
-        
-        const dateRowListUnitElement = document.createElement('div');
-        dateRowListUnitElement.className = 'chronological-date-row-unit-card fade-in';
-        
-        let calculatedPayloadSubDescription = engineState.currentZone === 'Free' ? 
-            '<i class="fa-solid fa-bolt-lightning text-color-crimson"></i> Core Mixed Verification Pack (20 Qs)' : 
-            '<i class="fa-solid fa-crown text-color-orange"></i> High-Tier Premium Sector Core Mapped';
-
-        dateRowListUnitElement.innerHTML = `
-            <div>
-                <span class="date-row-primary-text">${unifiedCompiledDateString}</span>
-                <span class="date-row-secondary-text">${calculatedPayloadSubDescription}</span>
-            </div>
-            <i class="fa-solid fa-angle-right" style="color:var(--text-color-slate);"></i>
-        `;
-        
-        // Operational Trigger Execution Bindings
-        dateRowListUnitElement.onclick = () => {
-            triggerNativeHapticPulse('medium');
-            engineState.selectedDate = unifiedCompiledDateString;
-            
-            if (engineState.currentZone === 'Free') {
-                engineState.selectedTopic = 'Daily Free Mix';
-                openQuizConfigSheetDrawer(unifiedCompiledDateString, 'Daily Free Mix Blueprint');
-            } else {
-                transitionApplicationActiveViewFrame('view-premium-topics-dashboard');
-            }
-        };
-
-        operationalStackRootNode.appendChild(dateRowListUnitElement);
+function openQuizConfigSheet(dateStr, topicTitle) {
+    if (engineState.currentZone === 'Free') {
+        engineState.selectedDate = dateStr;
+        engineState.selectedTopic = 'Daily Free Mix';
     }
-
-    transitionApplicationActiveViewFrame('view-dates-directory');
+    
+    document.getElementById('sheet-target-title').innerText = topicTitle;
+    document.getElementById('sheet-target-subtitle').innerText = `${engineState.selectedDate} • System Configuration`;
+    
+    document.getElementById('bottom-sheet-modal').classList.add('display-active');
 }
 
-function triggerPremiumTargetSelectionConfiguration(displayLabelString, internalSectorMappingKey) {
-    triggerNativeHapticPulse('light');
-    engineState.selectedTopic = internalSectorMappingKey;
-    openQuizConfigSheetDrawer(engineState.selectedDate, displayLabelString);
+function closeQuizConfigSheet() {
+    document.getElementById('bottom-sheet-modal').classList.remove('display-active');
+}
+
+function setTimerConfigState(secondsVal) {
+    triggerSystemPulse('light');
+    engineState.timerSetting = secondsVal;
+    
+    document.querySelectorAll('.seg-btn').forEach(b => b.classList.remove('active-seg'));
+    if(secondsVal === 10) document.getElementById('timer-opt-10').classList.add('active-seg');
+    else if(secondsVal === 15) document.getElementById('timer-opt-15').classList.add('active-seg');
+    else document.getElementById('timer-opt-0').classList.add('active-seg');
 }
 
 /**
- * 🎫 BOTTOM SHEET INTERACTION MODAL MANAGEMENT CORE
+ * 🎯 QUIZ RUNTIME CORE INTERACTION METHOD
  */
-function openQuizConfigSheetDrawer(targetDateContextString, targetedTopicDisplayString) {
-    document.getElementById('sheet-target-parameter-main-title').innerText = targetedTopicDisplayString;
-    document.getElementById('sheet-target-parameter-sub-subtitle').innerText = `${targetDateContextString} • Parameters Configuration`;
-    document.getElementById('bottom-sheet-modal-container').classList.add('display-active');
-}
-
-function closeQuizConfigSheetDrawer() {
-    document.getElementById('bottom-sheet-modal-container').classList.remove('display-active');
-}
-
-function setTimerConfigurationInternalState(numericalSecondsValue) {
-    triggerNativeHapticPulse('light');
-    engineState.timerSetting = numericalSecondsValue;
+function igniteQuizArenaSession() {
+    closeQuizConfigSheet();
     
-    document.querySelectorAll('.segmented-option-btn').forEach(buttonElement => buttonElement.classList.remove('active-segmented-option-state'));
-    document.getElementById(`timer-opt-${numericalSecondsValue}`).classList.add('active-segmented-option-state');
-}
-
-/**
- * 🎯 LIVE QUIZ ARENA RUNTIME CORE ENGINE INTERFACES
- */
-function igniteLiveQuizArenaSessionCore() {
-    triggerNativeHapticPulse('heavy');
-    closeQuizConfigSheetDrawer();
-    
-    // Inject Extensive Production Level High-Volume Mock Data Array Cache Logs
+    // Inject Target Topic Segment Pool Questions Data Emulations
     engineState.questionsPool = [
-        { type: "SYNONYM MATRIX", q: "Identify the absolute precise synonymous expression for 'ABERRATION':", o: ["Standard Conformance", "Anomalous Deviation", "Systemic Equilibrium", "Static Invariance"], a: 1 },
-        { type: "IDIOMATIC VECTOR", q: "What semantic implication does the dynamic phrase 'To burn the midnight oil' entail?", o: ["To exhaust financial capital aggressively", "To execute high-intensity structural work deep into night cycles", "To generate combustible volcanic thermal energy", "To waste valuable fuel matrices unnecessarily"], a: 1 },
-        { type: "ONE WORD CACHE", q: "A specialized individual who demonstrates systematic hatred, aversion, or distrust toward human kind:", o: ["Altruistic Philanthropist", "Volcanic Misanthrope Element", "Skeptical Dogmatic Cynic", "Utopian Teleological Optimist"], a: 1 },
-        { type: "GRAMMAR COMPONENT", q: "Isolate the precise fragmented segment containing structural anomalies: 'He do not / have any / money left / with him.'", o: ["He do not segment", "have any segment", "money left segment", "with him compilation"], a: 0 }
+        { type: "SYNONYM", q: "Select the accurate synonym for 'ABERRATION':", o: ["Normalcy Trace", "Deviation Anomalies", "Conformity Sync", "Stability Metric"], a: 1 },
+        { type: "CONTEXTUAL IDIOM", q: "What is the true mapping of the phrase 'To burn the midnight oil'?", o: ["To exhaust financial capital inputs", "To execute high-intensity operations late into the night", "To create system radiation hazards", "To trigger premature process termination"], a: 1 },
+        { type: "ERROR DETECTION", q: "Identify the flawed syntax segment: 'The group of / elite students / were planning / an optimization sprint.'", o: ["The group of", "elite students", "were planning", "an optimization sprint."], a: 2 }
     ];
 
     engineState.currentQIdx = 0;
@@ -342,324 +293,304 @@ function igniteLiveQuizArenaSessionCore() {
     engineState.userPenalty = 0.0;
     engineState.correctCount = 0;
     engineState.timeSpentSeconds = 0;
-    
-    // Clear Existing Active Timing Trackers and Relaunch Session Clock Loop
-    clearInterval(engineState.sessionTimerInterval);
-    engineState.sessionTimerInterval = setInterval(() => { engineState.timeSpentSeconds++; }, 1000);
 
-    renderQuizQuestionLayerStep();
-    transitionApplicationActiveViewFrame('view-quiz-arena-runtime');
+    clearInterval(engineState.sessionTimerInterval);
+    engineState.sessionTimerInterval = setInterval(() => {
+        engineState.timeSpentSeconds++;
+    }, 1000);
+
+    renderActiveQuizQuestionLayer();
+    navigateTo('view-quiz-arena');
 }
 
-function renderQuizQuestionLayerStep() {
+/**
+ * 🛠️ FIXES THE OPTION WORDS BLEEDING Glitch on iOS
+ */
+function renderActiveQuizQuestionLayer() {
     engineState.isOptionLocked = false;
     clearInterval(engineState.quizTimerRef);
 
-    const individualQuestionDataStructure = engineState.questionsPool[engineState.currentQIdx];
+    const currentQ = engineState.questionsPool[engineState.currentQIdx];
     
-    // Synchronize HUD Panel Telemetry Strings Meticulously
-    document.getElementById('quiz-progress-counter-text-node').innerText = `${engineState.currentQIdx + 1}/${engineState.questionsPool.length}`;
-    document.getElementById('live-score-value-node').innerText = engineState.userScore.toFixed(2);
-    document.getElementById('live-penalty-value-node').innerText = engineState.userPenalty.toFixed(2);
-    document.getElementById('question-type-classification-badge-node').innerText = individualQuestionDataStructure.type;
-    document.getElementById('live-arena-question-text-payload-node').innerText = individualQuestionDataStructure.q;
+    // Update HUD metrics view targets
+    document.getElementById('quiz-progress-txt').innerText = `Q ${engineState.currentQIdx + 1}/${engineState.questionsPool.length}`;
+    document.getElementById('question-type-badge').innerText = currentQ.type;
+    document.getElementById('main-question-text-field').innerText = currentQ.q;
+    
+    // Sync current bookmark visual icon status flag
+    updateBookmarkButtonUIStatus(currentQ.q);
 
-    // Refresh Dynamic Bookmark State Indicators
-    updateMemoryVaultBookmarkIconDisplayState();
+    // Build options list programmatically to bypass any HTML character raw injection crash
+    const container = document.getElementById('quiz-options-container');
+    container.innerHTML = '';
 
-    // Render Option Grid Items
-    const operationalOptionsStackContainerNode = document.getElementById('live-quiz-options-injection-root-stack');
-    operationalOptionsStackContainerNode.innerHTML = ''; // Erase completely
-
-    const indexAlphabetArray = ['A', 'B', 'C', 'D'];
-    individualQuestionDataStructure.o.forEach((optionTextPayloadString, structuralOptionIndex) => {
-        const optionRowNodeElement = document.createElement('div');
-        optionRowNodeElement.className = 'option-interactive-node-row';
-        optionRowNodeElement.onclick = () => { evaluateInteractiveSelectedOptionSnap(structuralOptionIndex, optionRowNodeElement); };
+    const indexes = ["A", "B", "C", "D"];
+    currentQ.o.forEach((optionText, idx) => {
+        const optionDiv = document.createElement('div');
+        optionDiv.className = 'option-node-item';
         
-        optionRowNodeElement.innerHTML = `
-            <div class="option-structural-alpha-index-badge">${indexAlphabetArray[structuralOptionIndex]}</div>
-            <div class="option-textual-payload-string">${optionTextPayloadString}</div>
+        // Text node structure setup securely
+        optionDiv.innerHTML = `
+            <span class="option-text-val">${optionText}</span>
+            <div class="option-badge-index">${indexes[idx]}</div>
         `;
-        operationalOptionsStackContainerNode.appendChild(optionRowNodeElement);
+        
+        optionDiv.onclick = () => {
+            evaluateUserOptionSelection(idx, optionDiv);
+        };
+        
+        container.appendChild(optionDiv);
     });
 
-    const primaryNextActionBtnRef = document.getElementById('next-sequence-trigger-action-btn');
-    primaryNextActionBtnRef.classList.remove('state-ready-trigger');
-    primaryNextActionBtnRef.innerHTML = `SKIP RUNTIME SECTOR <i class="fa-solid fa-angles-right"></i>`;
+    // Reset next control locks
+    const nextBtn = document.getElementById('next-q-trigger-btn');
+    nextBtn.className = 'next-step-btn-disabled';
+    nextBtn.disabled = true;
 
-    // Initialize Countdown Metrics
-    if (engineState.timerSetting > 0) {
-        launchAILineCountdownVectorTrack(engineState.timerSetting);
-    } else {
-        document.getElementById('quiz-countdown-timer-line-fill-node').style.width = '100%';
-    }
+    initKineticVectorTimerBar();
 }
 
-function launchAILineCountdownVectorTrack(allocatedDurationLimitSeconds) {
-    const horizontalTimerFillNodeElement = document.getElementById('quiz-countdown-timer-line-fill-node');
-    let fractionalTimeRemainingValue = allocatedDurationLimitSeconds;
-    horizontalTimerFillNodeElement.style.width = '100%';
+function initKineticVectorTimerBar() {
+    const timerBar = document.getElementById('quiz-kinetic-timer-bar');
+    if (engineState.timerSetting === 0) {
+        timerBar.style.transform = 'scaleX(1)';
+        return;
+    }
+
+    let durationMs = engineState.timerSetting * 1000;
+    let elapsedMs = 0;
+    timerBar.style.transform = 'scaleX(1)';
 
     engineState.quizTimerRef = setInterval(() => {
-        fractionalTimeRemainingValue -= 0.1;
-        let calculatedPercentageWidth = (fractionalTimeRemainingValue / allocatedDurationLimitSeconds) * 100;
-        horizontalTimerFillNodeElement.style.width = `${calculatedPercentageWidth}%`;
+        elapsedMs += 100;
+        let scale = 1 - (elapsedMs / durationMs);
+        if (scale < 0) scale = 0;
+        timerBar.style.transform = `scaleX(${scale})`;
 
-        if (fractionalTimeRemainingValue <= 0) {
+        if (elapsedMs >= durationMs) {
             clearInterval(engineState.quizTimerRef);
-            executeEnforcedTimeoutInterceptionSequence();
+            lockQuizArenaOptionsOnTimeout();
         }
     }, 100);
 }
 
-function evaluateInteractiveSelectedOptionSnap(userSelectedOptionIndex, targetOptionUiNodeElement) {
+function evaluateUserOptionSelection(selectedIdx, targetElement) {
     if (engineState.isOptionLocked) return;
     engineState.isOptionLocked = true;
     clearInterval(engineState.quizTimerRef);
 
-    const compiledActiveQuestionReference = engineState.questionsPool[engineState.currentQIdx];
-    const extractedOptionNodesCollectionList = document.querySelectorAll('.option-interactive-node-row');
+    const currentQ = engineState.questionsPool[engineState.currentQIdx];
+    const optionNodes = document.querySelectorAll('.option-node-item');
 
-    if (userSelectedOptionIndex === compiledActiveQuestionReference.a) {
-        triggerNativeHapticPulse('success');
-        targetOptionUiNodeElement.classList.add('state-resolved-correct');
-        engineState.userScore += 2.0;
+    if (selectedIdx === currentQ.a) {
+        triggerSystemPulse('success');
+        targetElement.classList.add('selected-correct');
+        engineState.userScore += 2.00;
         engineState.correctCount++;
     } else {
-        triggerNativeHapticPulse('error');
-        targetOptionUiNodeElement.classList.add('state-resolved-wrong');
-        extractedOptionNodesCollectionList[compiledActiveQuestionReference.a].classList.add('state-resolved-correct');
-        
+        triggerSystemPulse('error');
+        targetElement.classList.add('selected-wrong');
         engineState.userPenalty += engineState.negativeMarking;
         engineState.userScore -= engineState.negativeMarking;
         
-        // Push failing structure records natively inside vault tracking arrays
-        appendFailingItemToMemoryVaultCacheLogs(compiledActiveQuestionReference.type, compiledActiveQuestionReference.q);
+        // Auto archive to bookmark vault lists on wrong entries
+        silentlyInjectFailedQuestionToVault(currentQ);
+
+        // Highlight correct option frame node
+        optionNodes[currentQ.a].classList.add('reveal-correct-faded');
     }
 
-    document.getElementById('live-score-value-node').innerText = engineState.userScore.toFixed(2);
-    document.getElementById('live-penalty-value-node').innerText = engineState.userPenalty.toFixed(2);
+    // Apply global locked states across all remaining nodes
+    optionNodes.forEach(node => node.classList.add('locked-state'));
 
-    const primaryNextActionBtnRef = document.getElementById('next-sequence-trigger-action-btn');
-    primaryNextActionBtnRef.classList.add('state-ready-to-trigger');
-    primaryNextActionBtnRef.innerHTML = `ADVANCE SEQUENCE STEP <i class="fa-solid fa-circle-chevron-right"></i>`;
+    // Enable navigation switch
+    document.getElementById('quiz-live-score').innerText = engineState.userScore.toFixed(2);
+    document.getElementById('quiz-live-penalty').innerText = engineState.userPenalty.toFixed(2);
+    
+    const nextBtn = document.getElementById('next-q-trigger-btn');
+    nextBtn.className = 'next-step-btn-active';
+    nextBtn.disabled = false;
 }
 
-function executeEnforcedTimeoutInterceptionSequence() {
+function lockQuizArenaOptionsOnTimeout() {
     engineState.isOptionLocked = true;
-    triggerNativeHapticPulse('heavy');
+    triggerSystemPulse('heavy');
     
-    const compiledActiveQuestionReference = engineState.questionsPool[engineState.currentQIdx];
-    const extractedOptionNodesCollectionList = document.querySelectorAll('.option-interactive-node-row');
+    const currentQ = engineState.questionsPool[engineState.currentQIdx];
+    const optionNodes = document.querySelectorAll('.option-node-item');
     
-    extractedOptionNodesCollectionList[compiledActiveQuestionReference.a].classList.add('state-resolved-correct');
+    optionNodes[currentQ.a].classList.add('selected-correct');
+    optionNodes.forEach(node => node.classList.add('locked-state'));
+    
     engineState.userPenalty += engineState.negativeMarking;
     engineState.userScore -= engineState.negativeMarking;
-
-    document.getElementById('live-score-value-node').innerText = engineState.userScore.toFixed(2);
-    document.getElementById('live-penalty-value-node').innerText = engineState.userPenalty.toFixed(2);
-
-    const primaryNextActionBtnRef = document.getElementById('next-sequence-trigger-action-btn');
-    primaryNextActionBtnRef.classList.add('state-ready-to-trigger');
-    primaryNextActionBtnRef.innerHTML = `TIMEOUT! FORCE NEXT STEP <i class="fa-solid fa-circle-chevron-right"></i>`;
+    
+    document.getElementById('quiz-live-score').innerText = engineState.userScore.toFixed(2);
+    document.getElementById('quiz-live-penalty').innerText = engineState.userPenalty.toFixed(2);
+    
+    const nextBtn = document.getElementById('next-q-trigger-btn');
+    nextBtn.className = 'next-step-btn-active';
+    nextBtn.disabled = false;
 }
 
-function advanceLiveQuizArenaSequenceStep() {
-    triggerNativeHapticPulse('light');
-    if (!engineState.isOptionLocked) {
-        clearInterval(engineState.quizTimerRef);
-    }
-
+function advanceQuizArenaSequence() {
     engineState.currentQIdx++;
     if (engineState.currentQIdx < engineState.questionsPool.length) {
-        renderQuizQuestionLayerStep();
+        renderActiveQuizQuestionLayer();
     } else {
-        compileFinalSessionMetricsAndRevealSummary();
-    }
-}
-
-function abortLiveQuizArenaSessionSequence() {
-    triggerNativeHapticPulse('heavy');
-    if (confirm("CONFIRM ABSOLUTE TERMINATION? Unsaved session telemetry loops will be flushed permanently from register memory.")) {
-        clearInterval(engineState.quizTimerRef);
         clearInterval(engineState.sessionTimerInterval);
-        executeHardwareBackNavigationSequence();
+        executeSessionTerminationSequence();
     }
 }
 
-/**
- * 👑 PERFORMANCE SUMMARY METRIC ENGINES & BADGES METRIC FORMATS
- */
-function compileFinalSessionMetricsAndRevealSummary() {
-    clearInterval(engineState.sessionTimerInterval);
-    clearInterval(engineState.quizTimerRef);
-
-    const cumulativeQuestionsTotal = engineState.questionsPool.length;
-    const computedAccuracyPercentageRaw = Math.round((engineState.correctCount / cumulativeQuestionsTotal) * 100);
+function executeSessionTerminationSequence() {
+    if (tg && tg.showAlert) {
+        tg.showAlert(`Session Complete Matrix Verified!\nNet Points: ${engineState.userScore.toFixed(2)}\nErrors Logged: ${engineState.userPenalty.toFixed(2)}`);
+    } else {
+        alert(`Session Complete Matrix Verified!\nNet Points: ${engineState.userScore.toFixed(2)}`);
+    }
     
-    const calculatedMinutesSegmentValue = Math.floor(engineState.timeSpentSeconds / 60);
-    const calculatedSecondsRemainderValue = engineState.timeSpentSeconds % 60;
+    // Refresh main telemetry widgets
+    document.getElementById('telemetry-net-score').innerText = engineState.userScore.toFixed(2);
+    
+    let totalQs = engineState.questionsPool.length;
+    let acc = totalQs > 0 ? (engineState.correctCount / totalQs) * 100 : 100;
+    document.getElementById('telemetry-accuracy-percentage').innerText = `${acc.toFixed(1)}%`;
 
-    document.getElementById('res-summary-final-score-node').innerText = engineState.userScore.toFixed(2);
-    document.getElementById('res-summary-raw-accuracy-node').innerText = `${computedAccuracyPercentageRaw}%`;
-    document.getElementById('res-summary-time-duration-node').innerText = `${calculatedMinutesSegmentValue}m ${calculatedSecondsRemainderValue}s`;
-    document.getElementById('res-summary-correct-count-node').innerText = `${engineState.correctCount}/${cumulativeQuestionsTotal}`;
+    handleBackNavigation();
+}
 
-    const structuralTitleBadgeNodeRef = document.getElementById('result-badge-allocation-title');
-    const structuralIconBadgeNodeRef = document.getElementById('result-badge-allocation-vector-icon');
-
-    // Dynamic Level Allocation Rule Evaluation Matrix
-    if (computedAccuracyPercentageRaw === 100) {
-        structuralTitleBadgeNodeRef.innerText = "VOCAB GOD CORE";
-        structuralIconBadgeNodeRef.innerHTML = `<i class="fa-solid fa-crown" style="color:var(--neon-orange-core); filter:drop-shadow(0 0 10px var(--neon-orange-core));"></i>`;
-    } else if (computedAccuracyPercentageRaw >= 85) {
-        structuralTitleBadgeNodeRef.innerText = "ELITE SNIPER";
-        structuralIconBadgeNodeRef.innerHTML = `<i class="fa-solid fa-crosshairs" style="color:var(--neon-crimson-core);"></i>`;
-    } else if (computedAccuracyPercentageRaw >= 60) {
-        structuralTitleBadgeNodeRef.innerText = "STEEL WARRIOR";
-        structuralIconBadgeNodeRef.innerHTML = `<i class="fa-solid fa-shield-halved" style="color:#fff;"></i>`;
-    } else {
-        structuralTitleBadgeNodeRef.innerText = "RAW RECRUIT";
-        structuralIconBadgeNodeRef.innerHTML = `<i class="fa-solid fa-skull-crossbones" style="color:var(--text-color-slate);"></i>`;
-    }
-
-    transitionApplicationActiveViewFrame('view-result-summary-panel');
+function abortQuizArenaSession() {
+    clearInterval(engineState.quizTimerRef);
+    clearInterval(engineState.sessionTimerInterval);
+    handleBackNavigation();
 }
 
 /**
- * 🔖 SMART ENCRYPTED MEMORY VAULT SUBSYSTEM CONTROLLERS
+ * 🔖 WORD SECURITY CRYPT PERSISTENCE PROTOCOLS
  */
-function toggleCurrentQuestionInsideMemoryVaultCache() {
-    triggerNativeHapticPulse('light');
-    const compiledActiveQuestionReference = engineState.questionsPool[engineState.currentQIdx];
-    const verifiedTargetExistenceIndex = engineState.bookmarksVault.findIndex(bookmarkItem => bookmarkItem.word.startsWith(compiledActiveQuestionReference.type));
+function toggleCurrentQuestionBookmark() {
+    triggerSystemPulse('light');
+    const currentQ = engineState.questionsPool[engineState.currentQIdx];
+    const existsIdx = engineState.bookmarksVault.findIndex(b => b.word.toLowerCase() === currentQ.q.toLowerCase() || currentQ.q.includes(b.word));
 
-    if (verifiedTargetExistenceIndex > -1) {
-        engineState.bookmarksVault.splice(verifiedTargetExistenceIndex, 1);
+    if (existsIdx > -1) {
+        engineState.bookmarksVault.splice(existsIdx, 1);
     } else {
         engineState.bookmarksVault.push({
-            word: `${compiledActiveQuestionReference.type} Variable Element`,
-            definition: compiledActiveQuestionReference.q,
-            wrongCount: 1
+            word: currentQ.type + " Segment Question",
+            definition: currentQ.q
         });
     }
-    updateMemoryVaultBookmarkIconDisplayState();
-    renderLocalizedSmartVaultTelemetryBadges();
+    updateBookmarkButtonUIStatus(currentQ.q);
 }
 
-function updateMemoryVaultBookmarkIconDisplayState() {
-    const compiledActiveQuestionReference = engineState.questionsPool[engineState.currentQIdx];
-    const structuralTargetIconReferenceNode = document.getElementById('bookmark-vault-icon-status-target');
-    const booleanVerificationStateResult = engineState.bookmarksVault.some(bookmarkElement => bookmarkElement.word.startsWith(compiledActiveQuestionReference.type));
-
-    if (booleanVerificationStateResult) {
-        structuralTargetIconReferenceNode.className = 'fa-solid fa-bookmark text-color-crimson';
+function updateBookmarkButtonUIStatus(questionText) {
+    const btn = document.getElementById('bookmark-vault-icon-status-target');
+    const exists = engineState.bookmarksVault.some(b => b.definition === questionText);
+    if (exists) {
+        btn.classList.add('saved');
+        btn.innerHTML = `<i class="fa-solid fa-bookmark"></i>`;
     } else {
-        structuralTargetIconReferenceNode.className = 'fa-regular fa-bookmark';
+        btn.classList.remove('saved');
+        btn.innerHTML = `<i class="fa-regular fa-bookmark"></i>`;
     }
 }
 
-function appendFailingItemToMemoryVaultCacheLogs(failingClassificationTypeString, failingQuestionPayloadString) {
-    const localizedMatchTargetIndex = engineState.bookmarksVault.findIndex(vaultItem => vaultItem.definition === failingQuestionPayloadString);
-    if (localizedMatchTargetIndex > -1) {
-        engineState.bookmarksVault[localizedMatchTargetIndex].wrongCount++;
-    } else {
+function silentlyInjectFailedQuestionToVault(qObj) {
+    const exists = engineState.bookmarksVault.some(b => b.definition === qObj.q);
+    if (!exists) {
         engineState.bookmarksVault.push({
-            word: `${failingClassificationTypeString} Slip Logs`,
-            definition: failingQuestionPayloadString,
-            wrongCount: 1
+            word: "Incorrect-Hit Logs",
+            definition: qObj.q
         });
     }
-    renderLocalizedSmartVaultTelemetryBadges();
 }
 
-function renderLocalizedSmartVaultTelemetryBadges() {
-    const dashboardBadgeNodeElement = document.getElementById('dashboard-vault-count-badge');
-    if (dashboardBadgeNodeElement) {
-        dashboardBadgeNodeElement.innerText = `${engineState.bookmarksVault.length} VARIABLES`;
-    }
-}
-
-function openPersonalSmartVaultHub() {
-    triggerNativeHapticPulse('medium');
-    const genericInjectionRootContainerNode = document.getElementById('vault-dynamic-injection-stack-root');
-    if (!genericInjectionRootContainerNode) return;
-    genericInjectionRootContainerNode.innerHTML = ''; // System Purge
+function openUniversalBookmarkedVault() {
+    const root = document.getElementById('bookmarks-dynamic-list');
+    if (!root) return;
+    root.innerHTML = '';
 
     if (engineState.bookmarksVault.length === 0) {
-        genericInjectionRootContainerNode.innerHTML = `
-            <p style="text-align:center; color:var(--text-color-slate); font-size:0.9rem; padding:30px; font-weight:700; letter-spacing:0.5px;">
-                [SECURE VAULT CACHE EMPTY - ZERO VOLATILE LOGS DATA DETECTED]
-            </p>
-        `;
+        root.innerHTML = `<div class="empty-crypt-msg">Saved crypt is currently void.</div>`;
     } else {
-        engineState.bookmarksVault.forEach((vaultObjectItem, structuralIndexKey) => {
-            const structuralVaultCardElementNode = document.createElement('div');
-            structuralVaultCardElementNode.className = 'vault-secure-card-node fade-in';
-            
-            structuralVaultCardElementNode.innerHTML = `
-                <div class="vault-textual-payload-block">
-                    <h4>${vaultObjectItem.word.toUpperCase()}</h4>
-                    <p>${vaultObjectItem.definition}</p>
-                    <span class="vault-error-tracking-badge">FAIL_COUNT STATE LOG: ${vaultObjectItem.wrongCount} TIMES</span>
-                </div>
-                <button class="vault-clear-mastery-action-btn" onclick="executeVaultItemMasteryPurgeSequence(${structuralIndexKey})">
-                    RESOLVED ✓
-                </button>
+        engineState.bookmarksVault.forEach((item, idx) => {
+            const card = document.createElement('div');
+            card.className = 'crypt-word-card fade-in';
+            card.innerHTML = `
+                <h4>${item.word.toUpperCase()}</h4>
+                <p>${item.definition}</p>
+                <button class="purge-word-btn" onclick="purgeCryptRecord(${idx})"><i class="fa-solid fa-trash-can"></i></button>
             `;
-            genericInjectionRootContainerNode.appendChild(structuralVaultCardElementNode);
+            root.appendChild(card);
         });
     }
-
-    transitionApplicationActiveViewFrame('view-vault-hub-detailed');
+    navigateTo('view-bookmarks');
 }
 
-function executeVaultItemMasteryPurgeSequence(targetItemArrayCacheIndex) {
-    triggerNativeHapticPulse('success');
-    engineState.bookmarksVault.splice(targetItemArrayCacheIndex, 1);
-    renderLocalizedSmartVaultTelemetryBadges();
-    openPersonalSmartVaultHub(); // Recursive rebuild refresh
+function purgeCryptRecord(idx) {
+    triggerSystemPulse('heavy');
+    engineState.bookmarksVault.splice(idx, 1);
+    openUniversalBookmarkedVault(); // Re-render sequence
 }
 
 /**
- * 🏆 HIGH-DENSITY NATIONAL DETAILED LEADERBOARD HUB ENGINE
+ * 🏆 CHRONO TIE-BREAKER LEADERBOARD MATRIX GENERATION
  */
-function openNationalLeaderboardDetailedHub() {
-    triggerNativeHapticPulse('medium');
-    const detailedLeaderboardRootNode = document.getElementById('leaderboard-detailed-dynamic-injection-root');
-    if (!detailedLeaderboardRootNode) return;
-    detailedLeaderboardRootNode.innerHTML = ''; // Absolute cleanup strip
+function openLeaderboardHub() {
+    const root = document.getElementById('leaderboard-dynamic-list');
+    if (!root) return;
+    root.innerHTML = '';
 
-    // Map Dataset array lists directly on explicit list container cards
-    engineState.leaderboardDataset.forEach(leaderboardUserObject => {
-        const structuralRowListItemUnitElement = document.createElement('div');
-        
-        let calculatedRankClassTieModifier = '';
-        if (leaderboardUserObject.rank === 1) calculatedRankClassTieModifier = 'tier-gold-glow';
-        else if (leaderboardUserObject.rank === 2) calculatedRankClassTieModifier = 'tier-silver-glow';
-        else if (leaderboardUserObject.rank === 3) calculatedRankClassTieModifier = 'tier-bronze-glow';
+    // Mock dataset showing exact response tiebreaker maps
+    const leaders = [
+        { name: "Aman Sharma", date: "11 June 2026", score: 148.50, time: "1m 02.45s", rank: 1 },
+        { name: "Rahul Kumar", date: "11 June 2026", score: 148.50, time: "1m 05.12s", rank: 2 }, // Same score, more time taken -> Rank 2!
+        { name: "Priya Singh", date: "11 June 2026", score: 142.00, time: "1m 18.90s", rank: 3 }
+    ];
 
-        structuralRowListItemUnitElement.className = `chronological-date-row-unit-card fade-in ${calculatedRankClassTieModifier}`;
-        
-        structuralRowListItemUnitElement.innerHTML = `
-            <div style="display:flex; align-items:center; gap:14px; width:100%;">
-                <div class="rank-index-badge" style="flex-shrink:0;">${leaderboardUserObject.rank}</div>
-                <div style="flex-grow:1; min-width:0;">
-                    <span class="date-row-primary-text" style="white-space:nowrap; overflow:hidden; text-overflow:ellipsis; display:block;">
-                        ${leaderboardUserObject.name.toUpperCase()}
-                    </span>
-                    <span class="date-row-secondary-text">
-                        REG: ${leaderboardUserObject.location} • SPEED DURATION LOG: ${leaderboardUserObject.time}
-                    </span>
-                </div>
-                <div class="metric-value-string" style="flex-shrink:0; font-size:1.05rem;">
-                    ${leaderboardUserObject.score.toFixed(2)}
-                </div>
+    leaders.forEach(u => {
+        const row = document.createElement('div');
+        row.className = `rank-row-item fade-in ${u.rank === 1 ? 'gold-rank' : ''}`;
+        row.innerHTML = `
+            <div class="rank-num-badge">${u.rank}</div>
+            <div class="user-identity-meta">
+                <h4>${u.name}</h4>
+                <p>${u.date} • Duration: ${u.time}</p>
+            </div>
+            <div class="rank-score-metric">
+                <div class="points">${u.score.toFixed(2)}</div>
+                <div class="duration">METRIC</div>
             </div>
         `;
-        detailedLeaderboardRootNode.appendChild(structuralRowListItemUnitElement);
+        root.appendChild(row);
     });
 
-    transitionApplicationActiveViewFrame('view-leaderboard-hub-detailed');
+    navigateTo('view-leaderboard');
+}
+
+/**
+ * 🫨 REAL HARDWARE HAPTIC VIBRATION MANAGER
+ */
+function triggerSystemPulse(styleType) {
+    if (!tg || !tg.HapticFeedback) return;
+    
+    switch(styleType) {
+        case 'light':
+            tg.HapticFeedback.impactOccurred('light');
+            break;
+        case 'medium':
+            tg.HapticFeedback.impactOccurred('medium');
+            break;
+        case 'heavy':
+            tg.HapticFeedback.impactOccurred('heavy');
+            break;
+        case 'success':
+            tg.HapticFeedback.notificationOccurred('success');
+            break;
+        case 'error':
+            tg.HapticFeedback.notificationOccurred('error');
+            break;
+    }
 }
