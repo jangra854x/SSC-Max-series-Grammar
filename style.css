@@ -378,6 +378,7 @@ body {
     justify-content: center;
     gap: 5px;
     transition: background 0.2s, border-color 0.2s, color 0.2s;
+    cursor: pointer;
 }
 
 .topic-grid-item:hover .item-action-btn {
@@ -495,4 +496,25 @@ body {
 .version-tag {
     font-size: 0.65rem;
     color: rgba(255, 255, 255, 0.15);
+}
+
+/* ==========================================================================
+   NEW ADDITIONS: Added specifically for Grammar Topics Levels View Setup
+   ========================================================================== */
+.grid-container {
+    display: flex !important;
+    flex-direction: column;
+    gap: 14px;
+}
+
+.topic-levels-box {
+    margin-top: 10px;
+    width: 100%;
+    background: rgba(3, 7, 18, 0.4);
+    border-radius: 8px;
+    padding: 4px 10px;
+}
+
+.hidden {
+    display: none !important;
 }
