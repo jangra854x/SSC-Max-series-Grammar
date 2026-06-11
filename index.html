@@ -3,219 +3,312 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>VOCAB ELITE ENGINE</title>
-    <!-- Font Awesome Elite Icons -->
+    <title>VOCAB MAX ELITE ENGINE - 2026</title>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
-    <!-- Custom Cyberpunk Stylesheet -->
     <link rel="stylesheet" href="style.css">
 </head>
 <body>
 
-    <!-- Elite Neon Micro Loader Screen -->
     <div id="loader" class="loader-container">
-        <div class="cyber-loader-wrapper">
-            <div class="neon-spinner-outer"></div>
-            <div class="neon-spinner-inner"></div>
-            <span class="loader-text">INITIALIZING CORE...</span>
+        <div class="cyber-loader-core">
+            <div class="spinner-ring cyan-ring"></div>
+            <div class="spinner-ring gold-ring"></div>
+            <div class="pulse-logo"><i class="fa-solid fa-shield-halved"></i></div>
+            <span class="loader-status">BOOTING CORE ENGINE...</span>
         </div>
     </div>
 
-    <!-- Background Ambient Light Fields -->
-    <div class="glow-bg-orb orb-blue"></div>
-    <div class="glow-bg-orb orb-gold"></div>
+    <div class="liquid-orb orb-cyan"></div>
+    <div class="liquid-orb orb-gold"></div>
+    <div class="liquid-orb orb-purple"></div>
 
-    <!-- Main Telegram Viewport Shell -->
-    <div class="app-container fade-in">
+    <div class="app-canvas fade-in">
 
-        <!-- ==========================================
-             VIEW 0: MAIN DASHBOARD HOME
-             ========================================== -->
         <section id="view-dashboard" class="app-view active-view">
+            <div class="telemetry-top-bar">
+                <div class="streak-badge" onclick="triggerMicroHaptic()"><i class="fa-solid fa-fire neon-fire"></i> <span>STREAK: 5 DAYS</span></div>
+                <div class="batch-identity-tag">🎯 MISSION SSC 2026 BATCH</div>
+            </div>
+
             <header class="main-header">
-                <div class="logo-area">
-                    <i class="fa-solid fa-bolt-lightning neon-icon-zap"></i>
-                    <h1 class="glow-text-prime">VOCAB MAX SERIES</h1>
+                <h1 class="hologram-text" data-text="VOCAB MAX SERIES">VOCAB MAX SERIES</h1>
+                <div class="exam-ticker-ribbon">
+                    <div class="ticker-track">
+                        <span>CGL</span> • <span>CHSL</span> • <span>CPO</span> • <span>MTS</span> • <span>GD</span> • <span>STENO</span> • <span>PHASE EXAMS</span> • <span>SELECTION POSTS</span>
+                    </div>
                 </div>
-                <div class="challenge-banner">
-                    <span class="challenge-title">VOCABULARY COMPLETE CHALLENGE</span>
-                    <p class="challenge-quote">“Don't just memorize words. Weaponize them. 10 Minutes Daily to Tier-2 Dominance.”</p>
-                </div>
-                <div class="target-exams">
-                    <span>CGL</span> • <span>CHSL</span> • <span>CPO</span> • <span>MTS</span> • <span>BANK</span>
+                <div class="elite-challenge-banner">
+                    <span class="banner-tag">VOCABULARY COMPLETE CHALLENGE</span>
+                    <p class="banner-quote">“Don't just memorize words. Weaponize them. 10 Minutes Daily to Tier-2 Dominance.”</p>
                 </div>
             </header>
 
-            <main class="menu-container">
-                <!-- Card 1: Free Vocabulary Zone -->
-                <div class="premium-card free-zone-card">
-                    <div class="card-status-badge">FREE ACCESS</div>
-                    <div class="card-header-set">
-                        <div class="card-icon-box cyan-glow">
-                            <i class="fa-solid fa-graduation-cap"></i>
-                        </div>
-                        <div class="title-meta">
-                            <h2>Daily Vocab Arena</h2>
-                            <p class="card-desc">Kickstart your preparation with daily high-yield micro drills.</p>
+            <div class="radar-analysis-widget">
+                <div class="widget-header">
+                    <h3><i class="fa-solid fa-chart-radar text-gold"></i> Live Performance Radar</h3>
+                    <span class="live-pulse-dot"></span>
+                </div>
+                <div class="radar-body">
+                    <div class="weak-topic-alert">
+                        <i class="fa-solid fa-triangle-exclamation text-warn"></i>
+                        <p>Focus Required: Your accuracy in <span>Phrasal Verbs</span> is currently <b>42%</b>. Tap a drill card to optimize.</p>
+                    </div>
+                </div>
+            </div>
+
+            <main class="menu-grid-layer">
+                <div class="cyber-mega-card free-arena" onclick="openMonthSelection('Free')">
+                    <div class="card-status-pill">FREE ROUTINE</div>
+                    <div class="card-title-set">
+                        <div class="icon-frame cyan-frame"><i class="fa-solid fa-bolt"></i></div>
+                        <div>
+                            <h2>Daily Free Arena</h2>
+                            <p>Kickstart your morning routine instantly.</p>
                         </div>
                     </div>
-                    <div class="content-manifest-box">
-                        <div class="manifest-item"><i class="fa-solid fa-circle-check"></i> <span>Daily Mix Routine: 20 Exam Questions</span></div>
-                        <div class="manifest-item"><i class="fa-solid fa-circle-check"></i> <span>Pool Coverage: Selected OWS & Idioms (15-15 Master Deck)</span></div>
+                    <div class="card-manifest-list">
+                        <div><i class="fa-solid fa-check cyan-txt"></i> <span>Daily Mix: 20 Exam-Targeted Questions</span></div>
+                        <div><i class="fa-solid fa-check cyan-txt"></i> <span>100% Most Repeated SSC PYQs (High-Yield Deck)</span></div>
                     </div>
-                    <button class="action-glow-btn btn-cyan" onclick="switchView('view-free-zone')">
-                        <span>Enter Free Arena</span>
-                        <i class="fa-solid fa-circle-play"></i>
-                    </button>
+                    <button class="card-action-trigger btn-cyan">Enter Free Arena <i class="fa-solid fa-arrow-right-long"></i></button>
                 </div>
 
-                <!-- Card 2: Premium Elite Zone -->
-                <div class="premium-card elite-zone-card dynamic-border-glow">
-                    <div class="card-status-badge gold-badge"><i class="fa-solid fa-crown"></i> ELITE PLATINUM</div>
-                    <div class="card-header-set">
-                        <div class="card-icon-box gold-glow">
-                            <i class="fa-solid fa-shield-halved"></i>
-                        </div>
-                        <div class="title-meta">
-                            <h2>Premium Vocab Engine</h2>
-                            <p class="card-desc">The ultimate vocabulary dominance architecture for elite tier aspirants.</p>
+                <div class="cyber-mega-card premium-arena premium-glow-border" onclick="openMonthSelection('Premium')">
+                    <div class="card-status-pill gold-pill"><i class="fa-solid fa-crown"></i> ELITE PLATINUM</div>
+                    <div class="card-title-set">
+                        <div class="icon-frame gold-frame"><i class="fa-solid fa-gem"></i></div>
+                        <div>
+                            <h2>Premium Elite Engine</h2>
+                            <p>The ultimate vocabulary dominance architecture.</p>
                         </div>
                     </div>
-                    <div class="content-manifest-box premium-manifest">
-                        <div class="manifest-item"><i class="fa-solid fa-star gold-txt"></i> <span>⚡ Daily Mega Mix: 100 Questions Challenge</span></div>
-                        <div class="manifest-item"><i class="fa-solid fa-star gold-txt"></i> <span>🗂️ Topic-Wise Drills: 50 Questions Daily per section</span></div>
-                        <div class="manifest-item"><i class="fa-solid fa-star gold-txt"></i> <span>🎯 Synonyms, Antonyms, OWS, Idioms, Homonyms, Phrasal Verbs, Fixed Prepositions, Spellings & Errors</span></div>
+                    <div class="card-manifest-list premium-manifest">
+                        <div><i class="fa-solid fa-star gold-txt"></i> <span>Daily Mega Mix: 100 High-Velocity Questions</span></div>
+                        <div><i class="fa-solid fa-star gold-txt"></i> <span>Topic-Wise Mastery: 50 Questions Daily per section</span></div>
+                        <div><i class="fa-solid fa-star gold-txt"></i> <span>20+ Years PYQs + Advanced New TCS-Pattern Words</span></div>
                     </div>
-                    <div class="price-strip">
-                        <span class="price-label">Subscription Fee:</span>
-                        <span class="price-val">₹99<small>/month</small></span>
+                    <div class="premium-pricing-strip">
+                        <span class="sub-label">Access Fee:</span>
+                        <span class="sub-price">₹99<small>/month</small></span>
                     </div>
-                    <button class="action-glow-btn btn-gold" onclick="switchView('view-premium-hub')">
-                        <span>Unlock Elite Arena</span>
-                        <i class="fa-solid fa-lock-open"></i>
-                    </button>
+                    <button class="card-action-trigger btn-gold">Unlock Elite Arena <i class="fa-solid fa-lock-open"></i></button>
                 </div>
             </main>
-        </section>
 
-        <!-- ==========================================
-             VIEW 1: FREE ZONE DATE SELECTION
-             ========================================== -->
-        <section id="view-free-zone" class="app-view hidden-view">
-            <div class="navigation-bar">
-                <button class="back-nav-btn" onclick="switchView('view-dashboard')"><i class="fa-solid fa-arrow-left-long"></i> Dashboard</button>
-                <span class="nav-title-tag text-cyan">Free Arena</span>
+            <div class="quick-nav-dock">
+                <button class="dock-btn" onclick="openUniversalVault()"><i class="fa-solid fa-box-archive"></i> <span>Vocab Vault</span></button>
+                <div class="dock-separator"></div>
+                <button class="dock-btn" onclick="openLeaderboardHub()"><i class="fa-solid fa-trophy"></i> <span>Leaderboards</span></button>
             </div>
-            <div class="view-intro-hero">
-                <h2>Daily Mix Quizzes</h2>
-                <p>Select a date to launch your 20-question custom mix sprint.</p>
-            </div>
-            <div id="free-date-container" class="date-list-grid">
-                <!-- Populated dynamically via Script -->
-            </div>
-        </section>
-
-        <!-- ==========================================
-             VIEW 2: PREMIUM HUB VIEW
-             ========================================== -->
-        <section id="view-premium-hub" class="app-view hidden-view">
-            <div class="navigation-bar">
-                <button class="back-nav-btn" onclick="switchView('view-dashboard')"><i class="fa-solid fa-arrow-left-long"></i> Dashboard</button>
-                <span class="nav-title-tag text-gold"><i class="fa-solid fa-crown"></i> Elite Hub</span>
-            </div>
-
-            <!-- Top Layer Sticky: Mega Mix Card -->
-            <div class="mega-mix-banner" onclick="openPremiumDateSelection('Daily Mega Mix (100 Qs)', 'Mega Mix')">
-                <div class="mega-mix-details">
-                    <span class="hot-tag">🔥 ULTIMATE DAILY DRIVEN</span>
-                    <h2>Daily Mega Mix Challenge</h2>
-                    <p>100 High-velocity questions combining all formats.</p>
-                </div>
-                <div class="mega-mix-action">
-                    <span class="mega-qs-badge">100 Qs</span>
-                    <div class="circle-arrow-btn"><i class="fa-solid fa-chevron-right"></i></div>
-                </div>
-            </div>
-
-            <!-- Bottom Layer: Topic Grid Layout -->
-            <div class="section-divider-title">🗂️ TOPIC-WISE MASTERY (DAILY 50-50 Qs)</div>
             
-            <main class="topics-dynamic-grid">
-                <!-- Topic Card 1 -->
-                <div class="topic-grid-node" onclick="openPremiumDateSelection('Synonyms & Antonyms', 'Synonyms & Antonyms')">
-                    <div class="node-icon"><i class="fa-solid fa-clover"></i></div>
+            <div class="revision-sys-banner">
+                <i class="fa-solid fa-arrows-spin fa-spin text-cyan"></i>
+                <p><b>Revision Schedule Active:</b> Automated Mega-Revision Tests go live every Sunday and Month-End for all enrolled users.</p>
+            </div>
+        </section>
+
+        <section id="view-month-selector" class="app-view hidden-view">
+            <div class="navigation-header-node">
+                <button class="nav-back-btn" onclick="switchView('view-dashboard')"><i class="fa-solid fa-angle-left"></i> Dashboard</button>
+                <span id="target-zone-title-tag" class="zone-tag">FREE ZONE</span>
+            </div>
+            <div class="view-hero-desc">
+                <h2>Select Target Schedule</h2>
+                <p>Data organized under month directories for ultra-clean access logs.</p>
+            </div>
+
+            <div id="accordion-months-root" class="accordion-container">
+                </div>
+        </section>
+
+        <section id="view-premium-topics" class="app-view hidden-view">
+            <div class="navigation-header-node">
+                <button class="nav-back-btn" onclick="switchView('view-month-selector')"><i class="fa-solid fa-angle-left"></i> Folders</button>
+                <span class="zone-tag text-gold"><i class="fa-solid fa-crown"></i> ELITE MASTER</span>
+            </div>
+
+            <div class="mega-mix-prime-card" onclick="triggerPremiumTargetConfig('Daily Mega Mix', 'Mega Mix')">
+                <div class="badge-row"><span class="fire-pill">🔥 POPULAR DRIVEN</span> <span class="qs-count-pill">100 Qs</span></div>
+                <h2>Daily Mega Mix Challenge</h2>
+                <p>High-velocity test combining all formats into a single runtime.</p>
+                <div class="launch-arrow-indicator">Select Schedule <i class="fa-solid fa-chevron-right"></i></div>
+            </div>
+
+            <div class="grid-section-label">🗂️ TOPIC-WISE DRILLS (DAILY 50-50 Qs)</div>
+
+            <div class="topics-isometric-grid">
+                <div class="topic-grid-cell" onclick="triggerPremiumTargetConfig('Synonyms & Antonyms', 'Syno-Anto')">
+                    <div class="cell-icon"><i class="fa-solid fa-shuffle"></i></div>
                     <h3>Synonyms & Antonyms</h3>
-                    <span class="node-meta-badge">50 Qs Daily</span>
                 </div>
-                <!-- Topic Card 2 -->
-                <div class="topic-grid-node" onclick="openPremiumDateSelection('One Word Substitution', 'OWS')">
-                    <div class="node-icon"><i class="fa-solid fa-font-awesome"></i></div>
-                    <h3>One Word Substitutions</h3>
-                    <span class="node-meta-badge">50 Qs Daily</span>
+                <div class="topic-grid-cell" onclick="triggerPremiumTargetConfig('One Word Substitution', 'OWS')">
+                    <div class="cell-icon"><i class="fa-solid fa-input-text"></i></div>
+                    <h3>OWS Mastery</h3>
                 </div>
-                <!-- Topic Card 3 -->
-                <div class="topic-grid-node" onclick="openPremiumDateSelection('Idioms & Phrases', 'Idioms & Phrases')">
-                    <div class="node-icon"><i class="fa-solid fa-masks-theater"></i></div>
+                <div class="topic-grid-cell" onclick="triggerPremiumTargetConfig('Idioms & Phrases', 'Idioms')">
+                    <div class="cell-icon"><i class="fa-solid fa-masks-theater"></i></div>
                     <h3>Idioms & Phrases</h3>
-                    <span class="node-meta-badge">50 Qs Daily</span>
                 </div>
-                <!-- Topic Card 4 -->
-                <div class="topic-grid-node" onclick="openPremiumDateSelection('Homonyms & Homophones', 'Homonyms')">
-                    <div class="node-icon"><i class="fa-solid fa-clone"></i></div>
-                    <h3>Homonyms & Phones</h3>
-                    <span class="node-meta-badge">50 Qs Daily</span>
+                <div class="topic-grid-cell" onclick="triggerPremiumTargetConfig('Homonyms & Homophones', 'Homonyms')">
+                    <div class="cell-icon"><i class="fa-solid fa-clone"></i></div>
+                    <h3>Homonyms</h3>
                 </div>
-                <!-- Topic Card 5 -->
-                <div class="topic-grid-node" onclick="openPremiumDateSelection('Phrasal Verbs', 'Phrasal Verbs')">
-                    <div class="node-icon"><i class="fa-solid fa-dna"></i></div>
+                <div class="topic-grid-cell" onclick="triggerPremiumTargetConfig('Phrasal Verbs', 'Phrasal')">
+                    <div class="cell-icon"><i class="fa-solid fa-dna"></i></div>
                     <h3>Phrasal Verbs</h3>
-                    <span class="node-meta-badge">50 Qs Daily</span>
                 </div>
-                <!-- Topic Card 6 -->
-                <div class="topic-grid-node" onclick="openPremiumDateSelection('Fixed Prepositions', 'Fixed Prepositions')">
-                    <div class="node-icon"><i class="fa-solid fa-anchor"></i></div>
+                <div class="topic-grid-cell" onclick="triggerPremiumTargetConfig('Fixed Prepositions', 'Prepositions')">
+                    <div class="cell-icon"><i class="fa-solid fa-anchor"></i></div>
                     <h3>Fixed Prepositions</h3>
-                    <span class="node-meta-badge">50 Qs Daily</span>
                 </div>
-                <!-- Topic Card 7 -->
-                <div class="topic-grid-node" onclick="openPremiumDateSelection('Spelling Mastery', 'Spelling Tests')">
-                    <div class="node-icon"><i class="fa-solid fa-spell-check"></i></div>
-                    <h3>Spelling Mastery</h3>
-                    <span class="node-meta-badge">50 Qs Daily</span>
+                <div class="topic-grid-cell" onclick="triggerPremiumTargetConfig('Spelling Mastery', 'Spellings')">
+                    <div class="cell-icon"><i class="fa-solid fa-spell-check"></i></div>
+                    <h3>Spelling Tests</h3>
                 </div>
-                <!-- Topic Card 8 -->
-                <div class="topic-grid-node" onclick="openPremiumDateSelection('Sentence Errors', 'Sentence Errors')">
-                    <div class="node-icon"><i class="fa-solid fa-triangle-exclamation"></i></div>
+                <div class="topic-grid-cell" onclick="triggerPremiumTargetConfig('Sentence Errors', 'Errors')">
+                    <div class="cell-icon"><i class="fa-solid fa-triangle-exclamation"></i></div>
                     <h3>Sentence Errors</h3>
-                    <span class="node-meta-badge">50 Qs Daily</span>
                 </div>
-            </main>
-        </section>
-
-        <!-- ==========================================
-             VIEW 3: DYNAMIC DATE SELECTION VIEW
-             ========================================== -->
-        <section id="view-date-selector" class="app-view hidden-view">
-            <div class="navigation-bar">
-                <button id="date-back-target-btn" class="back-nav-btn" onclick="switchView('view-premium-hub')"><i class="fa-solid fa-arrow-left-long"></i> Back</button>
-                <span id="date-selector-nav-title" class="nav-title-tag text-gold">Select Date</span>
-            </div>
-            <div class="view-intro-hero">
-                <h2 id="dynamic-target-title">Topic Loading</h2>
-                <p>Choose the target date schedule to pull live engine queries.</p>
-            </div>
-            <div id="premium-date-container" class="date-list-grid">
-                <!-- Populated dynamically via Javascript dependent on context selection -->
             </div>
         </section>
 
-        <!-- Dynamic Universal Footer Node -->
-        <footer class="main-footer">
-            <p>VOCAB ELITE CORE SYSTEM &copy; 2026</p>
-            <span class="version-tag">v2.0.0-SPA.PRO</span>
-        </footer>
+        <section id="view-quiz-arena" class="app-view hidden-view">
+            <div class="quiz-hud-panel">
+                <div class="live-telemetry-metrics">
+                    <div class="hud-stat-box score-box">
+                        <span class="label">MARKS</span>
+                        <span id="live-score-val" class="val text-cyan">0.00</span>
+                    </div>
+                    <div class="hud-stat-box penalty-box">
+                        <span class="label">PENALTY</span>
+                        <span id="live-penalty-val" class="val text-warn">0.00</span>
+                    </div>
+                    <div class="hud-stat-box q-counter-box">
+                        <span id="quiz-progress-txt" class="val">1/20</span>
+                    </div>
+                </div>
+                <div class="timer-progress-track">
+                    <div id="timer-progress-fill" class="timer-fill-node"></div>
+                </div>
+            </div>
+
+            <div class="question-display-card">
+                <div class="q-actions-row">
+                    <span id="question-type-badge" class="q-type-badge">SYNONYM</span>
+                    <button class="bookmark-vault-btn" onclick="toggleCurrentQuestionBookmark()"><i id="bookmark-icon-target" class="fa-regular fa-bookmark"></i></button>
+                </div>
+                <h2 id="live-question-text" class="question-main-body">Loading dynamic question content matrix from database line logs...</h2>
+            </div>
+
+            <div id="live-quiz-options-root" class="quiz-options-vertical-stack">
+                </div>
+
+            <div class="quiz-footer-actions">
+                <button class="exit-danger-btn" onclick="abortQuizArenaSession()"><i class="fa-solid fa-circle-xmark"></i> Abort</button>
+                <button id="next-q-trigger-btn" class="next-action-btn disabled" onclick="advanceQuizArenaStep()">Skip Question <i class="fa-solid fa-angle-right"></i></button>
+            </div>
+        </section>
+
+        <section id="view-result-panel" class="app-view hidden-view">
+            <div class="result-celebration-canvas">
+                <div id="confetti-sparks-box" class="confetti-particle-box"></div>
+                
+                <div class="holo-badge-wrapper">
+                    <div id="holo-shiny-foil" class="foil-shimmer-layer"></div>
+                    <div class="badge-content-inner">
+                        <span id="result-badge-title" class="badge-title-txt">VOCAB GOD</span>
+                        <div id="result-badge-icon" class="badge-graphic-node"><i class="fa-solid fa-crown"></i></div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="performance-metrics-grid">
+                <div class="metric-node">
+                    <span class="m-label">Final Score</span>
+                    <span id="res-score" class="m-val text-gold">38.50</span>
+                </div>
+                <div class="metric-node">
+                    <span class="m-label">Accuracy Rate</span>
+                    <span id="res-accuracy" class="m-val text-cyan">92%</span>
+                </div>
+                <div class="metric-node">
+                    <span class="m-label">Time Spent</span>
+                    <span id="res-time" class="m-val">2m 14s</span>
+                </div>
+                <div class="metric-node">
+                    <span class="m-label">Total Correct</span>
+                    <span id="res-correct" class="m-val text-success">19/20</span>
+                </div>
+            </div>
+
+            <button class="return-home-btn" onclick="switchView('view-dashboard')"><i class="fa-solid fa-house-chimney-crack"></i> Return To Core Hub</button>
+        </section>
+
+        <section id="view-leaderboard-hub" class="app-view hidden-view">
+            <div class="navigation-header-node">
+                <button class="nav-back-btn" onclick="switchView('view-dashboard')"><i class="fa-solid fa-angle-left"></i> Home</button>
+                <span class="zone-tag text-gold">ALL INDIA RANK</span>
+            </div>
+            <div class="view-hero-desc">
+                <h2>All India Live Leaderboard</h2>
+                <p>Date-wise segregated scoring arrays mapped with microsecond resolution tie-breaker telemetry.</p>
+            </div>
+            <div id="leaderboard-dynamic-list" class="leaderboard-stack-list">
+                </div>
+        </section>
+
+        <section id="view-vault-hub" class="app-view hidden-view">
+            <div class="navigation-header-node">
+                <button class="nav-back-btn" onclick="switchView('view-dashboard')"><i class="fa-solid fa-angle-left"></i> Home</button>
+                <span class="zone-tag text-cyan">VOCAB VAULT</span>
+            </div>
+            <div class="view-hero-desc">
+                <h2>Smart Memory Box</h2>
+                <p>Your bookmarked vulnerabilities. Master them to permanently erase error logs.</p>
+            </div>
+            <div id="vault-dynamic-stack" class="vault-items-grid">
+                </div>
+        </section>
+
     </div>
 
-    <!-- Core App Engine Script Layout Mapping -->
+    <div id="bottom-sheet-modal" class="sheet-modal-backdrop" onclick="closeQuizConfigSheet()">
+        <div class="bottom-sheet-drawer-body" onclick="event.stopPropagation()">
+            <div class="sheet-drag-handle"></div>
+            
+            <div class="sheet-header-block">
+                <h3 id="sheet-target-title">Configure Engine Parameters</h3>
+                <p id="sheet-target-subtitle">Target Profile Match: 11 June 2026 • Free Arena</p>
+            </div>
+
+            <div class="config-parameters-scaffold">
+                <div class="config-param-row">
+                    <div class="param-meta">
+                        <label><i class="fa-solid fa-stopwatch text-cyan"></i> Custom AI Timer Mode</label>
+                        <p>Adjust throttle resolution constraints for questions.</p>
+                    </div>
+                    <div class="segmented-control-picker">
+                        <button id="timer-opt-10" class="seg-btn" onclick="setTimerConfigState(10)">10s</button>
+                        <button id="timer-opt-15" class="seg-btn active-seg" onclick="setTimerConfigState(15)">15s</button>
+                        <button id="timer-opt-0" class="seg-btn" onclick="setTimerConfigState(0)">None</button>
+                    </div>
+                </div>
+
+                <div class="config-param-row">
+                    <div class="param-meta">
+                        <label><i class="fa-solid fa-shield-halved text-warn"></i> Negative Penalty Vector</label>
+                        <p>Enforce strict SSC standard marking constraints.</p>
+                    </div>
+                    <div class="toggle-display-badge">
+                        <span>ACTIVE (-0.50)</span>
+                    </div>
+                </div>
+            </div>
+
+            <button class="sheet-ignition-action-btn" onclick="igniteQuizArenaSession()">LAUNCH QUIZ ENGINE ⚡</button>
+        </div>
+    </div>
+
     <script src="script.js"></script>
 </body>
 </html>
