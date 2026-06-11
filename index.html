@@ -3,85 +3,219 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>SSC MAX SERIES - Home</title>
-    <!-- Font Awesome Icons -->
+    <title>VOCAB ELITE ENGINE</title>
+    <!-- Font Awesome Elite Icons -->
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
-    <!-- Custom CSS -->
+    <!-- Custom Cyberpunk Stylesheet -->
     <link rel="stylesheet" href="style.css">
 </head>
 <body>
 
-    <!-- Loading Screen Anim -->
+    <!-- Elite Neon Micro Loader Screen -->
     <div id="loader" class="loader-container">
-        <div class="neon-spinner"></div>
+        <div class="cyber-loader-wrapper">
+            <div class="neon-spinner-outer"></div>
+            <div class="neon-spinner-inner"></div>
+            <span class="loader-text">INITIALIZING CORE...</span>
+        </div>
     </div>
 
-    <!-- Animated Glow Background Orbs -->
-    <div class="glow-bg-orb orb-1"></div>
-    <div class="glow-bg-orb orb-2"></div>
+    <!-- Background Ambient Light Fields -->
+    <div class="glow-bg-orb orb-blue"></div>
+    <div class="glow-bg-orb orb-gold"></div>
 
+    <!-- Main Telegram Viewport Shell -->
     <div class="app-container fade-in">
-        <!-- Header -->
-        <header class="main-header">
-            <div class="logo-area">
-                <i class="fa-solid fa-graduation-cap neon-icon"></i>
-                <h1 class="glow-text">SSC MAX SERIES</h1>
-            </div>
-            <p class="subtitle">Grammar Practice Platform</p>
-            <div class="target-exams">
-                <span>CGL</span> • <span>CHSL</span> • <span>CPO</span> • <span>MTS</span> • <span>GD</span>
-            </div>
-        </header>
 
-        <!-- Options Container -->
-        <main class="menu-container">
-            <!-- Card 1: Topic-wise Practice -->
-            <div class="premium-card long-glow">
-                <div class="card-icon-wrapper">
-                    <i class="fa-solid fa-book-open"></i>
+        <!-- ==========================================
+             VIEW 0: MAIN DASHBOARD HOME
+             ========================================== -->
+        <section id="view-dashboard" class="app-view active-view">
+            <header class="main-header">
+                <div class="logo-area">
+                    <i class="fa-solid fa-bolt-lightning neon-icon-zap"></i>
+                    <h1 class="glow-text-prime">VOCAB MAX SERIES</h1>
                 </div>
-                <div class="card-content">
-                    <h2>Topic-wise Practice</h2>
-                    <p class="card-desc">Master individual concepts with standard exam patterns.</p>
-                    <div class="card-stats">
-                        <span><i class="fa-solid fa-layer-group"></i> 19 Topics</span>
-                        <span><i class="fa-solid fa-circle-question"></i> 1900+ Questions</span>
+                <div class="challenge-banner">
+                    <span class="challenge-title">VOCABULARY COMPLETE CHALLENGE</span>
+                    <p class="challenge-quote">“Don't just memorize words. Weaponize them. 10 Minutes Daily to Tier-2 Dominance.”</p>
+                </div>
+                <div class="target-exams">
+                    <span>CGL</span> • <span>CHSL</span> • <span>CPO</span> • <span>MTS</span> • <span>BANK</span>
+                </div>
+            </header>
+
+            <main class="menu-container">
+                <!-- Card 1: Free Vocabulary Zone -->
+                <div class="premium-card free-zone-card">
+                    <div class="card-status-badge">FREE ACCESS</div>
+                    <div class="card-header-set">
+                        <div class="card-icon-box cyan-glow">
+                            <i class="fa-solid fa-graduation-cap"></i>
+                        </div>
+                        <div class="title-meta">
+                            <h2>Daily Vocab Arena</h2>
+                            <p class="card-desc">Kickstart your preparation with daily high-yield micro drills.</p>
+                        </div>
                     </div>
-                </div>
-                <a href="topics.html" class="glow-btn">
-                    <span>Start Practice</span>
-                    <i class="fa-solid fa-chevron-right"></i>
-                </a>
-            </div>
-
-            <!-- Card 2: Mock Tests -->
-            <div class="premium-card long-glow spec-mock">
-                <div class="card-icon-wrapper">
-                    <i class="fa-solid fa-bolt"></i>
-                </div>
-                <div class="card-content">
-                    <h2>Mock Tests</h2>
-                    <p class="card-desc">Test your real-time speed and accuracy with full setups.</p>
-                    <div class="card-stats">
-                        <span><i class="fa-solid fa-stopwatch"></i> Exam-Level Mocks</span>
-                        <span><i class="fa-solid fa-chart-simple"></i> Detailed Analysis</span>
+                    <div class="content-manifest-box">
+                        <div class="manifest-item"><i class="fa-solid fa-circle-check"></i> <span>Daily Mix Routine: 20 Exam Questions</span></div>
+                        <div class="manifest-item"><i class="fa-solid fa-circle-check"></i> <span>Pool Coverage: Selected OWS & Idioms (15-15 Master Deck)</span></div>
                     </div>
+                    <button class="action-glow-btn btn-cyan" onclick="switchView('view-free-zone')">
+                        <span>Enter Free Arena</span>
+                        <i class="fa-solid fa-circle-play"></i>
+                    </button>
                 </div>
-                <a href="mocks.html" class="glow-btn variant-purple">
-                    <span>Start Mocks</span>
-                    <i class="fa-solid fa-chevron-right"></i>
-                </a>
-            </div>
-        </main>
 
-        <!-- Footer -->
+                <!-- Card 2: Premium Elite Zone -->
+                <div class="premium-card elite-zone-card dynamic-border-glow">
+                    <div class="card-status-badge gold-badge"><i class="fa-solid fa-crown"></i> ELITE PLATINUM</div>
+                    <div class="card-header-set">
+                        <div class="card-icon-box gold-glow">
+                            <i class="fa-solid fa-shield-halved"></i>
+                        </div>
+                        <div class="title-meta">
+                            <h2>Premium Vocab Engine</h2>
+                            <p class="card-desc">The ultimate vocabulary dominance architecture for elite tier aspirants.</p>
+                        </div>
+                    </div>
+                    <div class="content-manifest-box premium-manifest">
+                        <div class="manifest-item"><i class="fa-solid fa-star gold-txt"></i> <span>⚡ Daily Mega Mix: 100 Questions Challenge</span></div>
+                        <div class="manifest-item"><i class="fa-solid fa-star gold-txt"></i> <span>🗂️ Topic-Wise Drills: 50 Questions Daily per section</span></div>
+                        <div class="manifest-item"><i class="fa-solid fa-star gold-txt"></i> <span>🎯 Synonyms, Antonyms, OWS, Idioms, Homonyms, Phrasal Verbs, Fixed Prepositions, Spellings & Errors</span></div>
+                    </div>
+                    <div class="price-strip">
+                        <span class="price-label">Subscription Fee:</span>
+                        <span class="price-val">₹99<small>/month</small></span>
+                    </div>
+                    <button class="action-glow-btn btn-gold" onclick="switchView('view-premium-hub')">
+                        <span>Unlock Elite Arena</span>
+                        <i class="fa-solid fa-lock-open"></i>
+                    </button>
+                </div>
+            </main>
+        </section>
+
+        <!-- ==========================================
+             VIEW 1: FREE ZONE DATE SELECTION
+             ========================================== -->
+        <section id="view-free-zone" class="app-view hidden-view">
+            <div class="navigation-bar">
+                <button class="back-nav-btn" onclick="switchView('view-dashboard')"><i class="fa-solid fa-arrow-left-long"></i> Dashboard</button>
+                <span class="nav-title-tag text-cyan">Free Arena</span>
+            </div>
+            <div class="view-intro-hero">
+                <h2>Daily Mix Quizzes</h2>
+                <p>Select a date to launch your 20-question custom mix sprint.</p>
+            </div>
+            <div id="free-date-container" class="date-list-grid">
+                <!-- Populated dynamically via Script -->
+            </div>
+        </section>
+
+        <!-- ==========================================
+             VIEW 2: PREMIUM HUB VIEW
+             ========================================== -->
+        <section id="view-premium-hub" class="app-view hidden-view">
+            <div class="navigation-bar">
+                <button class="back-nav-btn" onclick="switchView('view-dashboard')"><i class="fa-solid fa-arrow-left-long"></i> Dashboard</button>
+                <span class="nav-title-tag text-gold"><i class="fa-solid fa-crown"></i> Elite Hub</span>
+            </div>
+
+            <!-- Top Layer Sticky: Mega Mix Card -->
+            <div class="mega-mix-banner" onclick="openPremiumDateSelection('Daily Mega Mix (100 Qs)', 'Mega Mix')">
+                <div class="mega-mix-details">
+                    <span class="hot-tag">🔥 ULTIMATE DAILY DRIVEN</span>
+                    <h2>Daily Mega Mix Challenge</h2>
+                    <p>100 High-velocity questions combining all formats.</p>
+                </div>
+                <div class="mega-mix-action">
+                    <span class="mega-qs-badge">100 Qs</span>
+                    <div class="circle-arrow-btn"><i class="fa-solid fa-chevron-right"></i></div>
+                </div>
+            </div>
+
+            <!-- Bottom Layer: Topic Grid Layout -->
+            <div class="section-divider-title">🗂️ TOPIC-WISE MASTERY (DAILY 50-50 Qs)</div>
+            
+            <main class="topics-dynamic-grid">
+                <!-- Topic Card 1 -->
+                <div class="topic-grid-node" onclick="openPremiumDateSelection('Synonyms & Antonyms', 'Synonyms & Antonyms')">
+                    <div class="node-icon"><i class="fa-solid fa-clover"></i></div>
+                    <h3>Synonyms & Antonyms</h3>
+                    <span class="node-meta-badge">50 Qs Daily</span>
+                </div>
+                <!-- Topic Card 2 -->
+                <div class="topic-grid-node" onclick="openPremiumDateSelection('One Word Substitution', 'OWS')">
+                    <div class="node-icon"><i class="fa-solid fa-font-awesome"></i></div>
+                    <h3>One Word Substitutions</h3>
+                    <span class="node-meta-badge">50 Qs Daily</span>
+                </div>
+                <!-- Topic Card 3 -->
+                <div class="topic-grid-node" onclick="openPremiumDateSelection('Idioms & Phrases', 'Idioms & Phrases')">
+                    <div class="node-icon"><i class="fa-solid fa-masks-theater"></i></div>
+                    <h3>Idioms & Phrases</h3>
+                    <span class="node-meta-badge">50 Qs Daily</span>
+                </div>
+                <!-- Topic Card 4 -->
+                <div class="topic-grid-node" onclick="openPremiumDateSelection('Homonyms & Homophones', 'Homonyms')">
+                    <div class="node-icon"><i class="fa-solid fa-clone"></i></div>
+                    <h3>Homonyms & Phones</h3>
+                    <span class="node-meta-badge">50 Qs Daily</span>
+                </div>
+                <!-- Topic Card 5 -->
+                <div class="topic-grid-node" onclick="openPremiumDateSelection('Phrasal Verbs', 'Phrasal Verbs')">
+                    <div class="node-icon"><i class="fa-solid fa-dna"></i></div>
+                    <h3>Phrasal Verbs</h3>
+                    <span class="node-meta-badge">50 Qs Daily</span>
+                </div>
+                <!-- Topic Card 6 -->
+                <div class="topic-grid-node" onclick="openPremiumDateSelection('Fixed Prepositions', 'Fixed Prepositions')">
+                    <div class="node-icon"><i class="fa-solid fa-anchor"></i></div>
+                    <h3>Fixed Prepositions</h3>
+                    <span class="node-meta-badge">50 Qs Daily</span>
+                </div>
+                <!-- Topic Card 7 -->
+                <div class="topic-grid-node" onclick="openPremiumDateSelection('Spelling Mastery', 'Spelling Tests')">
+                    <div class="node-icon"><i class="fa-solid fa-spell-check"></i></div>
+                    <h3>Spelling Mastery</h3>
+                    <span class="node-meta-badge">50 Qs Daily</span>
+                </div>
+                <!-- Topic Card 8 -->
+                <div class="topic-grid-node" onclick="openPremiumDateSelection('Sentence Errors', 'Sentence Errors')">
+                    <div class="node-icon"><i class="fa-solid fa-triangle-exclamation"></i></div>
+                    <h3>Sentence Errors</h3>
+                    <span class="node-meta-badge">50 Qs Daily</span>
+                </div>
+            </main>
+        </section>
+
+        <!-- ==========================================
+             VIEW 3: DYNAMIC DATE SELECTION VIEW
+             ========================================== -->
+        <section id="view-date-selector" class="app-view hidden-view">
+            <div class="navigation-bar">
+                <button id="date-back-target-btn" class="back-nav-btn" onclick="switchView('view-premium-hub')"><i class="fa-solid fa-arrow-left-long"></i> Back</button>
+                <span id="date-selector-nav-title" class="nav-title-tag text-gold">Select Date</span>
+            </div>
+            <div class="view-intro-hero">
+                <h2 id="dynamic-target-title">Topic Loading</h2>
+                <p>Choose the target date schedule to pull live engine queries.</p>
+            </div>
+            <div id="premium-date-container" class="date-list-grid">
+                <!-- Populated dynamically via Javascript dependent on context selection -->
+            </div>
+        </section>
+
+        <!-- Dynamic Universal Footer Node -->
         <footer class="main-footer">
-            <p>SSC MAX SERIES &copy; 2026</p>
-            <span class="version-tag">v1.0.0</span>
+            <p>VOCAB ELITE CORE SYSTEM &copy; 2026</p>
+            <span class="version-tag">v2.0.0-SPA.PRO</span>
         </footer>
     </div>
 
-    <!-- Script File -->
+    <!-- Core App Engine Script Layout Mapping -->
     <script src="script.js"></script>
 </body>
 </html>
