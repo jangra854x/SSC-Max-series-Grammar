@@ -6,7 +6,8 @@
 // 1. Core Verification Constants
 const PREMIUM_USERS = [
     123456789,
-    987654321
+    7603262906,
+    987654321,
 ];
 
 const PREMIUM_TOPICS = [
