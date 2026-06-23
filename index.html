@@ -3,10 +3,11 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
-    <title>VOCAB MAX ELITE</title>
+    <title>SSC MAX VOCAB</title>
     <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     <link rel="stylesheet" href="style.css">
+    <script src="https://telegram.org/js/telegram-web-app.js"></script>
 </head>
 <body>
 
@@ -17,145 +18,159 @@
         
         <header class="app-header">
             <div class="brand">
-                <span class="text-cyan">VOCAB</span><span class="text-gold">MAX</span>
-                <span class="badge-elite">ELITE</span>
+                <span class="text-cyan">SSC</span> <span class="text-primary">MAX</span> <span class="text-gold">VOCAB</span>
             </div>
             <div class="header-actions">
-                <div class="streak-badge">
-                    <i class="fa-solid fa-fire text-gold animate-pulse"></i>
-                    <span id="global-streak-count">7</span>
-                </div>
+                <button class="btn-tier-toggle" onclick="app.toggleMembershipTier()" id="header-tier-indicator">
+                    <i class="fa-solid fa-user"></i> Free User
+                </button>
             </div>
         </header>
 
         <main id="view-container">
             
             <section id="view-dashboard" class="app-view active">
-                <div class="hero-section">
-                    <div class="hero-overlay"></div>
-                    <div class="hero-content">
-                        <h2>Master SSC English</h2>
-                        <p>Targeting CGL, CHSL, CPO 2026</p>
-                        <div class="premium-tier-tag">
-                            <i class="fa-solid fa-crown text-gold"></i> Premium Member
-                        </div>
+                
+                <div class="profile-header glass-card">
+                    <img src="https://placehold.co/120x120/121627/00f2fe?text=TG" alt="Profile" class="tg-avatar" id="tg-user-avatar">
+                    <div class="profile-info">
+                        <h3 id="tg-user-name">Aspirant</h3>
+                        <p id="tg-user-handle">@telegram_user</p>
+                        <span class="status-badge" id="tg-user-status">Free Membership</span>
                     </div>
                 </div>
 
-                <div class="stats-grid">
-                    <div class="stat-card glass-card">
-                        <div class="stat-icon cyan-bg"><i class="fa-solid fa-bolt"></i></div>
-                        <div class="stat-info">
-                            <span class="stat-value" id="stats-xp">1,240</span>
-                            <span class="stat-label">Total XP</span>
-                        </div>
-                    </div>
-                    <div class="stat-card glass-card">
-                        <div class="stat-icon gold-bg"><i class="fa-solid fa-bullseye"></i></div>
-                        <div class="stat-info">
-                            <span class="stat-value" id="stats-accuracy">94%</span>
-                            <span class="stat-label">Accuracy</span>
-                        </div>
-                    </div>
-                </div>
-
-                <div class="section-container">
-                    <h3 class="section-title">Performance Analytics</h3>
-                    <div class="analytics-card glass-card">
-                        <div class="progress-ring-container">
-                            <div class="progress-bar-wrapper">
-                                <div class="progress-text">
-                                    <span class="big-num text-cyan">84%</span>
-                                    <span class="sub-text">Syllabus Mastered</span>
-                                </div>
+                <div class="portal-cards-stack mt-4">
+                    <div class="portal-card cyan-gradient-card" onclick="app.showQuizDetails('free', 'Daily Free Diagnostic Quiz')">
+                        <div class="portal-card-content">
+                            <span class="portal-tag cyan-tag">ALWAYS FREE</span>
+                            <h3>Daily Free Vocabulary Quiz</h3>
+                            <p>Test your standard TCS vocabulary baseline. High-frequency questions without paywalls.</p>
+                            <div class="portal-meta">
+                                <span><i class="fa-solid fa-circle-question"></i> 10 Questions</span>
+                                <span><i class="fa-solid fa-scale-balanced"></i> +2.0 / -0.5 Marks</span>
                             </div>
                         </div>
-                        <div class="analytics-metrics">
-                            <div class="metric-row"><span>Synonyms</span><span class="text-cyan">92%</span></div>
-                            <div class="metric-row"><span>Idioms</span><span class="text-gold">78%</span></div>
-                            <div class="metric-row"><span>Error Detection</span><span class="text-cyan">85%</span></div>
-                        </div>
+                        <div class="portal-arrow"><i class="fa-solid fa-arrow-right"></i></div>
                     </div>
-                </div>
 
-                <div class="reminder-card gold-gradient-card">
-                    <div class="reminder-icon"><i class="fa-solid fa-bell"></i></div>
-                    <div class="reminder-body">
-                        <h4>Revision Due: 45 Words</h4>
-                        <p>Review weak vocabulary words before the next Daily Mega Mix!</p>
+                    <div class="portal-card gold-gradient-card mt-3" onclick="app.handlePremiumNavigation()">
+                        <div class="portal-card-content">
+                            <span class="portal-tag gold-tag"><i class="fa-solid fa-crown"></i> ELITE PREMIUM</span>
+                            <h3>Today's Premium Blueprint</h3>
+                            <p>Absolute exam-level simulation. Advanced Synonyms, Idioms, OWS & Syntax Splices.</p>
+                            <div class="portal-meta">
+                                <span><i class="fa-solid fa-circle-question"></i> 25 Questions</span>
+                                <span><i class="fa-solid fa-lock-open"></i> Full Archives Included</span>
+                            </div>
+                        </div>
+                        <div class="portal-arrow"><i class="fa-solid fa-crown"></i></div>
                     </div>
-                    <button class="btn-action-sm" onclick="app.switchView('vault')">Fix Now</button>
                 </div>
             </section>
 
             <section id="view-free" class="app-view">
                 <div class="screen-header">
-                    <h2>Free Practice Zone</h2>
-                    <p>Daily diagnostic tests & archives</p>
+                    <h2>Free Practice Portal</h2>
+                    <p>Open baseline evaluations for all SSC candidates</p>
                 </div>
 
-                <div class="quiz-strip-card cyan-gradient-card" onclick="app.startQuiz('Daily Free Quiz', 'free')">
-                    <div class="strip-info">
-                        <span class="badge-tag">LIVE</span>
-                        <h3>Daily Free Diagnostic Quiz</h3>
-                        <p>10 Questions • 5 Mins • -0.50 Negative</p>
+                <div class="portal-card cyan-gradient-card" onclick="app.showQuizDetails('free', 'Daily Free Diagnostic Quiz')">
+                    <div class="portal-card-content">
+                        <span class="portal-tag cyan-tag">LIVE TODAY</span>
+                        <h3>Daily Free Vocabulary Evaluation</h3>
+                        <p>Essential TCS questions covering recent CGL & CHSL syntax patterns.</p>
+                        <div class="portal-meta mt-2">
+                            <span><i class="fa-solid fa-circle-question"></i> 10 Questions</span>
+                            <span><i class="fa-solid fa-check-double"></i> Unlimited Time</span>
+                        </div>
                     </div>
-                    <div class="strip-action"><i class="fa-solid fa-play"></i></div>
+                    <div class="portal-arrow"><i class="fa-solid fa-play"></i></div>
+                </div>
+            </section>
+
+            <section id="view-quiz-details" class="app-view">
+                <div class="screen-header">
+                    <h2>Quiz Blueprint</h2>
+                    <p id="qd-subtitle">Review instructions before initiating</p>
                 </div>
 
-                <h3 class="section-title mt-4">Archive folders</h3>
-                <div class="folder-grid" id="free-folders-container">
-                    </div>
+                <div class="glass-card quiz-rules-card">
+                    <div class="rule-row"><span>📅 Date:</span> <strong id="qd-date">June 23, 2026</strong></div>
+                    <div class="rule-row"><span>❓ Questions:</span> <strong id="qd-count">10 Questions</strong></div>
+                    <div class="rule-row"><span>⚡ Marking Scheme:</span> <strong class="text-cyan">+2.0 Correct / -0.5 Incorrect</strong></div>
+                    <div class="rule-row"><span>⏱️ Duration:</span> <strong>Unlimited (Stopwatch active)</strong></div>
+                    
+                    <hr class="glass-divider">
+                    
+                    <h4>Examination Guidelines:</h4>
+                    <ul class="rules-list">
+                        <li>Take your time to deeply understand the vocabulary context. There is no auto-submission.</li>
+                        <li>You must manually lock your option and explicitly click **Next Question**.</li>
+                        <li>Incorrect attempts will automatically transfer to your personal **Weak Words Vault** for later revision.</li>
+                    </ul>
+                </div>
+
+                <div class="action-stack mt-4">
+                    <button class="btn-primary-gradient w-100" id="btn-confirm-start-quiz">
+                        <i class="fa-solid fa-flag-checkered"></i> START QUIZ NOW
+                    </button>
+                    <button class="btn-secondary w-100 mt-2" onclick="app.switchView('dashboard')">Cancel & Return</button>
+                </div>
             </section>
 
             <section id="view-premium" class="app-view">
                 <div class="screen-header">
                     <h2>Elite Access Matrix</h2>
-                    <p>Designed for absolute 50/50 scoring performance</p>
+                    <p>Absolute TCS vocabulary mastery targeting 50/50 scores</p>
                 </div>
 
-                <div class="mega-mix-card gold-gradient-card" onclick="app.startQuiz('Daily Mega Mix', 'premium')">
-                    <div class="mega-content">
-                        <span class="badge-premium"><i class="fa-solid fa-crown"></i> ELITE DAILY</span>
-                        <h3>Daily Mega Mix (Exam Blueprint)</h3>
-                        <p>30 Contextualized exam-tier questions based on latest TCS patterns.</p>
-                        <div class="mega-meta">
-                            <span><i class="fa-solid fa-clock"></i> 15 Mins</span>
-                            <span><i class="fa-solid fa-bolt"></i> +2.0 / -0.5</span>
+                <div class="portal-card gold-gradient-card mb-4" onclick="app.showQuizDetails('premium', 'Today\'s Premium Master Mix')">
+                    <div class="portal-card-content">
+                        <span class="portal-tag gold-tag"><i class="fa-solid fa-crown"></i> DAILY EXCLUSIVE</span>
+                        <h3>Today's Premium Master Mix</h3>
+                        <p>High-yield exam simulation structured from recent 2026 Selection Posts & CPO tiers.</p>
+                        <div class="portal-meta mt-2">
+                            <span><i class="fa-solid fa-circle-question"></i> 25 Questions</span>
+                            <span><i class="fa-solid fa-bolt"></i> Comprehensive Mix</span>
                         </div>
                     </div>
-                    <div class="mega-action-btn"><i class="fa-solid fa-bolt-lightning"></i> START</div>
+                    <div class="portal-arrow"><i class="fa-solid fa-play"></i></div>
                 </div>
 
-                <h3 class="section-title mt-4">Topic-Wise Mastery Matrix</h3>
-                <div class="topic-grid" id="premium-topics-container">
+                <h3 class="section-title">Topic-Wise Practice Modules</h3>
+                <div class="topic-list" id="premium-topics-list">
+                    </div>
+
+                <h3 class="section-title mt-4">Clean Archive System</h3>
+                <div class="archive-accordion-group" id="premium-archives-container">
                     </div>
             </section>
 
             <section id="view-quiz" class="app-view full-overlay-view">
                 <div class="quiz-header">
-                    <button class="btn-close" onclick="app.exitQuiz()"><i class="fa-solid fa-xmark"></i></button>
+                    <button class="btn-close" onclick="app.confirmExitQuiz()"><i class="fa-solid fa-xmark"></i></button>
                     <div class="quiz-title-context">
-                        <h4 id="quiz-title-display">Daily Mega Mix</h4>
-                        <span class="negative-marking-tag">Negative: 0.50</span>
+                        <h4 id="quiz-title-display">Vocabulary Assessment</h4>
+                        <span class="negative-marking-tag">Negative Marking: -0.50</span>
                     </div>
-                    <div class="quiz-timer" id="quiz-timer-clock">15:00</div>
+                    <div class="quiz-timer" id="quiz-stopwatch">00:00</div>
                 </div>
 
                 <div class="quiz-progress-wrapper">
-                    <div class="quiz-progress-bar" id="quiz-progress-fill" style="width: 0%;"></div>
+                    <div class="quiz-progress-fill" id="quiz-progress-fill" style="width: 0%;"></div>
                 </div>
 
                 <div class="quiz-meta-indices">
-                    <span id="quiz-question-counter">Question 0 of 0</span>
-                    <span class="score-live-tracker" id="quiz-live-score">+0.00</span>
+                    <span id="quiz-question-counter">Question 1 of 10</span>
+                    <span class="score-live-tracker" id="quiz-live-score">Score: 0.00</span>
                 </div>
 
                 <div class="question-wrapper card-animation-swap" id="question-card-frame">
                     <div class="question-tags">
-                        <span class="q-tag" id="question-category-tag">Synonyms</span>
+                        <span class="q-tag" id="question-category-tag">Vocabulary</span>
                     </div>
-                    <p class="question-text" id="question-text-body">Loading premium question parameters...</p>
+                    <p class="question-text" id="question-text-body">Loading evaluation parameters...</p>
                     
                     <div class="options-stack" id="question-options-container">
                         </div>
@@ -172,41 +187,47 @@
                     <div class="crown-badge-wrapper animate-bounce">
                         <i class="fa-solid fa-trophy text-gold"></i>
                     </div>
-                    <h2 class="result-heading">Performance Computed</h2>
-                    <div class="rank-badge-dynamic" id="res-rank-badge">ALCHEMIST GOLD</div>
+                    <h2 class="result-heading">Assessment Complete</h2>
+                    <div class="rank-badge-dynamic" id="res-tier-badge">COMPUTED PERFORMANCE</div>
 
                     <div class="result-stats-matrix">
                         <div class="res-card glass-card">
-                            <span class="res-val text-cyan" id="res-score">24.5</span>
-                            <span class="res-lbl">Net Score</span>
+                            <span class="res-val text-cyan" id="res-score">0.00</span>
+                            <span class="res-lbl">Total Marks</span>
                         </div>
                         <div class="res-card glass-card">
-                            <span class="res-val text-gold" id="res-accuracy">88%</span>
-                            <span class="res-lbl">Accuracy</span>
+                            <span class="res-val text-gold" id="res-correct">0</span>
+                            <span class="res-lbl">Correct</span>
                         </div>
                         <div class="res-card glass-card">
-                            <span class="res-val" id="res-time">4m 32s</span>
+                            <span class="res-val" id="res-time">00:00</span>
                             <span class="res-lbl">Time Taken</span>
                         </div>
                     </div>
 
                     <div class="feedback-card glass-card">
-                        <p class="feedback-text" id="res-feedback">Excellent accuracy. Focus on Phrasal Verbs syntax trends to lock in the remaining raw metrics.</p>
+                        <p class="feedback-text" id="res-feedback">Review your weak words inside the Vocabulary Vault to solidify long-term retention.</p>
                     </div>
 
-                    <button class="btn-primary-gradient w-100" onclick="app.switchView('dashboard')">Return To Command Dashboard</button>
+                    <button class="btn-primary-gradient w-100" onclick="app.switchView('dashboard')">Return To Dashboard</button>
                 </div>
             </section>
 
             <section id="view-vault" class="app-view">
                 <div class="screen-header">
                     <h2>Vocabulary Vault</h2>
-                    <p>Your algorithmic weakness clearing vector</p>
+                    <p>Simple revision system tracking your real mistakes</p>
+                </div>
+
+                <div class="vault-search-wrapper mb-3">
+                    <i class="fa-solid fa-magnifying-glass search-icon"></i>
+                    <input type="search" id="vault-search-input" placeholder="Search stored words or meanings..." oninput="app.filterVaultContent()">
                 </div>
 
                 <div class="vault-tabs">
-                    <button class="vault-tab-btn active" onclick="app.toggleVaultTab('weak')">Weak Words</button>
-                    <button class="vault-tab-btn" onclick="app.toggleVaultTab('bookmarks')">Bookmarks</button>
+                    <button class="vault-tab-btn active" onclick="app.switchVaultTab('weak')">Weak Words (<span id="count-weak">0</span>)</button>
+                    <button class="vault-tab-btn" onclick="app.switchVaultTab('saved')">Saved Words (<span id="count-saved">0</span>)</button>
+                    <button class="vault-tab-btn" onclick="app.switchVaultTab('mastered')">Mastered (<span id="count-mastered">0</span>)</button>
                 </div>
 
                 <div class="vault-stack-list" id="vault-items-container">
@@ -215,20 +236,11 @@
 
             <section id="view-leaderboard" class="app-view">
                 <div class="screen-header">
-                    <h2>Elite Rank Frame</h2>
-                    <p>Realtime percentile distribution of elite candidates</p>
+                    <h2>Daily Elite Ranks</h2>
+                    <p id="leaderboard-date-subtitle">Live Top 10 Standings</p>
                 </div>
 
-                <div class="user-rank-banner glass-card">
-                    <div class="user-rank-rank">#42</div>
-                    <div class="user-rank-details">
-                        <h4>You (Elite Tier)</h4>
-                        <p>Score: 948 pts • Avg Time: 12.4s/q</p>
-                    </div>
-                    <div class="user-rank-percentile">94.2%tile</div>
-                </div>
-
-                <div class="leaderboard-list" id="leaderboard-items-container">
+                <div id="leaderboard-master-container">
                     </div>
             </section>
 
@@ -236,11 +248,11 @@
 
         <nav class="bottom-nav-bar">
             <button class="nav-tab active" data-target="dashboard">
-                <i class="fa-solid fa-chart-pie"></i>
+                <i class="fa-solid fa-house"></i>
                 <span>Dashboard</span>
             </button>
             <button class="nav-tab" data-target="free">
-                <i class="fa-solid fa-graduation-cap"></i>
+                <i class="fa-solid fa-book-open"></i>
                 <span>Free</span>
             </button>
             <button class="nav-tab" data-target="premium">
@@ -248,11 +260,11 @@
                 <span>Premium</span>
             </button>
             <button class="nav-tab" data-target="vault">
-                <i class="fa-solid fa-box-archive"></i>
+                <i class="fa-solid fa-bookmark"></i>
                 <span>Vault</span>
             </button>
             <button class="nav-tab" data-target="leaderboard">
-                <i class="fa-solid fa-ranking-star"></i>
+                <i class="fa-solid fa-trophy"></i>
                 <span>Ranks</span>
             </button>
         </nav>

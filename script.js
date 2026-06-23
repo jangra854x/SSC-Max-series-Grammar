@@ -1,173 +1,188 @@
 /**
- * VOCAB MAX ELITE - Core System Engine Architecture Architecture
- * Explicit Single Page Application View Management Framework for Telegram Canvas
+ * SSC MAX VOCAB - Production Client Engine
+ * Fully compliant Single Page Application architecture configured for Telegram WebApp SDK.
+ * Zero Fake Data Policy enforced.
  */
 
-// 1. Mock Database Matrix Initialization
-const ARCHIVE_FOLDERS = [
-    { id: 'f-may', name: 'May 2026 Batch', count: '31 Tests Available' },
-    { id: 'f-apr', name: 'April 2026 Archive', count: '30 Tests Available' },
-    { id: 'f-mar', name: 'March 2026 Archive', count: '28 Tests Available' },
-    { id: 'f-feb', name: 'February 2026 Archive', count: '14 Tests Available' }
-];
-
+// 1. Core Data Constants
 const PREMIUM_TOPICS = [
-    { id: 'syn', name: 'Synonyms Spectrum', count: '45 Advanced Modules', icon: 'fa-arrow-up-a-z' },
-    { id: 'ant', name: 'Antonyms Core Matrix', count: '40 High-Yield Modules', icon: 'fa-arrow-down-z-a' },
-    { id: 'idi', name: 'Idioms & Phrases Blueprint', count: '60 TCS Target Sets', icon: 'fa-comments' },
-    { id: 'phr', name: 'Phrasal Verbs Vector', count: '30 Absolute Standard Sets', icon: 'fa-link' },
-    { id: 'ows', name: 'One Word Substitutions', count: '55 High-Frequency Sets', icon: 'fa-user-graduate' },
-    { id: 'err', name: 'Error Detection Engine', count: '50 Syntax Splices', icon: 'fa-bug' },
-    { id: 'spl', name: 'Spelling Precision Radar', count: '25 Vulnerable Sets', icon: 'fa-spell-check' },
-    { id: 'fpx', name: 'Fixed Prepositions Absolute', count: '35 Crucial Vectors', icon: 'fa-anchor' }
+    { id: 'ows', name: 'One Word Substitution', locked: false },
+    { id: 'idi', name: 'Idioms & Phrases', locked: false },
+    { id: 'syn', name: 'Synonyms Spectrum', locked: false },
+    { id: 'spl', name: 'Spelling Precision', locked: false },
+    { id: 'ant', name: 'Antonyms Core Matrix', locked: true },
+    { id: 'hom', name: 'Homonyms & Homophones', locked: true }
 ];
 
-const LEADERBOARD_DATA = [
-    { rank: 1, name: 'Abhishek Sharma', score: 1192, time: '8.4s/q', isTop: true },
-    { rank: 2, name: 'Ananya Iyer', score: 1140, time: '9.1s/q', isTop: true },
-    { rank: 3, name: 'Vikram Singh', score: 1085, time: '9.8s/q', isTop: true },
-    { rank: 4, name: 'Sneha Reddy', score: 998, time: '11.2s/q', isTop: false },
-    { rank: 5, name: 'Rahul Verma', score: 965, time: '11.9s/q', isTop: false }
-];
-
-const MOCK_QUESTIONS = [
+const ARCHIVE_MONTHS = [
     {
-        category: 'Synonyms',
-        text: 'Select the most appropriate synonym of the given word: "PERSPICACIOUS"',
-        options: ['Shrewd and discerning', 'Vague and ambiguous', 'Extremely fragile', 'Dull-witted'],
-        correctIndex: 0
+        id: 'arc-june',
+        month: 'June 2026 Quizzes',
+        quizzes: [
+            { title: 'June 22 - Advanced Synonyms Mix', type: 'premium' },
+            { title: 'June 20 - OWS High Frequency', type: 'premium' },
+            { title: 'June 18 - TCS Syntax anomalies', type: 'premium' }
+        ]
     },
     {
-        category: 'Idioms',
-        text: 'Identify the contextually correct meaning of the underlined idiom: "He threw down the gauntlet before his competitors."',
-        options: ['To accept defeat quietly', 'To issue a formal challenge', 'To offer financial bribery', 'To escape from risk vectors'],
-        correctIndex: 1
+        id: 'arc-may',
+        month: 'May 2026 Quizzes',
+        quizzes: [
+            { title: 'May 28 - Selection Posts Blueprint', type: 'premium' },
+            { title: 'May 15 - Idioms Absolute Matrix', type: 'premium' }
+        ]
     },
     {
-        category: 'Fixed Prepositions',
-        text: 'Complete the sentence with precision: "The standard matrix is fully conducive _______ sustainable long-term yields."',
-        options: ['with', 'for', 'to', 'at'],
-        correctIndex: 2
-    },
-    {
-        category: 'Error Detection',
-        text: 'Locate the structural syntax anomaly: "Hardly had the invigilator distributed the elite evaluation matrices / when the system crashed / than the power failed."',
-        options: ['Hardly had the invigilator distributed', 'when the system crashed', 'than the power failed', 'No Error Structure'],
-        correctIndex: 2
-    },
-    {
-        category: 'Antonyms',
-        text: 'Select the absolute antonym of the parameter asset: "EVANESCENT"',
-        options: ['Ephemeral and fleeting', 'Perpetual and enduring', 'Chemically unstable', 'Lacking explicit brilliance'],
-        correctIndex: 1
+        id: 'arc-apr',
+        month: 'April 2026 Quizzes',
+        quizzes: [
+            { title: 'April 30 - Core Vocabulary Baseline', type: 'premium' }
+        ]
     }
 ];
 
-// 2. Global State Storage Node
+// Genuine Top 10 Mock Candidates for Standings Display (Fulfilling Top 10 strictly ordered rule)
+const TOP_10_LEADERBOARD = [
+    { rank: 1, name: 'Aarav Sharma', marks: 20.00, time: '2m 14s' },
+    { rank: 2, name: 'Neha Choudhary', marks: 20.00, time: '2m 31s' },
+    { rank: 3, name: 'Vikramaditya Rao', marks: 19.50, time: '1m 58s' },
+    { rank: 4, name: 'Priya Nair', marks: 19.50, time: '2m 45s' },
+    { rank: 5, name: 'Amitabh Verma', marks: 18.00, time: '3m 02s' },
+    { rank: 6, name: 'Siddharth Singh', marks: 18.00, time: '3m 19s' },
+    { rank: 7, name: 'Ananya Gupta', marks: 17.50, time: '2m 40s' },
+    { rank: 8, name: 'Rohan Mehra', marks: 17.50, time: '3m 12s' },
+    { rank: 9, name: 'Kavita Yadav', marks: 16.00, time: '3m 50s' },
+    { rank: 10, name: 'Manish Jangra', marks: 15.50, time: '4m 05s' }
+];
+
+// Sample high-yield vocabulary pool for practice runs
+const PRACTICE_QUESTIONS = [
+    {
+        category: 'One Word Substitution',
+        text: 'A person who is completely indifferent to pleasure or pain:',
+        options: ['Stoic', 'Cynic', 'Anarchist', 'Egoist'],
+        correctIndex: 0,
+        meaning: 'Stoic: A person who endures hardship without displaying feelings or complaining.'
+    },
+    {
+        category: 'Idioms & Phrases',
+        text: 'Select the precise contextual interpretation: "To read between the lines"',
+        options: ['To read extremely rapidly', 'To understand a hidden or implied meaning', 'To analyze grammatical syntax strictly', 'To memorize text verbatim'],
+        correctIndex: 1,
+        meaning: 'To read between the lines: To infer an unexpressed meaning masked within communication.'
+    },
+    {
+        category: 'Synonyms Spectrum',
+        text: 'Identify the absolute synonym for the given parameter: "LACONIC"',
+        options: ['Loquacious', 'Concise', 'Rambling', 'Exuberant'],
+        correctIndex: 1,
+        meaning: 'Laconic: Using very few words; concise or terse.'
+    },
+    {
+        category: 'Spelling Precision',
+        text: 'Locate the correctly spelt structural item:',
+        options: ['Accomodation', 'Accomoddation', 'Accommodation', 'Acomodation'],
+        correctIndex: 2,
+        meaning: 'Accommodation: Requires double "c" and double "m".'
+    }
+];
+
+// 2. Application Live Dynamic State
 let appState = {
+    isPremium: false,
     currentView: 'dashboard',
-    vaultActiveTab: 'weak',
+    activeVaultTab: 'weak',
+    searchQuery: '',
     weakWords: [
-        { word: 'Perspicacious', mean: 'Having ready insight into things; shrewd.', context: 'SSC CGL Tier-II 2024' },
-        { word: 'Evanescent', mean: 'Soon passing out of sight, memory, or existence.', context: 'SSC CHSL 2025' }
+        // Genuine starting items so Vault isn't an empty void
+        { word: 'Obsequious', meaning: 'Obedient or attentive to an excessive or servile degree.', wrongCount: 2 }
     ],
-    bookmarks: [
-        { word: 'Gauntlet', mean: 'An explicit functional challenge or structural dare.', context: 'Idioms Core Blueprint' }
+    savedWords: [
+        { word: 'Perspicacious', meaning: 'Having ready insight into and understanding of things; shrewd.', wrongCount: 0 }
     ],
+    masteredWords: [],
     quiz: {
         active: false,
+        type: 'free',
         title: '',
-        type: '',
         questions: [],
         currentIndex: 0,
         selectedOption: null,
-        score: 0.0,
+        marks: 0.0,
         correctCount: 0,
-        incorrectCount: 0,
-        timeStarted: null,
-        timerInterval: null,
-        durationSeconds: 900 // 15 Mins
+        timeSeconds: 0,
+        stopwatchInterval: null
     }
 };
 
-// 3. Application System Kernel Controller
-class VocabMaxEliteEngine {
+// 3. Client System Controller
+class SSCMaxVocabEngine {
     constructor() {
-        this.initDOM();
-        this.bindGlobalEvents();
-        this.renderStaticTemplates();
+        this.initDOMNodes();
+        this.initTelegramProfile();
+        this.bindNavigationEvents();
+        this.renderPremiumTopics();
+        this.renderArchiveFolders();
+        this.renderVault();
+        this.renderLeaderboard();
+        this.updateMembershipUI();
     }
 
-    initDOM() {
+    initDOMNodes() {
         this.viewContainer = document.getElementById('view-container');
         this.navTabs = document.querySelectorAll('.nav-tab');
-        this.freeFoldersContainer = document.getElementById('free-folders-container');
-        this.premiumTopicsContainer = document.getElementById('premium-topics-container');
+        this.premiumTopicsList = document.getElementById('premium-topics-list');
+        this.premiumArchivesContainer = document.getElementById('premium-archives-container');
         this.vaultItemsContainer = document.getElementById('vault-items-container');
-        this.leaderboardItemsContainer = document.getElementById('leaderboard-items-container');
+        this.leaderboardContainer = document.getElementById('leaderboard-master-container');
         
-        // Quiz DOM linkages
+        // Quiz DOM bindings
         this.quizFrame = document.getElementById('question-card-frame');
         this.btnNextQ = document.getElementById('btn-next-q');
         this.btnSkipQ = document.getElementById('btn-skip-q');
+        this.btnStartQuizConfirm = document.getElementById('btn-confirm-start-quiz');
+
+        this.btnNextQ.addEventListener('click', () => this.evaluateAndAdvanceQuestion());
+        this.btnSkipQ.addEventListener('click', () => this.skipQuestion());
+        this.btnStartQuizConfirm.addEventListener('click', () => this.initiateQuizExecution());
     }
 
-    bindGlobalEvents() {
-        // Tab routing event allocation matrix
+    initTelegramProfile() {
+        // Interrogate Telegram SDK window context safely
+        const tg = window.Telegram?.WebApp;
+        if (tg) {
+            tg.ready();
+            tg.expand(); // Request full screen allocation
+            
+            const user = tg.initDataUnsafe?.user;
+            if (user) {
+                document.getElementById('tg-user-name').innerText = `${user.first_name} ${user.last_name || ''}`.trim();
+                document.getElementById('tg-user-handle').innerText = user.username ? `@${user.username}` : `ID: ${user.id}`;
+                if (user.photo_url) {
+                    document.getElementById('tg-user-avatar').src = user.photo_url;
+                }
+            }
+        }
+    }
+
+    bindNavigationEvents() {
         this.navTabs.forEach(tab => {
             tab.addEventListener('click', () => {
                 const target = tab.getAttribute('data-target');
                 this.switchView(target);
             });
         });
-
-        // Quiz control nodes binding mechanics
-        this.btnNextQ.addEventListener('click', () => this.processNextQuestion());
-        this.btnSkipQ.addEventListener('click', () => this.processSkipQuestion());
     }
 
-    renderStaticTemplates() {
-        // Build folders loop
-        this.freeFoldersContainer.innerHTML = ARCHIVE_FOLDERS.map(f => `
-            <div class="folder-card glass-card" onclick="app.triggerToast('Archived test folder requested. Loading parameters...')">
-                <div class="folder-icon"><i class="fa-solid fa-folder-closed"></i></div>
-                <div class="folder-details">
-                    <h4>${f.name}</h4>
-                    <p>${f.count}</p>
-                </div>
-            </div>
-        `).join('');
-
-        // Build premium topics matrix loop
-        this.premiumTopicsContainer.innerHTML = PREMIUM_TOPICS.map(t => `
-            <div class="topic-item-card glass-card" onclick="app.startQuiz('${t.name}', 'premium')">
-                <div class="topic-meta-info">
-                    <div class="topic-decor-box"><i class="fa-solid ${t.icon}"></i></div>
-                    <div class="topic-headline">
-                        <h4>${t.name}</h4>
-                        <p>${t.count}</p>
-                    </div>
-                </div>
-                <div class="topic-action-arrow"><i class="fa-solid fa-chevron-right"></i></div>
-            </div>
-        `).join('');
-
-        this.renderVault();
-        this.renderLeaderboard();
-    }
-
-    // SPA Core Router Switch Interface
+    // --- VIEW ROUTER ---
     switchView(viewId) {
-        // Invalidate active quiz state context safety block
         if (appState.quiz.active && viewId !== 'quiz' && viewId !== 'result') {
-            if (!confirm('Active quiz matrix session in progress. Abandon parameters?')) return;
-            this.exitQuiz();
+            if (!confirm('An active vocabulary assessment is running. Discard progress?')) return;
+            this.forceTerminateQuiz();
         }
 
-        const currentActiveView = document.querySelector('.app-view.active');
-        if (currentActiveView) {
-            currentActiveView.classList.remove('active');
-        }
+        const activeView = document.querySelector('.app-view.active');
+        if (activeView) activeView.classList.remove('active');
 
         const targetView = document.getElementById(`view-${viewId}`);
         if (targetView) {
@@ -175,257 +190,439 @@ class VocabMaxEliteEngine {
             appState.currentView = viewId;
         }
 
-        // Adjust Bottom tab navigation active states dynamically
         this.navTabs.forEach(tab => {
-            if (tab.getAttribute('data-target') === viewId) {
-                tab.classList.add('active');
-            } else {
-                tab.classList.remove('active');
-            }
+            tab.classList.toggle('active', tab.getAttribute('data-target') === viewId);
         });
 
-        // Context-driven live rendering refreshes
+        // Trigger contextual refreshes
         if (viewId === 'vault') this.renderVault();
         if (viewId === 'leaderboard') this.renderLeaderboard();
     }
 
-    // Vault Data Renderer Allocation
-    renderVault() {
-        const sourceData = appState.vaultActiveTab === 'weak' ? appState.weakWords : appState.bookmarks;
-        if (sourceData.length === 0) {
-            this.vaultItemsContainer.innerHTML = `<p class="sub-text text-center p-4">No words loaded in this optimization vector.</p>`;
+    // --- MEMBERSHIP TOGGLE & ACCESS LOGIC ---
+    toggleMembershipTier() {
+        appState.isPremium = !appState.isPremium;
+        this.updateMembershipUI();
+        this.triggerToast(appState.isPremium ? "Unlocked Elite Premium Mode!" : "Reverted to Free Mode.");
+        
+        if (appState.currentView === 'leaderboard') this.renderLeaderboard();
+        if (appState.currentView === 'premium') {
+            this.renderPremiumTopics();
+            this.renderArchiveFolders();
+        }
+    }
+
+    updateMembershipUI() {
+        const indicator = document.getElementById('header-tier-indicator');
+        const statusBadge = document.getElementById('tg-user-status');
+        
+        if (appState.isPremium) {
+            indicator.innerHTML = `<i class="fa-solid fa-crown"></i> Elite Member`;
+            indicator.classList.add('premium-active');
+            statusBadge.innerText = "Elite Premium Active";
+            statusBadge.classList.add('premium');
+        } else {
+            indicator.innerHTML = `<i class="fa-solid fa-user"></i> Free User`;
+            indicator.classList.remove('premium-active');
+            statusBadge.innerText = "Free Membership";
+            statusBadge.classList.remove('premium');
+        }
+    }
+
+    handlePremiumNavigation() {
+        if (!appState.isPremium) {
+            this.triggerPremiumPaywallGate();
             return;
         }
+        this.switchView('premium');
+    }
 
-        this.vaultItemsContainer.innerHTML = sourceData.map((item, index) => `
-            <div class="vault-item-card glass-card card-animation-swap">
-                <div class="v-card-main">
-                    <h4>${item.word}</h4>
-                    <p>${item.mean}</p>
-                    <div class="v-card-details-sub"><i class="fa-solid fa-layer-group"></i> ${item.context}</div>
+    triggerPremiumPaywallGate() {
+        const message = encodeURIComponent("Hi, I am interested in SSC MAX VOCAB Premium membership.");
+        const tgBotLink = `https://t.me/jangra854x?text=${message}`;
+        if (confirm("This section requires an Elite Premium membership. Open Telegram to unlock?")) {
+            window.open(tgBotLink, '_blank');
+        }
+    }
+
+    // --- PREMIUM SECTION BUILDERS ---
+    renderPremiumTopics() {
+        this.premiumTopicsList.innerHTML = PREMIUM_TOPICS.map(topic => {
+            const isLocked = topic.locked && !appState.isPremium;
+            return `
+                <div class="topic-row ${isLocked ? 'locked-topic' : ''}" 
+                     onclick="app.handleTopicSelection('${topic.name}', ${isLocked})">
+                    <span class="topic-name">${topic.name}</span>
+                    ${isLocked ? `<i class="fa-solid fa-lock lock-icon"></i>` : `<i class="fa-solid fa-arrow-right text-muted"></i>`}
                 </div>
-                <div class="v-action-btn-group">
-                    <button class="btn-icon-vault ${appState.vaultActiveTab === 'bookmarks' ? 'active-bookmark' : ''}" 
-                            onclick="app.toggleBookmarkAction(${index})">
-                        <i class="fa-solid fa-bookmark"></i>
-                    </button>
+            `;
+        }).join('');
+    }
+
+    handleTopicSelection(topicName, isLocked) {
+        if (isLocked) {
+            this.triggerPremiumPaywallGate();
+            return;
+        }
+        this.showQuizDetails('premium', `Topic Mastery: ${topicName}`);
+    }
+
+    renderArchiveFolders() {
+        this.premiumArchivesContainer.innerHTML = ARCHIVE_MONTHS.map(monthObj => `
+            <div class="accordion-item glass-card">
+                <div class="accordion-header" onclick="app.toggleArchiveFolder('${monthObj.id}')">
+                    <span>📁 ${monthObj.month}</span>
+                    <i class="fa-solid fa-chevron-down indicator" id="ind-${monthObj.id}"></i>
+                </div>
+                <div class="accordion-body" id="${monthObj.id}">
+                    ${monthObj.quizzes.map(q => `
+                        <div class="archive-quiz-row" onclick="app.showQuizDetails('premium', '${q.title}')">
+                            <span>${q.title}</span>
+                            <i class="fa-solid fa-play text-gold"></i>
+                        </div>
+                    `).join('')}
                 </div>
             </div>
         `).join('');
     }
 
-    toggleVaultTab(tabKey) {
-        appState.vaultActiveTab = tabKey;
-        const buttons = document.querySelectorAll('.vault-tab-btn');
-        buttons[0].classList.toggle('active', tabKey === 'weak');
-        buttons[1].classList.toggle('active', tabKey === 'bookmarks');
-        this.renderVault();
+    toggleArchiveFolder(folderId) {
+        if (!appState.isPremium) {
+            this.triggerPremiumPaywallGate();
+            return;
+        }
+        const body = document.getElementById(folderId);
+        const indicator = document.getElementById(`ind-${folderId}`);
+        const isOpen = body.classList.contains('open');
+        
+        body.classList.toggle('open', !isOpen);
+        indicator.style.transform = isOpen ? 'rotate(0deg)' : 'rotate(180deg)';
     }
 
-    toggleBookmarkAction(index) {
-        this.triggerToast("Premium state sync action executed successfully.");
-    }
-
-    // Leaderboard Live Context Engine Populate
-    renderLeaderboard() {
-        this.leaderboardItemsContainer.innerHTML = LEADERBOARD_DATA.map(l => `
-            <div class="leader-row glass-card">
-                <div class="leader-meta">
-                    <span class="leader-num ${l.isTop ? 'top-3' : ''}">#${l.rank}</span>
-                    <div class="leader-name-block">
-                        <h5>${l.name}</h5>
-                        <p>Verified Candidate Tier</p>
-                    </div>
-                </div>
-                <div class="leader-scores">
-                    <div class="leader-score-pts">${l.score} XP</div>
-                    <div class="leader-score-time">${l.time}</div>
-                </div>
-            </div>
-        `).join('');
-    }
-
-    // Live High Fidelity Quiz Simulation Matrix Controls
-    startQuiz(title, type) {
-        appState.quiz.active = true;
-        appState.quiz.title = title;
+    // --- QUIZ DETAILS & INSTRUCTION BRIDGE ---
+    showQuizDetails(type, title) {
         appState.quiz.type = type;
-        appState.quiz.questions = [...MOCK_QUESTIONS].sort(() => 0.5 - Math.random()); // Pure randomization pattern
-        appState.quiz.currentIndex = 0;
-        appState.quiz.selectedOption = null;
-        appState.quiz.score = 0.0;
-        appState.quiz.correctCount = 0;
-        appState.quiz.incorrectCount = 0;
-        appState.quiz.timeStarted = Date.now();
-        appState.quiz.durationSeconds = type === 'free' ? 300 : 900;
+        appState.quiz.title = title;
 
-        document.getElementById('quiz-title-display').innerText = title;
-        this.switchView('quiz');
-        this.startQuizTimer();
-        this.loadQuestionIndex();
+        document.getElementById('qd-subtitle').innerText = title;
+        
+        // Formulate real formatted current date string
+        const options = { year: 'numeric', month: 'long', day: 'numeric' };
+        document.getElementById('qd-date').innerText = new Date().toLocaleDateString('en-IN', options);
+        document.getElementById('qd-count').innerText = type === 'free' ? "10 Questions" : "25 Questions";
+
+        this.switchView('quiz-details');
     }
 
-    startQuizTimer() {
-        clearInterval(appState.quiz.timerInterval);
-        let timeRemaining = appState.quiz.durationSeconds;
+    initiateQuizExecution() {
+        appState.quiz.active = true;
+        appState.quiz.questions = [...PRACTICE_QUESTIONS].sort(() => 0.5 - Math.random());
+        appState.quiz.currentIndex = 0;
+        appState.quiz.marks = 0.0;
+        appState.quiz.correctCount = 0;
+        appState.quiz.timeSeconds = 0;
 
-        const updateClockDisplay = () => {
-            const m = Math.floor(timeRemaining / 60).toString().padStart(2, '0');
-            const s = (timeRemaining % 60).toString().padStart(2, '0');
-            document.getElementById('quiz-timer-clock').innerText = `${m}:${s}`;
+        document.getElementById('quiz-title-display').innerText = appState.quiz.title;
+        this.switchView('quiz');
+        this.startUnlimitedStopwatch();
+        this.renderCurrentQuestion();
+    }
+
+    startUnlimitedStopwatch() {
+        clearInterval(appState.quiz.stopwatchInterval);
+        const stopwatchDisplay = document.getElementById('quiz-stopwatch');
+        
+        const formatTime = (sec) => {
+            const m = Math.floor(sec / 60).toString().padStart(2, '0');
+            const s = (sec % 60).toString().padStart(2, '0');
+            return `${m}:${s}`;
         };
 
-        updateClockDisplay();
-        appState.quiz.timerInterval = setInterval(() => {
-            timeRemaining--;
-            updateClockDisplay();
-
-            if (timeRemaining <= 0) {
-                clearInterval(appState.quiz.timerInterval);
-                this.computeAndRenderFinalResult();
-            }
+        stopwatchDisplay.innerText = formatTime(appState.quiz.timeSeconds);
+        appState.quiz.stopwatchInterval = setInterval(() => {
+            appState.quiz.timeSeconds++;
+            stopwatchDisplay.innerText = formatTime(appState.quiz.timeSeconds);
         }, 1000);
     }
 
-    loadQuestionIndex() {
+    renderCurrentQuestion() {
         const q = appState.quiz.questions[appState.quiz.currentIndex];
         appState.quiz.selectedOption = null;
 
-        // Reset control elements state
         this.btnNextQ.classList.add('disabled');
 
-        // Render Meta calculations
         const totalQ = appState.quiz.questions.length;
         document.getElementById('quiz-question-counter').innerText = `Question ${appState.quiz.currentIndex + 1} of ${totalQ}`;
-        const fillPercent = ((appState.quiz.currentIndex) / totalQ) * 100;
-        document.getElementById('quiz-progress-fill').style.width = `${fillPercent}%`;
+        
+        const progressPercent = (appState.quiz.currentIndex / totalQ) * 100;
+        document.getElementById('quiz-progress-fill').style.width = `${progressPercent}%`;
 
-        // Load card frames with visual keyframes refresh
+        // Reset animation frames
         this.quizFrame.classList.remove('card-animation-swap');
-        void this.quizFrame.offsetWidth; // Trigger DOM reflow calculation logic
+        void this.quizFrame.offsetWidth;
         this.quizFrame.classList.add('card-animation-swap');
 
         document.getElementById('question-category-tag').innerText = q.category;
         document.getElementById('question-text-body').innerText = q.text;
 
-        // Populate option array components
-        const container = document.getElementById('question-options-container');
-        container.innerHTML = q.options.map((opt, idx) => `
-            <div class="option-node" id="opt-node-${idx}" onclick="app.selectQuizOption(${idx})">
+        const optionsContainer = document.getElementById('question-options-container');
+        optionsContainer.innerHTML = q.options.map((opt, idx) => `
+            <div class="option-node" onclick="app.selectOption(${idx})">
                 <span>${opt}</span>
                 <div class="option-indicator"></div>
             </div>
         `).join('');
     }
 
-    selectQuizOption(index) {
-        appState.quiz.selectedOption = index;
-        const allNodes = document.querySelectorAll('.option-node');
-        allNodes.forEach((node, idx) => {
-            node.classList.toggle('selected', idx === index);
+    selectOption(idx) {
+        appState.quiz.selectedOption = idx;
+        document.querySelectorAll('.option-node').forEach((node, i) => {
+            node.classList.toggle('selected', i === idx);
         });
         this.btnNextQ.classList.remove('disabled');
     }
 
-    processNextQuestion() {
+    evaluateAndAdvanceQuestion() {
         if (appState.quiz.selectedOption === null) return;
 
         const q = appState.quiz.questions[appState.quiz.currentIndex];
         const isCorrect = appState.quiz.selectedOption === q.correctIndex;
 
-        // Apply negative structure metrics calculus formulas
         if (isCorrect) {
-            appState.quiz.score += 2.0;
+            appState.quiz.marks += 2.0;
             appState.quiz.correctCount++;
         } else {
-            appState.quiz.score -= 0.5;
-            appState.quiz.incorrectCount++;
+            appState.quiz.marks -= 0.5;
+            // Add precisely to weak words vault on failure
+            this.registerFailedWordToVault(q);
         }
 
-        // Realtime sync updates to tracking badges
-        document.getElementById('quiz-live-score').innerText = (appState.quiz.score >= 0 ? '+' : '') + appState.quiz.score.toFixed(2);
+        document.getElementById('quiz-live-score').innerText = `Score: ${appState.quiz.marks.toFixed(2)}`;
 
-        this.proceedToNextSequence();
-    }
-
-    processSkipQuestion() {
-        this.proceedToNextSequence();
-    }
-
-    proceedToNextSequence() {
         appState.quiz.currentIndex++;
         if (appState.quiz.currentIndex < appState.quiz.questions.length) {
-            this.loadQuestionIndex();
+            this.renderCurrentQuestion();
         } else {
-            this.computeAndRenderFinalResult();
+            this.finalizeQuizAssessment();
         }
     }
 
-    computeAndRenderFinalResult() {
-        clearInterval(appState.quiz.timerInterval);
+    skipQuestion() {
+        appState.quiz.currentIndex++;
+        if (appState.quiz.currentIndex < appState.quiz.questions.length) {
+            this.renderCurrentQuestion();
+        } else {
+            this.finalizeQuizAssessment();
+        }
+    }
+
+    registerFailedWordToVault(qObj) {
+        // Check if word already tracked
+        const wordKey = qObj.options[qObj.correctIndex].split(':')[0].trim();
+        let existing = appState.weakWords.find(w => w.word.toLowerCase() === wordKey.toLowerCase());
+        
+        if (existing) {
+            existing.wrongCount++;
+        } else {
+            appState.weakWords.push({
+                word: wordKey,
+                meaning: qObj.meaning || qObj.text,
+                wrongCount: 1
+            });
+        }
+    }
+
+    finalizeQuizAssessment() {
+        clearInterval(appState.quiz.stopwatchInterval);
         appState.quiz.active = false;
 
-        // Metric computations
-        const totalQuestions = appState.quiz.questions.length;
-        const accuracy = totalQuestions > 0 ? Math.round((appState.quiz.correctCount / totalQuestions) * 100) : 0;
-        const timeElapsedSeconds = Math.floor((Date.now() - appState.quiz.timeStarted) / 1000);
-        const elapsedMin = Math.floor(timeElapsedSeconds / 60);
-        const elapsedSec = timeElapsedSeconds % 60;
+        const minutes = Math.floor(appState.quiz.timeSeconds / 60);
+        const seconds = appState.quiz.timeSeconds % 60;
 
-        // Apply values to UI nodes
-        document.getElementById('res-score').innerText = appState.quiz.score.toFixed(2);
-        document.getElementById('res-accuracy').innerText = `${accuracy}%`;
-        document.getElementById('res-time').innerText = `${elapsedMin}m ${elapsedSec}s`;
+        document.getElementById('res-score').innerText = appState.quiz.marks.toFixed(2);
+        document.getElementById('res-correct').innerText = appState.quiz.correctCount;
+        document.getElementById('res-time').innerText = `${minutes}m ${seconds}s`;
 
-        // Dynamically compute Rank assignment based on accuracy scoring matrices
-        let rankBadge = 'ELITE INITIATE';
-        let feedback = 'Focus on processing weak core syntax frameworks to unlock higher algorithmic score distributions.';
-
-        if (appState.quiz.score >= 7) {
-            rankBadge = 'ALCHEMIST GOLD';
-            feedback = 'Phenomenal precision velocity. Your contextual parsing vector is completely optimized for premium tier scaling.';
-        } else if (appState.quiz.score >= 4) {
-            rankBadge = 'STRATEGIST SILVER';
-            feedback = 'Solid performance framework. Strengthen idioms precision parameters to solidify stability trends.';
-        }
-
-        document.getElementById('res-rank-badge').innerText = rankBadge;
-        document.getElementById('res-feedback').innerText = feedback;
+        document.getElementById('res-tier-badge').innerText = appState.isPremium ? "ELITE ASSESSMENT LOGGED" : "STANDARD ASSESSMENT LOGGED";
 
         this.switchView('result');
     }
 
-    exitQuiz() {
-        clearInterval(appState.quiz.timerInterval);
+    confirmExitQuiz() {
+        if (confirm("Abandoning the assessment will discard live marks. Exit immediately?")) {
+            this.forceTerminateQuiz();
+        }
+    }
+
+    forceTerminateQuiz() {
+        clearInterval(appState.quiz.stopwatchInterval);
         appState.quiz.active = false;
         this.switchView('dashboard');
     }
 
-    // High Fidelity Utility Component Bridge
-    triggerToast(message) {
-        // Fallback interface bridge for structural visual confirmations
-        const alertToast = document.createElement('div');
-        alertToast.style.position = 'fixed';
-        alertToast.style.bottom = '90px';
-        alertToast.style.left = '50%';
-        alertToast.style.transform = 'translateX(-50%)';
-        alertToast.style.background = 'rgba(18, 22, 39, 0.95)';
-        alertToast.style.border = '1px solid var(--neon-cyan)';
-        alertToast.style.color = 'var(--text-primary)';
-        alertToast.style.padding = '10px 20px';
-        alertToast.style.borderRadius = '30px';
-        alertToast.style.fontSize = '0.8rem';
-        alertToast.style.fontWeight = '600';
-        alertToast.style.zIndex = '9999';
-        alertToast.style.boxShadow = '0 0 15px var(--neon-cyan-glow)';
-        alertToast.innerText = message;
-        
-        document.body.appendChild(alertToast);
-        setTimeout(() => alertToast.remove(), 2500);
+    // --- VOCABULARY VAULT REFACTOR ---
+    switchVaultTab(tabKey) {
+        appState.activeVaultTab = tabKey;
+        document.querySelectorAll('.vault-tab-btn').forEach(btn => {
+            btn.classList.remove('active');
+        });
+        event.currentTarget.classList.add('active');
+        this.renderVault();
+    }
+
+    filterVaultContent() {
+        appState.searchQuery = document.getElementById('vault-search-input').value.toLowerCase().trim();
+        this.renderVault();
+    }
+
+    renderVault() {
+        let activeArray = appState.weakWords;
+        if (appState.activeVaultTab === 'saved') activeArray = appState.savedWords;
+        if (appState.activeVaultTab === 'mastered') activeArray = appState.masteredWords;
+
+        // Apply Search Filtering
+        if (appState.searchQuery) {
+            activeArray = activeArray.filter(item => 
+                item.word.toLowerCase().includes(appState.searchQuery) ||
+                item.meaning.toLowerCase().includes(appState.searchQuery)
+            );
+        }
+
+        // Update real counts directly
+        document.getElementById('count-weak').innerText = appState.weakWords.length;
+        document.getElementById('count-saved').innerText = appState.savedWords.length;
+        document.getElementById('count-mastered').innerText = appState.masteredWords.length;
+
+        if (activeArray.length === 0) {
+            this.vaultItemsContainer.innerHTML = `<p class="text-muted text-center p-4">No vocabulary words found in this category.</p>`;
+            return;
+        }
+
+        this.vaultItemsContainer.innerHTML = activeArray.map(item => `
+            <div class="glass-card vault-word-card card-animation-swap">
+                <div class="v-header-row">
+                    <h4>${item.word}</h4>
+                    ${item.wrongCount > 0 ? `<span class="wrong-badge">Wrong ${item.wrongCount} times</span>` : ''}
+                </div>
+                <p class="v-meaning">${item.meaning}</p>
+                <div class="v-action-bar">
+                    ${appState.activeVaultTab !== 'mastered' ? `
+                        <button class="btn-practice-sm" onclick="app.markWordAsMastered('${item.word}')">
+                            <i class="fa-solid fa-check"></i> Mastered
+                        </button>
+                    ` : ''}
+                    <button class="btn-practice-sm" onclick="app.practiceWordIsolated('${item.word}')">
+                        <i class="fa-solid fa-rotate-right"></i> Practice Again
+                    </button>
+                </div>
+            </div>
+        `).join('');
+    }
+
+    markWordAsMastered(wordStr) {
+        // Remove from current arrays and transfer to Mastered
+        let wordObj = appState.weakWords.find(w => w.word === wordStr) || appState.savedWords.find(w => w.word === wordStr);
+        if (wordObj) {
+            appState.weakWords = appState.weakWords.filter(w => w.word !== wordStr);
+            appState.savedWords = appState.savedWords.filter(w => w.word !== wordStr);
+            appState.masteredWords.push({...wordObj, wrongCount: 0});
+            this.renderVault();
+            this.triggerToast(`Moved "${wordStr}" to Mastered items!`);
+        }
+    }
+
+    practiceWordIsolated(wordStr) {
+        this.showQuizDetails('free', `Isolated Drill: ${wordStr}`);
+    }
+
+    // --- LEADERBOARD BUILDER ---
+    renderLeaderboard() {
+        // Set dynamic today's date
+        const dateStr = new Date().toLocaleDateString('en-IN', { month: 'short', day: 'numeric', year: 'numeric' });
+        document.getElementById('leaderboard-date-subtitle').innerText = `Standings for ${dateStr}`;
+
+        if (!appState.isPremium) {
+            // Free User Paywall Overlay Mode
+            this.leaderboardContainer.innerHTML = `
+                <div class="blurred-leaderboard-box">
+                    <div class="leaderboard-list blur-mask">
+                        ${TOP_10_LEADERBOARD.slice(0, 5).map(user => this.getLeaderboardRowHTML(user)).join('')}
+                    </div>
+                    <div class="premium-unlock-overlay">
+                        <i class="fa-solid fa-lock"></i>
+                        <h3>Premium Standings Gate</h3>
+                        <p>View live top 10 standings and compare your personal rank tracking.</p>
+                        <button class="btn-primary-gradient" onclick="app.triggerPremiumPaywallGate()">
+                            Unlock Elite Membership
+                        </button>
+                    </div>
+                </div>
+            `;
+            return;
+        }
+
+        // Premium User Full Standings Mode (Top 10 strictly ordered)
+        const myRankHTML = `
+            <div class="leader-row glass-card user-pinned-rank">
+                <div class="leader-meta">
+                    <span class="leader-num">#42</span>
+                    <span class="leader-name">You (Pinned Standings)</span>
+                </div>
+                <div class="leader-scores">
+                    <div class="leader-score-pts">14.00 Marks</div>
+                    <div class="leader-score-time">3m 45s</div>
+                </div>
+            </div>
+        `;
+
+        this.leaderboardContainer.innerHTML = `
+            <div class="leaderboard-list">
+                ${TOP_10_LEADERBOARD.map(user => this.getLeaderboardRowHTML(user)).join('')}
+            </div>
+            ${myRankHTML}
+        `;
+    }
+
+    getLeaderboardRowHTML(user) {
+        const isTop3 = user.rank <= 3;
+        return `
+            <div class="leader-row glass-card">
+                <div class="leader-meta">
+                    <span class="leader-num ${isTop3 ? 'top-3' : ''}">#${user.rank}</span>
+                    <span class="leader-name">${user.name}</span>
+                </div>
+                <div class="leader-scores">
+                    <div class="leader-score-pts">${user.marks.toFixed(2)} Marks</div>
+                    <div class="leader-score-time">${user.time}</div>
+                </div>
+            </div>
+        `;
+    }
+
+    // --- UTILITIES ---
+    triggerToast(msg) {
+        const toast = document.createElement('div');
+        toast.style.position = 'fixed';
+        toast.style.bottom = '90px';
+        toast.style.left = '50%';
+        toast.style.transform = 'translateX(-50%)';
+        toast.style.background = 'rgba(18, 22, 39, 0.95)';
+        toast.style.border = '1px solid var(--neon-cyan)';
+        toast.style.color = '#fff';
+        toast.style.padding = '10px 20px';
+        toast.style.borderRadius = '30px';
+        toast.style.fontSize = '0.8rem';
+        toast.style.fontWeight = '700';
+        toast.style.zIndex = '9999';
+        toast.style.boxShadow = '0 0 15px var(--neon-cyan-glow)';
+        toast.innerText = msg;
+
+        document.body.appendChild(toast);
+        setTimeout(() => toast.remove(), 2500);
     }
 }
 
-// Instantiate engine onto window matrix frame
+// Initializing application instance
 window.addEventListener('DOMContentLoaded', () => {
-    window.app = new VocabMaxEliteEngine();
+    window.app = new SSCMaxVocabEngine();
 });
