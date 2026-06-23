@@ -5,7 +5,7 @@
 
 // 1. Core Verification Constants
 const PREMIUM_USERS = [
-    123456789,
+    7990149560,
     7603262906,
     987654321,
 ];
