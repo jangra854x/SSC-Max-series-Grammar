@@ -7,7 +7,7 @@
 const PREMIUM_USERS = [
     7990149560,
     7603262906,
-    987654321,
+    987654321
 ];
 
 const PREMIUM_TOPICS = [
