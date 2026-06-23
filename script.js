@@ -1,596 +1,431 @@
 /**
- * VOCABULARY MAX ELITE PLATINUM PLATFORM CORE ENGINE
- * Synchronization Baseline: June 11, 2026
- * Architecture Matrix: Unified Single Page Application (SPA)
+ * VOCAB MAX ELITE - Core System Engine Architecture Architecture
+ * Explicit Single Page Application View Management Framework for Telegram Canvas
  */
 
-// Global System Configuration State Machine Matrix Tracker
-let engineState = {
-    currentZone: 'Free',         // Free or Premium
-    selectedTopic: 'Mega Mix',   // Stores target key context
-    selectedDate: '',            // Mapped on click trigger
-    timerSetting: 15,            // Custom time allocation per question
-    negativeMarking: 0.50,       // Strict standard penalty format
-    
-    // Test Arena Session Cache
-    questionsPool: [],
-    currentQIdx: 0,
-    userScore: 0.0,
-    userPenalty: 0.0,
-    correctCount: 0,
-    quizTimerRef: null,
-    timeSpentSeconds: 0,
-    sessionTimerInterval: null,
-    isOptionLocked: false,
-    
-    // History Stack for Physical Back Button Overrides
-    navigationViewHistoryStack: ['view-dashboard'],
-    
-    // Global User Database Emulation Mappings
-    bookmarksVault: [
-        { word: "Ambiguous", definition: "Having a double meaning or unclear framework configuration." },
-        { word: "Ephemeral", definition: "Lasting for a very short duration of chronological ticks." }
-    ]
+// 1. Mock Database Matrix Initialization
+const ARCHIVE_FOLDERS = [
+    { id: 'f-may', name: 'May 2026 Batch', count: '31 Tests Available' },
+    { id: 'f-apr', name: 'April 2026 Archive', count: '30 Tests Available' },
+    { id: 'f-mar', name: 'March 2026 Archive', count: '28 Tests Available' },
+    { id: 'f-feb', name: 'February 2026 Archive', count: '14 Tests Available' }
+];
+
+const PREMIUM_TOPICS = [
+    { id: 'syn', name: 'Synonyms Spectrum', count: '45 Advanced Modules', icon: 'fa-arrow-up-a-z' },
+    { id: 'ant', name: 'Antonyms Core Matrix', count: '40 High-Yield Modules', icon: 'fa-arrow-down-z-a' },
+    { id: 'idi', name: 'Idioms & Phrases Blueprint', count: '60 TCS Target Sets', icon: 'fa-comments' },
+    { id: 'phr', name: 'Phrasal Verbs Vector', count: '30 Absolute Standard Sets', icon: 'fa-link' },
+    { id: 'ows', name: 'One Word Substitutions', count: '55 High-Frequency Sets', icon: 'fa-user-graduate' },
+    { id: 'err', name: 'Error Detection Engine', count: '50 Syntax Splices', icon: 'fa-bug' },
+    { id: 'spl', name: 'Spelling Precision Radar', count: '25 Vulnerable Sets', icon: 'fa-spell-check' },
+    { id: 'fpx', name: 'Fixed Prepositions Absolute', count: '35 Crucial Vectors', icon: 'fa-anchor' }
+];
+
+const LEADERBOARD_DATA = [
+    { rank: 1, name: 'Abhishek Sharma', score: 1192, time: '8.4s/q', isTop: true },
+    { rank: 2, name: 'Ananya Iyer', score: 1140, time: '9.1s/q', isTop: true },
+    { rank: 3, name: 'Vikram Singh', score: 1085, time: '9.8s/q', isTop: true },
+    { rank: 4, name: 'Sneha Reddy', score: 998, time: '11.2s/q', isTop: false },
+    { rank: 5, name: 'Rahul Verma', score: 965, time: '11.9s/q', isTop: false }
+];
+
+const MOCK_QUESTIONS = [
+    {
+        category: 'Synonyms',
+        text: 'Select the most appropriate synonym of the given word: "PERSPICACIOUS"',
+        options: ['Shrewd and discerning', 'Vague and ambiguous', 'Extremely fragile', 'Dull-witted'],
+        correctIndex: 0
+    },
+    {
+        category: 'Idioms',
+        text: 'Identify the contextually correct meaning of the underlined idiom: "He threw down the gauntlet before his competitors."',
+        options: ['To accept defeat quietly', 'To issue a formal challenge', 'To offer financial bribery', 'To escape from risk vectors'],
+        correctIndex: 1
+    },
+    {
+        category: 'Fixed Prepositions',
+        text: 'Complete the sentence with precision: "The standard matrix is fully conducive _______ sustainable long-term yields."',
+        options: ['with', 'for', 'to', 'at'],
+        correctIndex: 2
+    },
+    {
+        category: 'Error Detection',
+        text: 'Locate the structural syntax anomaly: "Hardly had the invigilator distributed the elite evaluation matrices / when the system crashed / than the power failed."',
+        options: ['Hardly had the invigilator distributed', 'when the system crashed', 'than the power failed', 'No Error Structure'],
+        correctIndex: 2
+    },
+    {
+        category: 'Antonyms',
+        text: 'Select the absolute antonym of the parameter asset: "EVANESCENT"',
+        options: ['Ephemeral and fleeting', 'Perpetual and enduring', 'Chemically unstable', 'Lacking explicit brilliance'],
+        correctIndex: 1
+    }
+];
+
+// 2. Global State Storage Node
+let appState = {
+    currentView: 'dashboard',
+    vaultActiveTab: 'weak',
+    weakWords: [
+        { word: 'Perspicacious', mean: 'Having ready insight into things; shrewd.', context: 'SSC CGL Tier-II 2024' },
+        { word: 'Evanescent', mean: 'Soon passing out of sight, memory, or existence.', context: 'SSC CHSL 2025' }
+    ],
+    bookmarks: [
+        { word: 'Gauntlet', mean: 'An explicit functional challenge or structural dare.', context: 'Idioms Core Blueprint' }
+    ],
+    quiz: {
+        active: false,
+        title: '',
+        type: '',
+        questions: [],
+        currentIndex: 0,
+        selectedOption: null,
+        score: 0.0,
+        correctCount: 0,
+        incorrectCount: 0,
+        timeStarted: null,
+        timerInterval: null,
+        durationSeconds: 900 // 15 Mins
+    }
 };
 
-// Initialize Telegram WebApp Sandbox Binding
-const tg = window.Telegram && window.Telegram.WebApp ? window.Telegram.WebApp : null;
-
-document.addEventListener('DOMContentLoaded', () => {
-    // Android Boot Freeze Failsafe System Protection Launcher
-    executeGlobalEngineBoot();
-});
-
-/**
- * 🛡️ ANDROID ENGINE SAFESHIELED BOOT
- * Prevents loader loop from turning forever if native events race or crash
- */
-function executeGlobalEngineBoot() {
-    const loaderNode = document.getElementById('loader');
-    
-    // Absolute Failsafe: Android WebViews often drop window.onload triggers. Force clear after 800ms max.
-    const fallbackTimer = setTimeout(() => {
-        if (loaderNode && loaderNode.style.display !== 'none') {
-            clearLoaderOverlay(loaderNode);
-        }
-    }, 800);
-
-    window.addEventListener('load', () => {
-        clearTimeout(fallbackTimer);
-        clearLoaderOverlay(loaderNode);
-    });
-
-    if (document.readyState === 'complete') {
-        clearTimeout(fallbackTimer);
-        clearLoaderOverlay(loaderNode);
+// 3. Application System Kernel Controller
+class VocabMaxEliteEngine {
+    constructor() {
+        this.initDOM();
+        this.bindGlobalEvents();
+        this.renderStaticTemplates();
     }
 
-    // Bind Telegram App Configurations
-    initTelegramProfileData();
-    setupNativeHardwareBackButton();
-}
-
-function clearLoaderOverlay(node) {
-    if (!node) return;
-    node.style.opacity = '0';
-    setTimeout(() => { 
-        node.style.display = 'none'; 
-    }, 400);
-}
-
-/**
- * 👥 NATIVE TELEGRAM PROFILE LINKER (iOS Fixed sizing fallback metrics)
- */
-function initTelegramProfileData() {
-    const avatarImg = document.getElementById('user-avatar-element');
-    const nameField = document.getElementById('user-display-name');
-
-    if (tg && tg.initDataUnsafe && tg.initDataUnsafe.user) {
-        const uData = tg.initDataUnsafe.user;
-        nameField.innerText = `${uData.first_name} ${uData.last_name || ''}`.trim();
-        if (uData.photo_url) {
-            avatarImg.src = uData.photo_url;
-        }
-    } else {
-        // Fallback for local sandbox testing environment logs
-        nameField.innerText = "ELITE COMMANDER";
-    }
-}
-
-/**
- * 🛜 NATIVE HARDWARE BACK BUTTON PROTOCOLS
- */
-function setupNativeHardwareBackButton() {
-    if (!tg || !tg.BackButton) return;
-
-    tg.BackButton.onClick(() => {
-        handleBackNavigation();
-    });
-
-    updateTelegramHardwareBackButtonVisibility();
-}
-
-function updateTelegramHardwareBackButtonVisibility() {
-    if (!tg || !tg.BackButton) return;
-    
-    if (engineState.navigationViewHistoryStack.length > 1) {
-        tg.BackButton.show();
-    } else {
-        tg.BackButton.hide();
-    }
-}
-
-/**
- * SPA Route Switch Engine with History Trace
- */
-function switchView(targetViewId) {
-    triggerSystemPulse('medium');
-    
-    const views = document.querySelectorAll('.app-view');
-    views.forEach(v => v.classList.remove('active-view'));
-
-    const activeTarget = document.getElementById(targetViewId);
-    if (activeTarget) {
-        activeTarget.classList.add('active-view');
-        window.scrollTo({ top: 0 });
-    }
-
-    updateTelegramHardwareBackButtonVisibility();
-}
-
-function navigateTo(targetViewId) {
-    engineState.navigationViewHistoryStack.push(targetViewId);
-    switchView(targetViewId);
-}
-
-function handleBackNavigation() {
-    if (engineState.navigationViewHistoryStack.length > 1) {
-        // Stop active interval systems if exiting quiz runtime arena
-        if (engineState.navigationViewHistoryStack[engineState.navigationViewHistoryStack.length - 1] === 'view-quiz-arena') {
-            clearInterval(engineState.quizTimerRef);
-            clearInterval(engineState.sessionTimerInterval);
-        }
+    initDOM() {
+        this.viewContainer = document.getElementById('view-container');
+        this.navTabs = document.querySelectorAll('.nav-tab');
+        this.freeFoldersContainer = document.getElementById('free-folders-container');
+        this.premiumTopicsContainer = document.getElementById('premium-topics-container');
+        this.vaultItemsContainer = document.getElementById('vault-items-container');
+        this.leaderboardItemsContainer = document.getElementById('leaderboard-items-container');
         
-        engineState.navigationViewHistoryStack.pop();
-        const prevView = engineState.navigationViewHistoryStack[engineState.navigationViewHistoryStack.length - 1];
-        switchView(prevView);
+        // Quiz DOM linkages
+        this.quizFrame = document.getElementById('question-card-frame');
+        this.btnNextQ = document.getElementById('btn-next-q');
+        this.btnSkipQ = document.getElementById('btn-skip-q');
     }
-}
 
-/**
- * Generates Adaptive Date Directory Sequences without Dropdowns
- */
-function compileEngineDateStructures() {
-    return [
-        { monthName: "JUNE 2026", isActive: true, dates: ["11 June 2026", "10 June 2026", "09 June 2026", "08 June 2026"] },
-        { monthName: "MAY 2026", isActive: false, dates: ["31 May 2026", "25 May 2026", "18 May 2026", "12 May 2026"] },
-        { monthName: "APRIL 2026", isActive: false, dates: ["30 April 2026", "20 April 2026", "10 April 2026", "01 April 2026"] }
-    ];
-}
+    bindGlobalEvents() {
+        // Tab routing event allocation matrix
+        this.navTabs.forEach(tab => {
+            tab.addEventListener('click', () => {
+                const target = tab.getAttribute('data-target');
+                this.switchView(target);
+            });
+        });
 
-/**
- * Populates Dynamic Folder Accordions for Month Screen Transitions
- */
-function openMonthSelection(zoneType) {
-    engineState.currentZone = zoneType;
-    const rootContainer = document.getElementById('accordion-months-root');
-    const headerTitle = document.getElementById('target-zone-title-tag');
-    
-    if (!rootContainer) return;
-    rootContainer.innerHTML = ''; 
+        // Quiz control nodes binding mechanics
+        this.btnNextQ.addEventListener('click', () => this.processNextQuestion());
+        this.btnSkipQ.addEventListener('click', () => this.processSkipQuestion());
+    }
 
-    headerTitle.innerText = zoneType === 'Free' ? 'FREE ARENA' : 'PREMIUM ARCHIVE';
-    headerTitle.className = zoneType === 'Free' ? 'zone-tag text-cyan' : 'zone-tag text-gold';
+    renderStaticTemplates() {
+        // Build folders loop
+        this.freeFoldersContainer.innerHTML = ARCHIVE_FOLDERS.map(f => `
+            <div class="folder-card glass-card" onclick="app.triggerToast('Archived test folder requested. Loading parameters...')">
+                <div class="folder-icon"><i class="fa-solid fa-folder-closed"></i></div>
+                <div class="folder-details">
+                    <h4>${f.name}</h4>
+                    <p>${f.count}</p>
+                </div>
+            </div>
+        `).join('');
 
-    const directoryDataset = compileEngineDateStructures();
+        // Build premium topics matrix loop
+        this.premiumTopicsContainer.innerHTML = PREMIUM_TOPICS.map(t => `
+            <div class="topic-item-card glass-card" onclick="app.startQuiz('${t.name}', 'premium')">
+                <div class="topic-meta-info">
+                    <div class="topic-decor-box"><i class="fa-solid ${t.icon}"></i></div>
+                    <div class="topic-headline">
+                        <h4>${t.name}</h4>
+                        <p>${t.count}</p>
+                    </div>
+                </div>
+                <div class="topic-action-arrow"><i class="fa-solid fa-chevron-right"></i></div>
+            </div>
+        `).join('');
 
-    directoryDataset.forEach((monthData, index) => {
-        const itemShell = document.createElement('div');
-        itemShell.className = `accordion-month-item ${index === 0 ? 'expanded' : ''}`;
-        
-        let datesHTML = '';
-        monthData.dates.forEach(dateStr => {
-            if (zoneType === 'Free') {
-                datesHTML += `
-                    <div class="date-drill-row">
-                        <div class="date-drill-meta">
-                            <span class="primary-d-text">${dateStr}</span>
-                            <span class="secondary-d-text"><i class="fa-solid fa-layer-group text-cyan"></i> Free Daily Mix (20 Qs)</span>
-                        </div>
-                        <button class="launch-sprint-trigger-btn" onclick="openQuizConfigSheet('${dateStr}', 'Daily Free Mix')">Start</button>
-                    </div>`;
+        this.renderVault();
+        this.renderLeaderboard();
+    }
+
+    // SPA Core Router Switch Interface
+    switchView(viewId) {
+        // Invalidate active quiz state context safety block
+        if (appState.quiz.active && viewId !== 'quiz' && viewId !== 'result') {
+            if (!confirm('Active quiz matrix session in progress. Abandon parameters?')) return;
+            this.exitQuiz();
+        }
+
+        const currentActiveView = document.querySelector('.app-view.active');
+        if (currentActiveView) {
+            currentActiveView.classList.remove('active');
+        }
+
+        const targetView = document.getElementById(`view-${viewId}`);
+        if (targetView) {
+            targetView.classList.add('active');
+            appState.currentView = viewId;
+        }
+
+        // Adjust Bottom tab navigation active states dynamically
+        this.navTabs.forEach(tab => {
+            if (tab.getAttribute('data-target') === viewId) {
+                tab.classList.add('active');
             } else {
-                datesHTML += `
-                    <div class="date-drill-row">
-                        <div class="date-drill-meta">
-                            <span class="primary-d-text">${dateStr}</span>
-                            <span class="secondary-d-text"><i class="fa-solid fa-crown text-gold"></i> Premium Study Segments Mapped</span>
-                        </div>
-                        <button class="launch-sprint-trigger-btn btn-premium-launch" onclick="navigateToPremiumTopicDashboard('${dateStr}')">Open ➔</button>
-                    </div>`;
+                tab.classList.remove('active');
             }
         });
 
-        itemShell.innerHTML = `
-            <div class="accordion-month-header" onclick="toggleAccordionFolderNode(this)">
-                <h3>${monthData.monthName}</h3>
-                <div class="month-status-indicators">
-                    ${monthData.isActive ? '<span class="active-month-dot-tag">ACTIVE</span>' : ''}
-                    <i class="fa-solid fa-chevron-down chevron-rotate-icon"></i>
+        // Context-driven live rendering refreshes
+        if (viewId === 'vault') this.renderVault();
+        if (viewId === 'leaderboard') this.renderLeaderboard();
+    }
+
+    // Vault Data Renderer Allocation
+    renderVault() {
+        const sourceData = appState.vaultActiveTab === 'weak' ? appState.weakWords : appState.bookmarks;
+        if (sourceData.length === 0) {
+            this.vaultItemsContainer.innerHTML = `<p class="sub-text text-center p-4">No words loaded in this optimization vector.</p>`;
+            return;
+        }
+
+        this.vaultItemsContainer.innerHTML = sourceData.map((item, index) => `
+            <div class="vault-item-card glass-card card-animation-swap">
+                <div class="v-card-main">
+                    <h4>${item.word}</h4>
+                    <p>${item.mean}</p>
+                    <div class="v-card-details-sub"><i class="fa-solid fa-layer-group"></i> ${item.context}</div>
+                </div>
+                <div class="v-action-btn-group">
+                    <button class="btn-icon-vault ${appState.vaultActiveTab === 'bookmarks' ? 'active-bookmark' : ''}" 
+                            onclick="app.toggleBookmarkAction(${index})">
+                        <i class="fa-solid fa-bookmark"></i>
+                    </button>
                 </div>
             </div>
-            <div class="accordion-dates-drawer">
-                ${datesHTML}
-            </div>
-        `;
-        rootContainer.appendChild(itemShell);
-    });
-
-    navigateTo('view-month-selector');
-}
-
-function toggleAccordionFolderNode(headerElement) {
-    triggerSystemPulse('light');
-    const parentNode = headerElement.parentElement;
-    parentNode.classList.toggle('expanded');
-}
-
-function navigateToPremiumTopicDashboard(targetDate) {
-    engineState.selectedDate = targetDate;
-    document.getElementById('premium-topic-date-subtitle').innerText = `${targetDate} • ELITE VAULT MAP`;
-    navigateTo('view-premium-topics');
-}
-
-function triggerPremiumTargetConfig(displayTitle, internalKey) {
-    engineState.selectedTopic = internalKey;
-    openQuizConfigSheet(engineState.selectedDate, displayTitle);
-}
-
-/**
- * 🎫 BOTTOM SHEET TIMING MODAL PROTOCOLS
- */
-function openQuizConfigSheet(dateStr, topicTitle) {
-    if (engineState.currentZone === 'Free') {
-        engineState.selectedDate = dateStr;
-        engineState.selectedTopic = 'Daily Free Mix';
+        `).join('');
     }
-    
-    document.getElementById('sheet-target-title').innerText = topicTitle;
-    document.getElementById('sheet-target-subtitle').innerText = `${engineState.selectedDate} • System Configuration`;
-    
-    document.getElementById('bottom-sheet-modal').classList.add('display-active');
-}
 
-function closeQuizConfigSheet() {
-    document.getElementById('bottom-sheet-modal').classList.remove('display-active');
-}
+    toggleVaultTab(tabKey) {
+        appState.vaultActiveTab = tabKey;
+        const buttons = document.querySelectorAll('.vault-tab-btn');
+        buttons[0].classList.toggle('active', tabKey === 'weak');
+        buttons[1].classList.toggle('active', tabKey === 'bookmarks');
+        this.renderVault();
+    }
 
-function setTimerConfigState(secondsVal) {
-    triggerSystemPulse('light');
-    engineState.timerSetting = secondsVal;
-    
-    document.querySelectorAll('.seg-btn').forEach(b => b.classList.remove('active-seg'));
-    if(secondsVal === 10) document.getElementById('timer-opt-10').classList.add('active-seg');
-    else if(secondsVal === 15) document.getElementById('timer-opt-15').classList.add('active-seg');
-    else document.getElementById('timer-opt-0').classList.add('active-seg');
-}
+    toggleBookmarkAction(index) {
+        this.triggerToast("Premium state sync action executed successfully.");
+    }
 
-/**
- * 🎯 QUIZ RUNTIME CORE INTERACTION METHOD
- */
-function igniteQuizArenaSession() {
-    closeQuizConfigSheet();
-    
-    // Inject Target Topic Segment Pool Questions Data Emulations
-    engineState.questionsPool = [
-        { type: "SYNONYM", q: "Select the accurate synonym for 'ABERRATION':", o: ["Normalcy Trace", "Deviation Anomalies", "Conformity Sync", "Stability Metric"], a: 1 },
-        { type: "CONTEXTUAL IDIOM", q: "What is the true mapping of the phrase 'To burn the midnight oil'?", o: ["To exhaust financial capital inputs", "To execute high-intensity operations late into the night", "To create system radiation hazards", "To trigger premature process termination"], a: 1 },
-        { type: "ERROR DETECTION", q: "Identify the flawed syntax segment: 'The group of / elite students / were planning / an optimization sprint.'", o: ["The group of", "elite students", "were planning", "an optimization sprint."], a: 2 }
-    ];
+    // Leaderboard Live Context Engine Populate
+    renderLeaderboard() {
+        this.leaderboardItemsContainer.innerHTML = LEADERBOARD_DATA.map(l => `
+            <div class="leader-row glass-card">
+                <div class="leader-meta">
+                    <span class="leader-num ${l.isTop ? 'top-3' : ''}">#${l.rank}</span>
+                    <div class="leader-name-block">
+                        <h5>${l.name}</h5>
+                        <p>Verified Candidate Tier</p>
+                    </div>
+                </div>
+                <div class="leader-scores">
+                    <div class="leader-score-pts">${l.score} XP</div>
+                    <div class="leader-score-time">${l.time}</div>
+                </div>
+            </div>
+        `).join('');
+    }
 
-    engineState.currentQIdx = 0;
-    engineState.userScore = 0.0;
-    engineState.userPenalty = 0.0;
-    engineState.correctCount = 0;
-    engineState.timeSpentSeconds = 0;
+    // Live High Fidelity Quiz Simulation Matrix Controls
+    startQuiz(title, type) {
+        appState.quiz.active = true;
+        appState.quiz.title = title;
+        appState.quiz.type = type;
+        appState.quiz.questions = [...MOCK_QUESTIONS].sort(() => 0.5 - Math.random()); // Pure randomization pattern
+        appState.quiz.currentIndex = 0;
+        appState.quiz.selectedOption = null;
+        appState.quiz.score = 0.0;
+        appState.quiz.correctCount = 0;
+        appState.quiz.incorrectCount = 0;
+        appState.quiz.timeStarted = Date.now();
+        appState.quiz.durationSeconds = type === 'free' ? 300 : 900;
 
-    clearInterval(engineState.sessionTimerInterval);
-    engineState.sessionTimerInterval = setInterval(() => {
-        engineState.timeSpentSeconds++;
-    }, 1000);
+        document.getElementById('quiz-title-display').innerText = title;
+        this.switchView('quiz');
+        this.startQuizTimer();
+        this.loadQuestionIndex();
+    }
 
-    renderActiveQuizQuestionLayer();
-    navigateTo('view-quiz-arena');
-}
+    startQuizTimer() {
+        clearInterval(appState.quiz.timerInterval);
+        let timeRemaining = appState.quiz.durationSeconds;
 
-/**
- * 🛠️ FIXES THE OPTION WORDS BLEEDING Glitch on iOS
- */
-function renderActiveQuizQuestionLayer() {
-    engineState.isOptionLocked = false;
-    clearInterval(engineState.quizTimerRef);
-
-    const currentQ = engineState.questionsPool[engineState.currentQIdx];
-    
-    // Update HUD metrics view targets
-    document.getElementById('quiz-progress-txt').innerText = `Q ${engineState.currentQIdx + 1}/${engineState.questionsPool.length}`;
-    document.getElementById('question-type-badge').innerText = currentQ.type;
-    document.getElementById('main-question-text-field').innerText = currentQ.q;
-    
-    // Sync current bookmark visual icon status flag
-    updateBookmarkButtonUIStatus(currentQ.q);
-
-    // Build options list programmatically to bypass any HTML character raw injection crash
-    const container = document.getElementById('quiz-options-container');
-    container.innerHTML = '';
-
-    const indexes = ["A", "B", "C", "D"];
-    currentQ.o.forEach((optionText, idx) => {
-        const optionDiv = document.createElement('div');
-        optionDiv.className = 'option-node-item';
-        
-        // Text node structure setup securely
-        optionDiv.innerHTML = `
-            <span class="option-text-val">${optionText}</span>
-            <div class="option-badge-index">${indexes[idx]}</div>
-        `;
-        
-        optionDiv.onclick = () => {
-            evaluateUserOptionSelection(idx, optionDiv);
+        const updateClockDisplay = () => {
+            const m = Math.floor(timeRemaining / 60).toString().padStart(2, '0');
+            const s = (timeRemaining % 60).toString().padStart(2, '0');
+            document.getElementById('quiz-timer-clock').innerText = `${m}:${s}`;
         };
-        
-        container.appendChild(optionDiv);
-    });
 
-    // Reset next control locks
-    const nextBtn = document.getElementById('next-q-trigger-btn');
-    nextBtn.className = 'next-step-btn-disabled';
-    nextBtn.disabled = true;
+        updateClockDisplay();
+        appState.quiz.timerInterval = setInterval(() => {
+            timeRemaining--;
+            updateClockDisplay();
 
-    initKineticVectorTimerBar();
-}
-
-function initKineticVectorTimerBar() {
-    const timerBar = document.getElementById('quiz-kinetic-timer-bar');
-    if (engineState.timerSetting === 0) {
-        timerBar.style.transform = 'scaleX(1)';
-        return;
+            if (timeRemaining <= 0) {
+                clearInterval(appState.quiz.timerInterval);
+                this.computeAndRenderFinalResult();
+            }
+        }, 1000);
     }
 
-    let durationMs = engineState.timerSetting * 1000;
-    let elapsedMs = 0;
-    timerBar.style.transform = 'scaleX(1)';
+    loadQuestionIndex() {
+        const q = appState.quiz.questions[appState.quiz.currentIndex];
+        appState.quiz.selectedOption = null;
 
-    engineState.quizTimerRef = setInterval(() => {
-        elapsedMs += 100;
-        let scale = 1 - (elapsedMs / durationMs);
-        if (scale < 0) scale = 0;
-        timerBar.style.transform = `scaleX(${scale})`;
+        // Reset control elements state
+        this.btnNextQ.classList.add('disabled');
 
-        if (elapsedMs >= durationMs) {
-            clearInterval(engineState.quizTimerRef);
-            lockQuizArenaOptionsOnTimeout();
+        // Render Meta calculations
+        const totalQ = appState.quiz.questions.length;
+        document.getElementById('quiz-question-counter').innerText = `Question ${appState.quiz.currentIndex + 1} of ${totalQ}`;
+        const fillPercent = ((appState.quiz.currentIndex) / totalQ) * 100;
+        document.getElementById('quiz-progress-fill').style.width = `${fillPercent}%`;
+
+        // Load card frames with visual keyframes refresh
+        this.quizFrame.classList.remove('card-animation-swap');
+        void this.quizFrame.offsetWidth; // Trigger DOM reflow calculation logic
+        this.quizFrame.classList.add('card-animation-swap');
+
+        document.getElementById('question-category-tag').innerText = q.category;
+        document.getElementById('question-text-body').innerText = q.text;
+
+        // Populate option array components
+        const container = document.getElementById('question-options-container');
+        container.innerHTML = q.options.map((opt, idx) => `
+            <div class="option-node" id="opt-node-${idx}" onclick="app.selectQuizOption(${idx})">
+                <span>${opt}</span>
+                <div class="option-indicator"></div>
+            </div>
+        `).join('');
+    }
+
+    selectQuizOption(index) {
+        appState.quiz.selectedOption = index;
+        const allNodes = document.querySelectorAll('.option-node');
+        allNodes.forEach((node, idx) => {
+            node.classList.toggle('selected', idx === index);
+        });
+        this.btnNextQ.classList.remove('disabled');
+    }
+
+    processNextQuestion() {
+        if (appState.quiz.selectedOption === null) return;
+
+        const q = appState.quiz.questions[appState.quiz.currentIndex];
+        const isCorrect = appState.quiz.selectedOption === q.correctIndex;
+
+        // Apply negative structure metrics calculus formulas
+        if (isCorrect) {
+            appState.quiz.score += 2.0;
+            appState.quiz.correctCount++;
+        } else {
+            appState.quiz.score -= 0.5;
+            appState.quiz.incorrectCount++;
         }
-    }, 100);
-}
 
-function evaluateUserOptionSelection(selectedIdx, targetElement) {
-    if (engineState.isOptionLocked) return;
-    engineState.isOptionLocked = true;
-    clearInterval(engineState.quizTimerRef);
+        // Realtime sync updates to tracking badges
+        document.getElementById('quiz-live-score').innerText = (appState.quiz.score >= 0 ? '+' : '') + appState.quiz.score.toFixed(2);
 
-    const currentQ = engineState.questionsPool[engineState.currentQIdx];
-    const optionNodes = document.querySelectorAll('.option-node-item');
+        this.proceedToNextSequence();
+    }
 
-    if (selectedIdx === currentQ.a) {
-        triggerSystemPulse('success');
-        targetElement.classList.add('selected-correct');
-        engineState.userScore += 2.00;
-        engineState.correctCount++;
-    } else {
-        triggerSystemPulse('error');
-        targetElement.classList.add('selected-wrong');
-        engineState.userPenalty += engineState.negativeMarking;
-        engineState.userScore -= engineState.negativeMarking;
+    processSkipQuestion() {
+        this.proceedToNextSequence();
+    }
+
+    proceedToNextSequence() {
+        appState.quiz.currentIndex++;
+        if (appState.quiz.currentIndex < appState.quiz.questions.length) {
+            this.loadQuestionIndex();
+        } else {
+            this.computeAndRenderFinalResult();
+        }
+    }
+
+    computeAndRenderFinalResult() {
+        clearInterval(appState.quiz.timerInterval);
+        appState.quiz.active = false;
+
+        // Metric computations
+        const totalQuestions = appState.quiz.questions.length;
+        const accuracy = totalQuestions > 0 ? Math.round((appState.quiz.correctCount / totalQuestions) * 100) : 0;
+        const timeElapsedSeconds = Math.floor((Date.now() - appState.quiz.timeStarted) / 1000);
+        const elapsedMin = Math.floor(timeElapsedSeconds / 60);
+        const elapsedSec = timeElapsedSeconds % 60;
+
+        // Apply values to UI nodes
+        document.getElementById('res-score').innerText = appState.quiz.score.toFixed(2);
+        document.getElementById('res-accuracy').innerText = `${accuracy}%`;
+        document.getElementById('res-time').innerText = `${elapsedMin}m ${elapsedSec}s`;
+
+        // Dynamically compute Rank assignment based on accuracy scoring matrices
+        let rankBadge = 'ELITE INITIATE';
+        let feedback = 'Focus on processing weak core syntax frameworks to unlock higher algorithmic score distributions.';
+
+        if (appState.quiz.score >= 7) {
+            rankBadge = 'ALCHEMIST GOLD';
+            feedback = 'Phenomenal precision velocity. Your contextual parsing vector is completely optimized for premium tier scaling.';
+        } else if (appState.quiz.score >= 4) {
+            rankBadge = 'STRATEGIST SILVER';
+            feedback = 'Solid performance framework. Strengthen idioms precision parameters to solidify stability trends.';
+        }
+
+        document.getElementById('res-rank-badge').innerText = rankBadge;
+        document.getElementById('res-feedback').innerText = feedback;
+
+        this.switchView('result');
+    }
+
+    exitQuiz() {
+        clearInterval(appState.quiz.timerInterval);
+        appState.quiz.active = false;
+        this.switchView('dashboard');
+    }
+
+    // High Fidelity Utility Component Bridge
+    triggerToast(message) {
+        // Fallback interface bridge for structural visual confirmations
+        const alertToast = document.createElement('div');
+        alertToast.style.position = 'fixed';
+        alertToast.style.bottom = '90px';
+        alertToast.style.left = '50%';
+        alertToast.style.transform = 'translateX(-50%)';
+        alertToast.style.background = 'rgba(18, 22, 39, 0.95)';
+        alertToast.style.border = '1px solid var(--neon-cyan)';
+        alertToast.style.color = 'var(--text-primary)';
+        alertToast.style.padding = '10px 20px';
+        alertToast.style.borderRadius = '30px';
+        alertToast.style.fontSize = '0.8rem';
+        alertToast.style.fontWeight = '600';
+        alertToast.style.zIndex = '9999';
+        alertToast.style.boxShadow = '0 0 15px var(--neon-cyan-glow)';
+        alertToast.innerText = message;
         
-        // Auto archive to bookmark vault lists on wrong entries
-        silentlyInjectFailedQuestionToVault(currentQ);
-
-        // Highlight correct option frame node
-        optionNodes[currentQ.a].classList.add('reveal-correct-faded');
-    }
-
-    // Apply global locked states across all remaining nodes
-    optionNodes.forEach(node => node.classList.add('locked-state'));
-
-    // Enable navigation switch
-    document.getElementById('quiz-live-score').innerText = engineState.userScore.toFixed(2);
-    document.getElementById('quiz-live-penalty').innerText = engineState.userPenalty.toFixed(2);
-    
-    const nextBtn = document.getElementById('next-q-trigger-btn');
-    nextBtn.className = 'next-step-btn-active';
-    nextBtn.disabled = false;
-}
-
-function lockQuizArenaOptionsOnTimeout() {
-    engineState.isOptionLocked = true;
-    triggerSystemPulse('heavy');
-    
-    const currentQ = engineState.questionsPool[engineState.currentQIdx];
-    const optionNodes = document.querySelectorAll('.option-node-item');
-    
-    optionNodes[currentQ.a].classList.add('selected-correct');
-    optionNodes.forEach(node => node.classList.add('locked-state'));
-    
-    engineState.userPenalty += engineState.negativeMarking;
-    engineState.userScore -= engineState.negativeMarking;
-    
-    document.getElementById('quiz-live-score').innerText = engineState.userScore.toFixed(2);
-    document.getElementById('quiz-live-penalty').innerText = engineState.userPenalty.toFixed(2);
-    
-    const nextBtn = document.getElementById('next-q-trigger-btn');
-    nextBtn.className = 'next-step-btn-active';
-    nextBtn.disabled = false;
-}
-
-function advanceQuizArenaSequence() {
-    engineState.currentQIdx++;
-    if (engineState.currentQIdx < engineState.questionsPool.length) {
-        renderActiveQuizQuestionLayer();
-    } else {
-        clearInterval(engineState.sessionTimerInterval);
-        executeSessionTerminationSequence();
+        document.body.appendChild(alertToast);
+        setTimeout(() => alertToast.remove(), 2500);
     }
 }
 
-function executeSessionTerminationSequence() {
-    if (tg && tg.showAlert) {
-        tg.showAlert(`Session Complete Matrix Verified!\nNet Points: ${engineState.userScore.toFixed(2)}\nErrors Logged: ${engineState.userPenalty.toFixed(2)}`);
-    } else {
-        alert(`Session Complete Matrix Verified!\nNet Points: ${engineState.userScore.toFixed(2)}`);
-    }
-    
-    // Refresh main telemetry widgets
-    document.getElementById('telemetry-net-score').innerText = engineState.userScore.toFixed(2);
-    
-    let totalQs = engineState.questionsPool.length;
-    let acc = totalQs > 0 ? (engineState.correctCount / totalQs) * 100 : 100;
-    document.getElementById('telemetry-accuracy-percentage').innerText = `${acc.toFixed(1)}%`;
-
-    handleBackNavigation();
-}
-
-function abortQuizArenaSession() {
-    clearInterval(engineState.quizTimerRef);
-    clearInterval(engineState.sessionTimerInterval);
-    handleBackNavigation();
-}
-
-/**
- * 🔖 WORD SECURITY CRYPT PERSISTENCE PROTOCOLS
- */
-function toggleCurrentQuestionBookmark() {
-    triggerSystemPulse('light');
-    const currentQ = engineState.questionsPool[engineState.currentQIdx];
-    const existsIdx = engineState.bookmarksVault.findIndex(b => b.word.toLowerCase() === currentQ.q.toLowerCase() || currentQ.q.includes(b.word));
-
-    if (existsIdx > -1) {
-        engineState.bookmarksVault.splice(existsIdx, 1);
-    } else {
-        engineState.bookmarksVault.push({
-            word: currentQ.type + " Segment Question",
-            definition: currentQ.q
-        });
-    }
-    updateBookmarkButtonUIStatus(currentQ.q);
-}
-
-function updateBookmarkButtonUIStatus(questionText) {
-    const btn = document.getElementById('bookmark-vault-icon-status-target');
-    const exists = engineState.bookmarksVault.some(b => b.definition === questionText);
-    if (exists) {
-        btn.classList.add('saved');
-        btn.innerHTML = `<i class="fa-solid fa-bookmark"></i>`;
-    } else {
-        btn.classList.remove('saved');
-        btn.innerHTML = `<i class="fa-regular fa-bookmark"></i>`;
-    }
-}
-
-function silentlyInjectFailedQuestionToVault(qObj) {
-    const exists = engineState.bookmarksVault.some(b => b.definition === qObj.q);
-    if (!exists) {
-        engineState.bookmarksVault.push({
-            word: "Incorrect-Hit Logs",
-            definition: qObj.q
-        });
-    }
-}
-
-function openUniversalBookmarkedVault() {
-    const root = document.getElementById('bookmarks-dynamic-list');
-    if (!root) return;
-    root.innerHTML = '';
-
-    if (engineState.bookmarksVault.length === 0) {
-        root.innerHTML = `<div class="empty-crypt-msg">Saved crypt is currently void.</div>`;
-    } else {
-        engineState.bookmarksVault.forEach((item, idx) => {
-            const card = document.createElement('div');
-            card.className = 'crypt-word-card fade-in';
-            card.innerHTML = `
-                <h4>${item.word.toUpperCase()}</h4>
-                <p>${item.definition}</p>
-                <button class="purge-word-btn" onclick="purgeCryptRecord(${idx})"><i class="fa-solid fa-trash-can"></i></button>
-            `;
-            root.appendChild(card);
-        });
-    }
-    navigateTo('view-bookmarks');
-}
-
-function purgeCryptRecord(idx) {
-    triggerSystemPulse('heavy');
-    engineState.bookmarksVault.splice(idx, 1);
-    openUniversalBookmarkedVault(); // Re-render sequence
-}
-
-/**
- * 🏆 CHRONO TIE-BREAKER LEADERBOARD MATRIX GENERATION
- */
-function openLeaderboardHub() {
-    const root = document.getElementById('leaderboard-dynamic-list');
-    if (!root) return;
-    root.innerHTML = '';
-
-    // Mock dataset showing exact response tiebreaker maps
-    const leaders = [
-        { name: "Aman Sharma", date: "11 June 2026", score: 148.50, time: "1m 02.45s", rank: 1 },
-        { name: "Rahul Kumar", date: "11 June 2026", score: 148.50, time: "1m 05.12s", rank: 2 }, // Same score, more time taken -> Rank 2!
-        { name: "Priya Singh", date: "11 June 2026", score: 142.00, time: "1m 18.90s", rank: 3 }
-    ];
-
-    leaders.forEach(u => {
-        const row = document.createElement('div');
-        row.className = `rank-row-item fade-in ${u.rank === 1 ? 'gold-rank' : ''}`;
-        row.innerHTML = `
-            <div class="rank-num-badge">${u.rank}</div>
-            <div class="user-identity-meta">
-                <h4>${u.name}</h4>
-                <p>${u.date} • Duration: ${u.time}</p>
-            </div>
-            <div class="rank-score-metric">
-                <div class="points">${u.score.toFixed(2)}</div>
-                <div class="duration">METRIC</div>
-            </div>
-        `;
-        root.appendChild(row);
-    });
-
-    navigateTo('view-leaderboard');
-}
-
-/**
- * 🫨 REAL HARDWARE HAPTIC VIBRATION MANAGER
- */
-function triggerSystemPulse(styleType) {
-    if (!tg || !tg.HapticFeedback) return;
-    
-    switch(styleType) {
-        case 'light':
-            tg.HapticFeedback.impactOccurred('light');
-            break;
-        case 'medium':
-            tg.HapticFeedback.impactOccurred('medium');
-            break;
-        case 'heavy':
-            tg.HapticFeedback.impactOccurred('heavy');
-            break;
-        case 'success':
-            tg.HapticFeedback.notificationOccurred('success');
-            break;
-        case 'error':
-            tg.HapticFeedback.notificationOccurred('error');
-            break;
-    }
-}
+// Instantiate engine onto window matrix frame
+window.addEventListener('DOMContentLoaded', () => {
+    window.app = new VocabMaxEliteEngine();
+});

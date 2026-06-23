@@ -3,280 +3,259 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
-    <title>Vocabulary Max Elite Engine - Platinum Edition</title>
-    
-    <script src="https://telegram.org/js/telegram-web-app.js"></script>
-    
+    <title>VOCAB MAX ELITE</title>
+    <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
-    
-    <link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@500;700;900&family=Rajdhani:wght@500;600;700&display=swap" rel="stylesheet">
-    
     <link rel="stylesheet" href="style.css">
 </head>
 <body>
 
-    <div id="loader" class="loader-container">
-        <div class="cyber-loader-core">
-            <div class="spinner-ring cyan-ring"></div>
-            <div class="spinner-ring orange-ring"></div>
-            <div class="pulse-logo"><i class="fa-solid fa-bolt"></i></div>
-            <div class="loader-status">INITIALIZING PLATINUM MATRIX...</div>
-        </div>
-    </div>
+    <div class="bg-glow cyan-glow"></div>
+    <div class="bg-glow gold-glow"></div>
 
-    <div class="liquid-orb orb-cyan"></div>
-    <div class="liquid-orb orb-orange"></div>
-    <div class="liquid-orb orb-purple"></div>
-
-    <div class="app-canvas">
+    <div id="app">
         
-        <div class="telemetry-top-bar">
-            <div id="user-streak-badge" class="streak-badge" onclick="triggerSystemPulse('light')">
-                <i class="fa-solid fa-fire neon-fire"></i>
-                <span id="streak-counter-value">05 DAYS STREAK</span>
+        <header class="app-header">
+            <div class="brand">
+                <span class="text-cyan">VOCAB</span><span class="text-gold">MAX</span>
+                <span class="badge-elite">ELITE</span>
             </div>
-            <div class="batch-identity-tag">PLATINUM BATCH v2.0</div>
-        </div>
+            <div class="header-actions">
+                <div class="streak-badge">
+                    <i class="fa-solid fa-fire text-gold animate-pulse"></i>
+                    <span id="global-streak-count">7</span>
+                </div>
+            </div>
+        </header>
 
-        <div class="main-header">
-            <h1 class="hologram-text">VOCABULARY MAX</h1>
-            <div class="elite-platinum-badge">
-                <i class="fa-solid fa-shield-halved"></i> ELITE PLATINUM
-            </div>
-        </div>
-
-        <div class="profile-card">
-            <div class="profile-avatar-wrapper">
-                <img id="user-avatar-element" class="profile-avatar" src="https://images.unsplash.com/photo-1618005182384-a83a8bd57fbe?auto=format&fit=crop&w=150&q=80" alt="Avatar">
-                <div class="avatar-glow-ring"></div>
-            </div>
-            <div class="profile-info">
-                <h3 id="user-display-name">Loading Profile...</h3>
-                <p id="user-status-label"><i class="fa-solid fa-crown text-orange"></i> PLATINUM ACCESS</p>
-            </div>
-            <div class="profile-rank">
-                <span>GLOBAL RANK</span>
-                <div id="user-global-rank-tag" class="text-orange-glow">#01</div>
-            </div>
-        </div>
-
-        <div id="view-dashboard" class="app-view active-view fade-in">
+        <main id="view-container">
             
-            <div class="radar-analysis-widget">
-                <div class="widget-header">
-                    <h3><i class="fa-solid fa-chart-simple text-cyan"></i> PERFORMANCE TELEMETRY</h3>
-                    <div class="live-pulse-dot"></div>
-                </div>
-                <div class="stats-grid-layout">
-                    <div class="stat-mini-node">
-                        <label>ACCURACY INDEX</label>
-                        <span id="telemetry-accuracy-percentage" class="text-cyan">94.2%</span>
-                    </div>
-                    <div class="stat-mini-node">
-                        <label>NET METRIC SCORE</label>
-                        <span id="telemetry-net-score" class="text-orange">148.50</span>
-                    </div>
-                </div>
-            </div>
-
-            <div class="menu-grid-layer">
-                
-                <div class="cyber-mega-card premium-blue-border" onclick="openMonthSelection('Free')">
-                    <span class="card-status-pill cyan-pill">LIVE SESSIONS</span>
-                    <div class="card-title-set">
-                        <div class="icon-frame cyan-frame"><i class="fa-solid fa-graduationcap"></i></div>
-                        <div>
-                            <h2>DAILY FREE ARENA</h2>
-                            <p>Access daily mock vocabulary grids seamlessly.</p>
+            <section id="view-dashboard" class="app-view active">
+                <div class="hero-section">
+                    <div class="hero-overlay"></div>
+                    <div class="hero-content">
+                        <h2>Master SSC English</h2>
+                        <p>Targeting CGL, CHSL, CPO 2026</p>
+                        <div class="premium-tier-tag">
+                            <i class="fa-solid fa-crown text-gold"></i> Premium Member
                         </div>
                     </div>
-                    <div class="card-action-bar-strip">
-                        <span>ENTER FREE LABS</span>
-                        <i class="fa-solid fa-arrow-right-long icon-bounce"></i>
-                    </div>
                 </div>
 
-                <div class="cyber-mega-card premium-orange-border" onclick="openMonthSelection('Premium')">
-                    <span class="card-status-pill orange-pill">UNLOCKED</span>
-                    <div class="card-title-set">
-                        <div class="icon-frame orange-frame"><i class="fa-solid fa-vault"></i></div>
-                        <div>
-                            <h2>PREMIUM VAULT ARCHIVE</h2>
-                            <p>Deep analytical datewise logs and high-tier concepts.</p>
+                <div class="stats-grid">
+                    <div class="stat-card glass-card">
+                        <div class="stat-icon cyan-bg"><i class="fa-solid fa-bolt"></i></div>
+                        <div class="stat-info">
+                            <span class="stat-value" id="stats-xp">1,240</span>
+                            <span class="stat-label">Total XP</span>
                         </div>
                     </div>
-                    <div class="card-action-bar-strip">
-                        <span class="text-orange">OPEN ELITE VAULT</span>
-                        <i class="fa-solid fa-crown text-orange"></i>
+                    <div class="stat-card glass-card">
+                        <div class="stat-icon gold-bg"><i class="fa-solid fa-bullseye"></i></div>
+                        <div class="stat-info">
+                            <span class="stat-value" id="stats-accuracy">94%</span>
+                            <span class="stat-label">Accuracy</span>
+                        </div>
                     </div>
                 </div>
 
-            </div>
-
-            <div class="quick-nav-dock">
-                <button class="dock-btn active-dock" onclick="switchView('view-dashboard')">
-                    <i class="fa-solid fa-house-chimney"></i>
-                    <span>DASHBOARD</span>
-                </button>
-                <div class="dock-separator"></div>
-                <button class="dock-btn" onclick="openLeaderboardHub()">
-                    <i class="fa-solid fa-trophy"></i>
-                    <span>LEADERBOARD</span>
-                </button>
-                <div class="dock-separator"></div>
-                <button class="dock-btn" onclick="openUniversalBookmarkedVault()">
-                    <i class="fa-solid fa-bookmark"></i>
-                    <span>SAVED VAULT</span>
-                </button>
-            </div>
-        </div>
-
-        <div id="view-month-selector" class="app-view fade-in">
-            <div class="navigation-view-header">
-                <button class="view-back-icon-btn" onclick="handleBackNavigation()"><i class="fa-solid fa-arrow-left"></i></button>
-                <h2 id="target-zone-title-tag" class="zone-tag">ZONE SELECTOR</h2>
-            </div>
-            
-            <div id="accordion-months-root" class="accordion-layout-wrapper"></div>
-        </div>
-
-        <div id="view-premium-topics" class="app-view fade-in">
-            <div class="navigation-view-header">
-                <button class="view-back-icon-btn" onclick="handleBackNavigation()"><i class="fa-solid fa-arrow-left"></i></button>
-                <div class="topic-meta-wrapper">
-                    <h2>ELITE STUDY SCHEMES</h2>
-                    <p id="premium-topic-date-subtitle">Selected Date Matrix</p>
-                </div>
-            </div>
-
-            <div class="topics-vertical-stack">
-                <div class="topic-selection-row" onclick="triggerPremiumTargetConfig('High-Frequency Words', 'HF_WORDS')">
-                    <div class="topic-icon-bullet blue-bullet"><i class="fa-solid fa-fire-lightning"></i></div>
-                    <div class="topic-details">
-                        <h4>High-Frequency Words Matrix</h4>
-                        <p>Most repeated exam vocabularies.</p>
-                    </div>
-                    <i class="fa-solid fa-chevron-right arrow-indicator"></i>
-                </div>
-                
-                <div class="topic-selection-row" onclick="triggerPremiumTargetConfig('Idioms & Phrases Lab', 'IDIOMS')">
-                    <div class="topic-icon-bullet orange-bullet"><i class="fa-solid fa-wand-magic-sparkles"></i></div>
-                    <div class="topic-details">
-                        <h4>Idioms & Phrases Vault</h4>
-                        <p>Advanced context structural idioms.</p>
-                    </div>
-                    <i class="fa-solid fa-chevron-right arrow-indicator"></i>
-                </div>
-
-                <div class="topic-selection-row" onclick="triggerPremiumTargetConfig('Advanced Sentence Errors', 'GRAMMAR')">
-                    <div class="topic-icon-bullet purple-bullet"><i class="fa-solid fa-circle-exclamation"></i></div>
-                    <div class="topic-details">
-                        <h4>Contextual Error Spotting</h4>
-                        <p>Grammar conceptual parameters.</p>
-                    </div>
-                    <i class="fa-solid fa-chevron-right arrow-indicator"></i>
-                </div>
-            </div>
-        </div>
-
-        <div id="view-quiz-arena" class="app-view fade-in">
-            
-            <div class="quiz-hud-panel">
-                <div class="hud-score-block">
-                    <span class="hud-label">NET SCORE</span>
-                    <span id="quiz-live-score" class="hud-val score-cyan">0.00</span>
-                </div>
-                <div id="quiz-progress-txt" class="hud-mid-progress">Q 1/3</div>
-                <div class="hud-score-block text-right">
-                    <span class="hud-label">PENALTY METRIC</span>
-                    <span id="quiz-live-penalty" class="hud-val penalty-orange">0.00</span>
-                </div>
-            </div>
-
-            <div class="timer-strip-container">
-                <div id="quiz-kinetic-timer-bar" class="timer-progress-fill"></div>
-            </div>
-
-            <div class="question-display-shield">
-                <div class="q-header-meta">
-                    <span id="question-type-badge" class="q-type-pill">SYNONYM</span>
-                    <button id="bookmark-vault-icon-status-target" class="bookmark-action-toggle" onclick="toggleCurrentQuestionBookmark()">
-                        <i class="fa-regular fa-bookmark"></i>
-                    </button>
-                </div>
-                <p id="main-question-text-field">Loading question data matrix pipeline...</p>
-            </div>
-
-            <div id="quiz-options-container" class="options-vertical-grid"></div>
-
-            <div class="quiz-action-footer-row">
-                <button class="abort-session-btn" onclick="abortQuizArenaSession()"><i class="fa-solid fa-xmark"></i> Abort</button>
-                <button id="next-q-trigger-btn" class="next-step-btn-disabled" onclick="advanceQuizArenaSequence()" disabled>Next Question <i class="fa-solid fa-chevron-right"></i></button>
-            </div>
-        </div>
-
-        <div id="view-leaderboard" class="app-view fade-in">
-            <div class="navigation-view-header">
-                <button class="view-back-icon-btn" onclick="switchView('view-dashboard')"><i class="fa-solid fa-arrow-left"></i></button>
-                <div>
-                    <h2>CHRONO LEADERBOARD</h2>
-                    <p>Microsecond Response Tie-Breaker Active</p>
-                </div>
-            </div>
-
-            <div id="leaderboard-dynamic-list" class="leaderboard-container-list"></div>
-        </div>
-
-        <div id="view-bookmarks" class="app-view fade-in">
-            <div class="navigation-view-header">
-                <button class="view-back-icon-btn" onclick="switchView('view-dashboard')"><i class="fa-solid fa-arrow-left"></i></button>
-                <div>
-                    <h2>SAVED WORD CRYPT</h2>
-                    <p>Review & Purge Persistent Records</p>
-                </div>
-            </div>
-
-            <div id="bookmarks-dynamic-list" class="bookmarks-container-list"></div>
-        </div>
-
-    </div>
-
-    <div id="bottom-sheet-modal" class="bottom-sheet-scaffold-overlay">
-        <div class="bottom-sheet-backdrop" onclick="closeQuizConfigSheet()"></div>
-        <div class="bottom-sheet-window">
-            <div class="sheet-drag-handle"></div>
-            
-            <div class="sheet-content-header">
-                <h3 id="sheet-target-title">Daily Free Mix</h3>
-                <p id="sheet-target-subtitle">00 Month 2026 • Configuration Parameters</p>
-            </div>
-
-            <div class="config-parameters-scaffold">
-                <div class="config-param-row">
-                    <div class="param-meta">
-                        <label><i class="fa-solid fa-stopwatch text-cyan"></i> SPRINT COOLDOWN TIMING</label>
-                        <p>Time allocated per question response field.</p>
-                    </div>
-                    <div class="segmented-control-picker">
-                        <button id="timer-opt-10" class="seg-btn" onclick="setTimerConfigState(10)">10s</button>
-                        <button id="timer-opt-15" class="seg-btn active-seg" onclick="setTimerConfigState(15)">15s</button>
-                        <button id="timer-opt-0" class="seg-btn" onclick="setTimerConfigState(0)">No Limit</button>
+                <div class="section-container">
+                    <h3 class="section-title">Performance Analytics</h3>
+                    <div class="analytics-card glass-card">
+                        <div class="progress-ring-container">
+                            <div class="progress-bar-wrapper">
+                                <div class="progress-text">
+                                    <span class="big-num text-cyan">84%</span>
+                                    <span class="sub-text">Syllabus Mastered</span>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="analytics-metrics">
+                            <div class="metric-row"><span>Synonyms</span><span class="text-cyan">92%</span></div>
+                            <div class="metric-row"><span>Idioms</span><span class="text-gold">78%</span></div>
+                            <div class="metric-row"><span>Error Detection</span><span class="text-cyan">85%</span></div>
+                        </div>
                     </div>
                 </div>
 
-                <div class="config-param-row">
-                    <div class="param-meta">
-                        <label><i class="fa-solid fa-triangle-exclamation text-orange"></i> MARKING SYSTEM PENALTY</label>
-                        <p>Negative constraints applied on failure logs.</p>
+                <div class="reminder-card gold-gradient-card">
+                    <div class="reminder-icon"><i class="fa-solid fa-bell"></i></div>
+                    <div class="reminder-body">
+                        <h4>Revision Due: 45 Words</h4>
+                        <p>Review weak vocabulary words before the next Daily Mega Mix!</p>
                     </div>
-                    <span class="toggle-display-badge">-0.50 Metrics</span>
+                    <button class="btn-action-sm" onclick="app.switchView('vault')">Fix Now</button>
                 </div>
-                
-                <button class="master-ignite-trigger-btn" onclick="igniteQuizArenaSession()">
-                    IGNITE CORE SESSION <i class="fa-solid fa-bolt-lightning"></i>
-                </button>
-            </div>
-        </div>
+            </section>
+
+            <section id="view-free" class="app-view">
+                <div class="screen-header">
+                    <h2>Free Practice Zone</h2>
+                    <p>Daily diagnostic tests & archives</p>
+                </div>
+
+                <div class="quiz-strip-card cyan-gradient-card" onclick="app.startQuiz('Daily Free Quiz', 'free')">
+                    <div class="strip-info">
+                        <span class="badge-tag">LIVE</span>
+                        <h3>Daily Free Diagnostic Quiz</h3>
+                        <p>10 Questions • 5 Mins • -0.50 Negative</p>
+                    </div>
+                    <div class="strip-action"><i class="fa-solid fa-play"></i></div>
+                </div>
+
+                <h3 class="section-title mt-4">Archive folders</h3>
+                <div class="folder-grid" id="free-folders-container">
+                    </div>
+            </section>
+
+            <section id="view-premium" class="app-view">
+                <div class="screen-header">
+                    <h2>Elite Access Matrix</h2>
+                    <p>Designed for absolute 50/50 scoring performance</p>
+                </div>
+
+                <div class="mega-mix-card gold-gradient-card" onclick="app.startQuiz('Daily Mega Mix', 'premium')">
+                    <div class="mega-content">
+                        <span class="badge-premium"><i class="fa-solid fa-crown"></i> ELITE DAILY</span>
+                        <h3>Daily Mega Mix (Exam Blueprint)</h3>
+                        <p>30 Contextualized exam-tier questions based on latest TCS patterns.</p>
+                        <div class="mega-meta">
+                            <span><i class="fa-solid fa-clock"></i> 15 Mins</span>
+                            <span><i class="fa-solid fa-bolt"></i> +2.0 / -0.5</span>
+                        </div>
+                    </div>
+                    <div class="mega-action-btn"><i class="fa-solid fa-bolt-lightning"></i> START</div>
+                </div>
+
+                <h3 class="section-title mt-4">Topic-Wise Mastery Matrix</h3>
+                <div class="topic-grid" id="premium-topics-container">
+                    </div>
+            </section>
+
+            <section id="view-quiz" class="app-view full-overlay-view">
+                <div class="quiz-header">
+                    <button class="btn-close" onclick="app.exitQuiz()"><i class="fa-solid fa-xmark"></i></button>
+                    <div class="quiz-title-context">
+                        <h4 id="quiz-title-display">Daily Mega Mix</h4>
+                        <span class="negative-marking-tag">Negative: 0.50</span>
+                    </div>
+                    <div class="quiz-timer" id="quiz-timer-clock">15:00</div>
+                </div>
+
+                <div class="quiz-progress-wrapper">
+                    <div class="quiz-progress-bar" id="quiz-progress-fill" style="width: 0%;"></div>
+                </div>
+
+                <div class="quiz-meta-indices">
+                    <span id="quiz-question-counter">Question 0 of 0</span>
+                    <span class="score-live-tracker" id="quiz-live-score">+0.00</span>
+                </div>
+
+                <div class="question-wrapper card-animation-swap" id="question-card-frame">
+                    <div class="question-tags">
+                        <span class="q-tag" id="question-category-tag">Synonyms</span>
+                    </div>
+                    <p class="question-text" id="question-text-body">Loading premium question parameters...</p>
+                    
+                    <div class="options-stack" id="question-options-container">
+                        </div>
+                </div>
+
+                <div class="quiz-footer">
+                    <button class="btn-secondary" id="btn-skip-q">Skip Question</button>
+                    <button class="btn-primary-gradient disabled" id="btn-next-q">Next Question <i class="fa-solid fa-arrow-right"></i></button>
+                </div>
+            </section>
+
+            <section id="view-result" class="app-view full-overlay-view">
+                <div class="result-container">
+                    <div class="crown-badge-wrapper animate-bounce">
+                        <i class="fa-solid fa-trophy text-gold"></i>
+                    </div>
+                    <h2 class="result-heading">Performance Computed</h2>
+                    <div class="rank-badge-dynamic" id="res-rank-badge">ALCHEMIST GOLD</div>
+
+                    <div class="result-stats-matrix">
+                        <div class="res-card glass-card">
+                            <span class="res-val text-cyan" id="res-score">24.5</span>
+                            <span class="res-lbl">Net Score</span>
+                        </div>
+                        <div class="res-card glass-card">
+                            <span class="res-val text-gold" id="res-accuracy">88%</span>
+                            <span class="res-lbl">Accuracy</span>
+                        </div>
+                        <div class="res-card glass-card">
+                            <span class="res-val" id="res-time">4m 32s</span>
+                            <span class="res-lbl">Time Taken</span>
+                        </div>
+                    </div>
+
+                    <div class="feedback-card glass-card">
+                        <p class="feedback-text" id="res-feedback">Excellent accuracy. Focus on Phrasal Verbs syntax trends to lock in the remaining raw metrics.</p>
+                    </div>
+
+                    <button class="btn-primary-gradient w-100" onclick="app.switchView('dashboard')">Return To Command Dashboard</button>
+                </div>
+            </section>
+
+            <section id="view-vault" class="app-view">
+                <div class="screen-header">
+                    <h2>Vocabulary Vault</h2>
+                    <p>Your algorithmic weakness clearing vector</p>
+                </div>
+
+                <div class="vault-tabs">
+                    <button class="vault-tab-btn active" onclick="app.toggleVaultTab('weak')">Weak Words</button>
+                    <button class="vault-tab-btn" onclick="app.toggleVaultTab('bookmarks')">Bookmarks</button>
+                </div>
+
+                <div class="vault-stack-list" id="vault-items-container">
+                    </div>
+            </section>
+
+            <section id="view-leaderboard" class="app-view">
+                <div class="screen-header">
+                    <h2>Elite Rank Frame</h2>
+                    <p>Realtime percentile distribution of elite candidates</p>
+                </div>
+
+                <div class="user-rank-banner glass-card">
+                    <div class="user-rank-rank">#42</div>
+                    <div class="user-rank-details">
+                        <h4>You (Elite Tier)</h4>
+                        <p>Score: 948 pts • Avg Time: 12.4s/q</p>
+                    </div>
+                    <div class="user-rank-percentile">94.2%tile</div>
+                </div>
+
+                <div class="leaderboard-list" id="leaderboard-items-container">
+                    </div>
+            </section>
+
+        </main>
+
+        <nav class="bottom-nav-bar">
+            <button class="nav-tab active" data-target="dashboard">
+                <i class="fa-solid fa-chart-pie"></i>
+                <span>Dashboard</span>
+            </button>
+            <button class="nav-tab" data-target="free">
+                <i class="fa-solid fa-graduation-cap"></i>
+                <span>Free</span>
+            </button>
+            <button class="nav-tab" data-target="premium">
+                <i class="fa-solid fa-crown"></i>
+                <span>Premium</span>
+            </button>
+            <button class="nav-tab" data-target="vault">
+                <i class="fa-solid fa-box-archive"></i>
+                <span>Vault</span>
+            </button>
+            <button class="nav-tab" data-target="leaderboard">
+                <i class="fa-solid fa-ranking-star"></i>
+                <span>Ranks</span>
+            </button>
+        </nav>
     </div>
 
     <script src="script.js"></script>
