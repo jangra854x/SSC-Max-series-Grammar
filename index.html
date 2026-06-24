@@ -4,278 +4,348 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
     <title>SSC MAX VOCAB</title>
-    <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
-    <link rel="stylesheet" href="style.css">
+    <link rel="stylesheet" href="styles.css">
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
     <script src="https://telegram.org/js/telegram-web-app.js"></script>
 </head>
 <body>
+    <div class="aurora-bg">
+        <div class="aurora-sphere aurora-1"></div>
+        <div class="aurora-sphere aurora-2"></div>
+        <div class="aurora-sphere aurora-3"></div>
+    </div>
+    <div class="particle-container" id="ambient-particles"></div>
 
-    <div class="bg-glow cyan-glow" id="ambient-cyan"></div>
-    <div class="bg-glow purple-glow-bg" id="ambient-purple"></div>
-
-    <div id="app">
+    <div class="app-root-wrapper">
         
-        <header class="app-header">
-            <div class="brand">
-                <span class="text-cyan">SSC</span> <span class="text-primary">MAX</span> <span class="text-gold">VOCAB</span>
-            </div>
-            <div class="header-actions">
-                <div class="tier-indicator-badge" id="header-tier-indicator">
-                    <i class="fa-solid fa-spinner fa-spin"></i> Checking...
+        <header class="app-global-header glass-element">
+            <div class="user-identity-block">
+                <div class="avatar-frame">
+                    <img id="tg-user-avatar" src="data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><circle cx='50' cy='50' r='50' fill='%231e293b'/><text x='50%25' y='55%25' dominant-baseline='middle' text-anchor='middle' fill='%2364748b' font-family='sans-serif' font-size='20'>SSC</text></svg>" alt="Profile">
                 </div>
+                <div class="identity-text-meta">
+                    <h2 id="tg-user-name">SSC Aspirant</h2>
+                    <span id="tg-user-handle">Connecting Profile...</span>
+                </div>
+            </div>
+            <div id="header-tier-indicator" class="tier-status-badge free-tier">
+                <i class="fa-solid fa-user"></i> Free User
             </div>
         </header>
 
-        <main id="view-container">
-            
+        <main class="view-viewport-frame" id="view-container">
+
             <section id="view-dashboard" class="app-view active">
-                
-                <div class="exam-target-banner">
-                    SSC CGL • CHSL • MTS • GD • CPO • Steno • Selection Post
-                </div>
-                
-                <div class="pyq-focus-banner mt-2">
-                    Complete SSC Vocabulary Preparation • PYQ Based
+                <div class="dashboard-hero-card premium-card-glow">
+                    <div class="hero-brand-accent">SSC MAX VOCAB</div>
+                    <h1>Master English Vocabulary</h1>
+                    <p>Targeting CGL, CHSL, MTS & CPO 2026 Examinations with absolute retention precision.</p>
                 </div>
 
-                <div class="profile-header glass-card mt-3">
-                    <img src="https://placehold.co/120x120/121627/00f2fe?text=TG" alt="Profile Avatar" class="tg-avatar" id="tg-user-avatar">
-                    <div class="profile-info">
-                        <h3 id="tg-user-name">Loading...</h3>
-                        <p id="tg-user-handle">Connecting to Telegram</p>
-                        <span class="purple-glow-badge mt-2">SSC Aspirant</span>
-                    </div>
+                <div class="section-title-row">
+                    <h3><i class="fa-solid fa-bolt text-accent-cyan"></i> Daily Evaluations</h3>
                 </div>
 
-                <div class="portal-cards-stack mt-4">
-                    
-                    <div class="portal-card cyan-gradient-card" onclick="app.showQuizBlueprint('free', 'Daily Free Quiz')">
-                        <div class="portal-card-content">
-                            <span class="portal-tag cyan-tag">DAILY DIAGNOSTIC</span>
-                            <h3>Daily Free Quiz</h3>
-                            <p>Test your standard TCS vocabulary baseline. High-frequency questions without paywalls.</p>
-                            <div class="portal-meta">
-                                <span><i class="fa-solid fa-circle-question"></i> 30 Questions</span>
-                                <span><i class="fa-solid fa-book-open"></i> PYQ Based</span>
-                            </div>
+                <div class="action-grid-dual">
+                    <div class="action-card glass-element" onclick="app.loadFreeQuizDirect()">
+                        <div class="card-icon-wrap bg-cyan-fade">
+                            <i class="fa-solid fa-gift"></i>
                         </div>
-                        <div class="portal-arrow"><i class="fa-solid fa-arrow-right"></i></div>
+                        <h4>Daily Free Quiz</h4>
+                        <p>30 Core Questions</p>
+                        <span class="action-trigger-label">Start Quiz <i class="fa-solid fa-chevron-right"></i></span>
                     </div>
 
-                    <div class="portal-card gold-gradient-card mt-3" onclick="app.navigateToPremiumView()">
-                        <div class="portal-card-content">
-                            <span class="portal-tag gold-tag"><i class="fa-solid fa-crown"></i> ELITE PREMIUM</span>
-                            <h3>Topic Wise Vocabulary Quiz</h3>
-                            <p>OWS • Idioms & Phrases • Synonyms • Spelling • Error Detection • Mixed PYQ</p>
-                            <div class="portal-meta">
-                                <span><i class="fa-solid fa-circle-question"></i> 100 Questions</span>
-                                <span class="text-gold"><i class="fa-solid fa-ranking-star"></i> Affects Daily Ranks</span>
-                            </div>
+                    <div class="action-card glass-element premium-locked-feature" onclick="app.navigateToPremiumView()">
+                        <div class="card-icon-wrap bg-gold-fade">
+                            <i class="fa-solid fa-crown text-gold"></i>
                         </div>
-                        <div class="portal-arrow"><i class="fa-solid fa-crown"></i></div>
+                        <h4>Daily Premium Mix</h4>
+                        <p>100 Elite Questions</p>
+                        <span class="action-trigger-label text-gold">Unlock Access <i class="fa-solid fa-lock"></i></span>
                     </div>
-
-                </div>
-            </section>
-
-            <section id="view-quiz-details" class="app-view">
-                <div class="screen-header">
-                    <h2>Assessment Overview</h2>
-                    <p id="qd-subtitle">Review configuration parameters before starting</p>
                 </div>
 
-                <div class="glass-card quiz-rules-card">
-                    <div class="rule-row"><span>📅 Schedule Date:</span> <strong id="qd-date">Today</strong></div>
-                    <div class="rule-row"><span>❓ Payload Count:</span> <strong id="qd-count">30 Questions</strong></div>
-                    <div class="rule-row"><span>⏱️ Execution Timer:</span> <strong>Elapsed Stopwatch (No Countdown)</strong></div>
-                    <div class="rule-row"><span>🏆 Standings Impact:</span> <strong id="qd-rank-status" class="text-cyan">Unranked Practice</strong></div>
-                    
-                    <hr class="glass-divider">
-                    
-                    <h4>Operational Guidelines:</h4>
-                    <ul class="rules-list">
-                        <li><strong>Mandatory Selection:</strong> Skipping is disabled. You must commit to an answer to proceed.</li>
-                        <li><strong>Instant Isolation:</strong> Locking an option instantly reveals comprehensive color-coded breakdowns below every single choice.</li>
-                        <li><strong>Vault Syncing:</strong> Errors and bookmarked items sync automatically to your personal Vocabulary Vault.</li>
-                    </ul>
-                </div>
-
-                <div class="action-stack mt-4">
-                    <button class="btn-primary-gradient w-100" id="btn-confirm-start-quiz">
-                        <i class="fa-solid fa-flag-checkered"></i> EXECUTE QUIZ NOW
-                    </button>
-                    <button class="btn-secondary w-100 mt-2" onclick="app.switchView('dashboard')">Cancel & Return</button>
+                <div class="wide-menu-strip glass-element" onclick="app.navigateToPremiumView()">
+                    <div class="strip-left">
+                        <div class="strip-icon-wrap bg-purple-fade">
+                            <i class="fa-solid fa-book-bookmark text-purple"></i>
+                        </div>
+                        <div class="strip-text-meta">
+                            <h4>Topic Wise Modules</h4>
+                            <p>OWS, Idioms, Synonyms, Antonyms & Spelling Sets</p>
+                        </div>
+                    </div>
+                    <i class="fa-solid fa-chevron-right text-muted"></i>
                 </div>
             </section>
 
             <section id="view-premium" class="app-view">
-                <div class="screen-header">
-                    <h2>Elite Access Portal</h2>
-                    <p>Advanced PYQ syntax modules & live competitive ranking mixes</p>
+                <div class="premium-header-banner">
+                    <h3 class="text-gradient-gold"><i class="fa-solid fa-crown"></i> Premium Vault Explorer</h3>
+                    <p>Browse advanced topics and dynamic past mixed testing archives.</p>
                 </div>
 
-                <div class="portal-card gold-gradient-card mb-4" onclick="app.showQuizBlueprint('daily_premium', 'Daily Premium Mix')">
-                    <div class="portal-card-content">
-                        <span class="portal-tag gold-tag"><i class="fa-solid fa-trophy"></i> LEADERBOARD ACTIVE</span>
-                        <h3>Daily Premium Mix</h3>
-                        <p>100 Questions: OWS • Idioms & Phrases • Synonyms • Spelling • Error Detection • Mixed PYQ</p>
-                        <div class="portal-meta mt-2">
-                            <span><i class="fa-solid fa-circle-question"></i> 100 Questions</span>
-                            <span class="text-gold"><i class="fa-solid fa-chart-line"></i> Logs To Global Ranks</span>
-                        </div>
-                    </div>
-                    <div class="portal-arrow"><i class="fa-solid fa-play"></i></div>
-                </div>
-
-                <h3 class="section-title">Premium Topic Modules (20 Questions Each)</h3>
-                <div class="topic-grid" id="premium-topics-list">
-                    <div class="text-center text-muted p-3"><i class="fa-solid fa-spinner fa-spin"></i> Loading topics...</div>
-                </div>
-
-                <h3 class="section-title mt-4">Previous Premium Tests</h3>
-                <div class="archive-list-group" id="premium-archives-container">
-                    <div class="text-center text-muted p-3"><i class="fa-solid fa-spinner fa-spin"></i> Loading archives...</div>
-                </div>
-            </section>
-
-            <section id="view-quiz" class="app-view full-overlay-view">
-                <div class="quiz-header">
-                    <button class="btn-close" onclick="app.confirmAbandonQuiz()"><i class="fa-solid fa-xmark"></i></button>
-                    <div class="quiz-title-context">
-                        <h4 id="quiz-title-display">Vocabulary Assessment</h4>
-                    </div>
-                    <div class="quiz-timer" id="quiz-stopwatch">00:00</div>
-                </div>
-
-                <div class="quiz-progress-wrapper">
-                    <div class="quiz-progress-fill" id="quiz-progress-fill" style="width: 0%;"></div>
-                </div>
-
-                <div class="quiz-meta-indices mb-2">
-                    <span id="quiz-question-counter">Initializing...</span>
-                    <div class="meta-right-actions">
-                        <button class="btn-bookmark-q" id="btn-bookmark-current" onclick="app.toggleBookmarkCurrentQuestion()">
-                            <i class="fa-regular fa-bookmark"></i> Bookmark
-                        </button>
-                    </div>
-                </div>
-
-                <div class="question-wrapper card-animation-swap" id="question-card-frame">
-                    <div class="question-tags">
-                        <span class="q-tag" id="question-category-tag">Database</span>
-                    </div>
-                    <p class="question-text" id="question-text-body">Fetching latest database payload...</p>
-                    
-                    <div class="options-stack" id="question-options-container">
-                        </div>
-                </div>
-
-                <div class="quiz-footer-centered mt-4">
-                    <button class="btn-primary-gradient w-100 hidden" id="btn-next-q">
-                        Advance To Next <i class="fa-solid fa-arrow-right"></i>
-                    </button>
-                </div>
-            </section>
-
-            <section id="view-result" class="app-view full-overlay-view">
-                <div class="result-container">
-                    <div class="crown-badge-wrapper animate-bounce">
-                        <i class="fa-solid fa-trophy text-gold"></i>
-                    </div>
-                    <h2 class="result-heading">Assessment Finalized</h2>
-                    <div class="rank-badge-dynamic" id="res-tier-badge">PERFORMANCE EVALUATION</div>
-
-                    <div class="result-stats-grid mt-4">
-                        <div class="res-card glass-card">
-                            <span class="res-val text-cyan" id="res-score">0</span>
-                            <span class="res-lbl">Final Score</span>
-                        </div>
-                        <div class="res-card glass-card">
-                            <span class="res-val text-gold" id="res-accuracy">0%</span>
-                            <span class="res-lbl">Accuracy Rate</span>
-                        </div>
-                        <div class="res-card glass-card correct-card">
-                            <span class="res-val text-success" id="res-correct">0</span>
-                            <span class="res-lbl">Correct Answers</span>
-                        </div>
-                        <div class="res-card glass-card wrong-card">
-                            <span class="res-val text-danger" id="res-wrong">0</span>
-                            <span class="res-lbl">Incorrect Answers</span>
-                        </div>
-                        <div class="res-card glass-card col-span-2">
-                            <span class="res-val" id="res-time">00:00</span>
-                            <span class="res-lbl">Total Time Spent</span>
-                        </div>
+                <div class="view-segmented-scroller">
+                    <div class="segmented-control glass-element">
+                        <button class="seg-btn active" onclick="app.switchPremiumTab('topics', this)">Topic Decks</button>
+                        <button class="seg-btn" onclick="app.switchPremiumTab('archives', this)">Past Daily Mixes</button>
                     </div>
 
-                    <div class="feedback-card glass-card mt-4">
-                        <p class="feedback-text" id="res-feedback">
-                            All incorrect selections and bookmarked items have been securely routed to your Vault. Review them daily to guarantee long-term retention.
-                        </p>
+                    <div id="prem-sub-topics" class="premium-subview-panel active">
+                        <div class="topics-grid" id="premium-topics-list">
+                            </div>
                     </div>
 
-                    <button class="btn-primary-gradient w-100" onclick="app.switchView('dashboard')">
-                        Return To Dashboard
-                    </button>
-                </div>
-            </section>
-
-            <section id="view-vault" class="app-view">
-                <div class="screen-header">
-                    <h2>Vocabulary Vault</h2>
-                    <p>Targeted storage repository for weak and bookmarked syntax</p>
-                </div>
-
-                <div class="vault-search-wrapper mb-3">
-                    <i class="fa-solid fa-magnifying-glass search-icon"></i>
-                    <input type="search" id="vault-search-input" placeholder="Filter stored words or semantic meanings..." oninput="app.filterVaultContent()">
-                </div>
-
-                <div class="vault-dual-tabs mb-3">
-                    <button class="vault-tab-btn active" onclick="app.switchVaultTab('weak')">
-                        Weak Words (<span id="count-weak">0</span>)
-                    </button>
-                    <button class="vault-tab-btn" onclick="app.switchVaultTab('bookmarked')">
-                        Bookmarked (<span id="count-bookmarked">0</span>)
-                    </button>
-                </div>
-
-                <div class="vault-stack-list" id="vault-items-container">
-                    <div class="text-center text-muted p-3"><i class="fa-solid fa-spinner fa-spin"></i> Syncing vault...</div>
+                    <div id="prem-sub-archives" class="premium-subview-panel">
+                        <div class="accordion-container" id="premium-archives-container">
+                            </div>
+                    </div>
                 </div>
             </section>
 
             <section id="view-ranks" class="app-view">
-                <div class="screen-header">
-                    <h2>Daily Elite Ranks</h2>
-                    <p id="leaderboard-date-subtitle">Live Standings</p>
+                <div class="rank-header-display glass-element">
+                    <div class="rank-trophy-icon"><i class="fa-solid fa-trophy"></i></div>
+                    <h3>Global Leaderboard</h3>
+                    <p id="leaderboard-date-subtitle">Standings for Current Assessment Cycle</p>
                 </div>
 
-                <div id="leaderboard-master-container">
-                    <div class="text-center text-muted p-3"><i class="fa-solid fa-spinner fa-spin"></i> Fetching global standings...</div>
+                <div class="leaderboard-scroll-container-wrapper" id="leaderboard-master-container">
+                    </div>
+            </section>
+
+            <section id="view-vault" class="app-view">
+                <div class="vault-search-box-sticky glass-element">
+                    <div class="search-input-wrapper">
+                        <i class="fa-solid fa-magnifying-glass search-icon"></i>
+                        <input type="text" id="vault-search-input" placeholder="Search saved vocabulary repository..." oninput="app.filterVaultContent()">
+                    </div>
+                    <div class="vault-tabs-row">
+                        <button class="vault-tab-btn active" onclick="app.switchVaultTab('weak')">
+                            Weak Words (<span id="count-weak">0</span>)
+                        </button>
+                        <button class="vault-tab-btn" onclick="app.switchVaultTab('bookmarked')">
+                            Bookmarked (<span id="count-bookmarked">0</span>)
+                        </button>
+                    </div>
                 </div>
+
+                <div class="vault-scroll-items-viewport" id="vault-items-container">
+                    </div>
+            </section>
+
+            <section id="view-admin" class="app-view">
+                <div class="admin-panel-header glass-element">
+                    <h3><i class="fa-solid fa-sliders text-accent-cyan"></i> Admin Panel</h3>
+                    <button class="admin-exit-btn" onclick="app.switchView('dashboard')">Exit</button>
+                </div>
+
+                <div class="admin-tabs-row glass-element">
+                    <button class="admin-tab-pill active" onclick="app.switchAdminTab('free', this)">Free Quiz</button>
+                    <button class="admin-tab-pill" onclick="app.switchAdminTab('prem', this)">Premium Quiz</button>
+                    <button class="admin-tab-pill" onclick="app.switchAdminTab('topic', this)">Topics</button>
+                    <button class="admin-tab-pill" onclick="app.switchAdminTab('users', this)">Users Page</button>
+                </div>
+
+                <div class="admin-scroller-content-body">
+                    <div id="adm-sec-free" class="adm-sec-panel active">
+                        <div class="glass-element admin-form-card">
+                            <h4>Deploy Daily Free Quiz</h4>
+                            <div class="form-group">
+                                <label>Quiz Date</label>
+                                <input type="date" id="adm-free-date" class="form-control-input">
+                            </div>
+                            <div class="form-group">
+                                <label>Quiz Instructions</label>
+                                <input type="text" id="adm-free-inst" class="form-control-input" placeholder="Enter explicit guidelines...">
+                            </div>
+                            <div class="form-group">
+                                <label>Questions Input Block (30 Questions Matrix)</label>
+                                <textarea id="adm-free-txt" rows="8" class="form-control-textarea" placeholder="1. Question context&#10;A. Option 1&#10;B. Option 2&#10;C. Option 3&#10;D. Option 4&#10;Answer: A&#10;Explanation: Hindi Meaning Data"></textarea>
+                            </div>
+                            <button class="btn-primary-gradient w-100" onclick="app.publishAdminFreeQuiz()">🚀 Publish Free Quiz</button>
+                        </div>
+                    </div>
+
+                    <div id="adm-sec-prem" class="adm-sec-panel">
+                        <div class="glass-element admin-form-card">
+                            <h4>Deploy Daily Premium Mix</h4>
+                            <div class="form-group">
+                                <label>Quiz Date</label>
+                                <input type="date" id="adm-prem-date" class="form-control-input">
+                            </div>
+                            <div class="form-group">
+                                <label>Questions Input Block (100 Questions Matrix)</label>
+                                <textarea id="adm-prem-txt" rows="8" class="form-control-textarea" placeholder="Paste structural 100 questions blocks formatted correctly..."></textarea>
+                            </div>
+                            <button class="btn-gold-gradient w-100" onclick="app.publishAdminPremiumQuiz()">👑 Publish Premium Mix</button>
+                        </div>
+                    </div>
+
+                    <div id="adm-sec-topic" class="adm-sec-panel">
+                        <div class="glass-element admin-form-card">
+                            <h4>Deploy Topic Wise Questions</h4>
+                            <div class="form-group">
+                                <label>Target Stream Topic Category</label>
+                                <select id="adm-topic-sel" class="form-control-input">
+                                    <option value="One Word Substitution">One Word Substitution</option>
+                                    <option value="Idioms & Phrases">Idioms & Phrases</option>
+                                    <option value="Synonyms">Synonyms</option>
+                                    <option value="Spelling">Spelling</option>
+                                    <option value="Antonyms">Antonyms</option>
+                                    <option value="Homophones">Homophones</option>
+                                </select>
+                            </div>
+                            <div class="form-group">
+                                <label>Questions Input Context Pool</label>
+                                <textarea id="adm-topic-txt" rows="8" class="form-control-textarea" placeholder="Paste structural questions blocks to slice automatically into sets..."></textarea>
+                            </div>
+                            <button class="btn-primary-gradient w-100" onclick="app.publishAdminTopicDeck()">📚 Publish Topic Deck</button>
+                        </div>
+                    </div>
+
+                    <div id="adm-sec-users" class="adm-sec-panel">
+                        <div class="glass-element admin-form-card mb-3">
+                            <h4>Grant Premium Authorization</h4>
+                            <div class="form-group">
+                                <label>Target Telegram Account ID</label>
+                                <input type="number" id="adm-user-tgid" class="form-control-input" placeholder="Ex: 7603262906">
+                            </div>
+                            <div class="form-group">
+                                <label>User Visual Name Reference (Optional)</label>
+                                <input type="text" id="adm-user-name" class="form-control-input" placeholder="Ex: Rahul Kumar">
+                            </div>
+                            <button class="btn-gold-gradient w-100" onclick="app.adminGrantPremium()">Authorize Access Tier</button>
+                        </div>
+                        
+                        <div class="glass-element admin-form-card">
+                            <h4>Authorized Premium Users Directory</h4>
+                            <div class="admin-users-list-wrapper" id="admin-users-directory-node">
+                                </div>
+                        </div>
+                    </div>
+                </div>
+            </section>
+
+            <section id="view-quiz-details" class="app-view">
+                <div class="blueprint-modal-card glass-element premium-card-glow">
+                    <span class="blueprint-tag">PRE-FLIGHT VALIDATION</span>
+                    <h2 id="qd-subtitle">Assessment Title</h2>
+                    <div class="blueprint-meta-spec-grid">
+                        <div class="spec-cell">
+                            <span class="spec-title">Total Questions</span>
+                            <span class="spec-value" id="qd-count">0 Questions</span>
+                        </div>
+                        <div class="spec-cell">
+                            <span class="spec-title">Target Date</span>
+                            <span class="spec-value" id="qd-date">-- -- ----</span>
+                        </div>
+                    </div>
+                    <div class="blueprint-instructions">
+                        <h5>Assessment Instructions & Parameters</h5>
+                        <p id="qd-inst-body">No negative markings applied during this sequence cycle. Comprehensive structural multi-directional answer explanations will map on-screen immediately upon input selection validation locks.</p>
+                    </div>
+                    <div class="blueprint-status-bar glass-element" id="qd-rank-status">
+                        Unranked Practice Mode Instance
+                    </div>
+                    
+                    <div id="blueprint-action-zone">
+                        </div>
+                    <button class="btn-secondary-outline w-100 mt-2" onclick="app.switchView('dashboard')">Cancel Execution</button>
+                </div>
+            </section>
+
+            <section id="view-quiz" class="app-view">
+                <div class="quiz-sticky-header glass-element">
+                    <div class="quiz-meta-top">
+                        <span id="quiz-question-counter">Question 0 of 0</span>
+                        <div class="stopwatch-display-bubble" id="quiz-stopwatch">00:00</div>
+                    </div>
+                    <div class="quiz-progress-bar-track">
+                        <div class="quiz-progress-fill-indicator" id="quiz-progress-fill"></div>
+                    </div>
+                    <div class="quiz-context-sub-bar">
+                        <span id="question-category-tag" class="category-meta-pill">Vocabulary Deck</span>
+                        <h4 id="quiz-title-display">Active Evaluation Assessment</h4>
+                    </div>
+                </div>
+
+                <div class="quiz-scrollable-question-body">
+                    <div class="question-container-card glass-element" id="question-card-frame">
+                        <p id="question-text-body">Loading vocabulary node query payload context...</p>
+                    </div>
+
+                    <div class="options-layout-stack-box" id="question-options-container">
+                        </div>
+                </div>
+
+                <div class="quiz-footer-action-dock glass-element">
+                    <button id="btn-bookmark-current" class="btn-action-pill" onclick="app.toggleBookmarkCurrentQuestion()">
+                        <i class="fa-regular fa-bookmark"></i> Bookmark
+                    </button>
+                    <button id="btn-next-q" class="btn-primary-gradient hidden">
+                        Next Question <i class="fa-solid fa-arrow-right"></i>
+                    </button>
+                </div>
+            </section>
+
+            <section id="view-result" class="app-view">
+                <div class="result-summary-hero glass-element premium-card-glow">
+                    <div class="result-badge-icon"><i class="fa-solid fa-square-poll-vertical"></i></div>
+                    <h3 id="res-tier-badge">EVALUATION METRICS SUMMARY</h3>
+                    <h1 id="res-score">0 / 0</h1>
+                    <p>Overall Accuracy Rating: <span id="res-accuracy" class="text-accent-cyan">0%</span></p>
+                </div>
+
+                <div class="metrics-grid-quad mb-3">
+                    <div class="metric-mini-tile glass-element">
+                        <span class="tile-label">Correct Hits</span>
+                        <span class="tile-val text-success" id="res-correct">0</span>
+                    </div>
+                    <div class="metric-mini-tile glass-element">
+                        <span class="tile-label">Incorrect Hits</span>
+                        <span class="tile-val text-danger" id="res-wrong">0</span>
+                    </div>
+                    <div class="metric-mini-tile glass-element">
+                        <span class="tile-label">Quiz Duration</span>
+                        <span class="tile-val" id="res-time">0m 0s</span>
+                    </div>
+                </div>
+
+                <button class="btn-primary-gradient w-100 py-3" onclick="app.switchView('dashboard')">
+                    Return to Mission Dashboard
+                </button>
             </section>
 
         </main>
 
-        <nav class="bottom-nav-bar">
+        <nav class="app-persistent-nav-dock glass-element">
             <button class="nav-tab active" data-target="dashboard">
-                <i class="fa-solid fa-house"></i>
-                <span>Dashboard</span>
+                <i class="fa-solid fa-grip-vertical"></i>
+                <span>Home</span>
             </button>
-            <button class="nav-tab" data-target="vault">
-                <i class="fa-solid fa-bookmark"></i>
-                <span>Vault</span>
+            <button class="nav-tab" data-target="premium" onclick="app.fetchPremiumMetadata()">
+                <i class="fa-solid fa-crown"></i>
+                <span>Premium</span>
             </button>
             <button class="nav-tab" data-target="ranks">
-                <i class="fa-solid fa-trophy"></i>
+                <i class="fa-solid fa-chart-simple"></i>
                 <span>Ranks</span>
             </button>
+            <button class="nav-tab" data-target="vault">
+                <i class="fa-solid fa-vault"></i>
+                <span>Vault</span>
+            </button>
+            <button class="nav-tab hidden-admin-gate" id="nav-anchor-admin-portal" data-target="admin" style="display: none;">
+                <i class="fa-solid fa-sliders-h"></i>
+                <span>Admin</span>
+            </button>
         </nav>
+
     </div>
 
-    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
     <script src="script.js"></script>
 </body>
 </html>
