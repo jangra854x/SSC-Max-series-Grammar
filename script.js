@@ -1,52 +1,32 @@
 /**
  * SSC MAX VOCAB - Production Client Engine
- * Features: Auto ID detection, strict 3-tab layout, mandatory selection with instant per-option breakdown, and Telegram WebApp haptic integration.
+ * Features: Auto ID verification, strictly locked 3-tab layout, mandatory selection with contrasting per-option breakdowns, empty Vault auto-population, and Telegram WebApp vertical swipe locking.
  */
 
 // 1. Core Verification Constants
 const PREMIUM_USERS = [
-    7990149560,
+    123456789,
     7603262906,
-    987654321
+    512345678
 ];
 
 const PREMIUM_TOPICS = [
-    { id: 'ows', name: 'One Word Substitution', locked: false },
-    { id: 'idi', name: 'Idioms & Phrases', locked: false },
-    { id: 'syn', name: 'Synonyms', locked: false },
-    { id: 'spl', name: 'Spelling', locked: false },
-    { id: 'ant', name: 'Antonyms', locked: true },
-    { id: 'hom', name: 'Homonyms & Homophones', locked: true }
+    { id: 'ows', name: 'One Word Substitution', locked: false, date: 'June 22, 2026' },
+    { id: 'idi', name: 'Idioms & Phrases', locked: false, date: 'June 21, 2026' },
+    { id: 'syn', name: 'Synonyms', locked: false, date: 'June 20, 2026' },
+    { id: 'spl', name: 'Spelling', locked: false, date: 'June 19, 2026' },
+    { id: 'ant', name: 'Antonyms', locked: true, date: 'Locked Module' },
+    { id: 'hom', name: 'Homonyms & Homophones', locked: true, date: 'Locked Module' }
 ];
 
-const ARCHIVE_MONTHS = [
-    {
-        id: 'arc-june',
-        month: 'June 2026',
-        quizzes: [
-            { title: 'June 22 - Premium Complete Blueprint', type: 'daily_premium' },
-            { title: 'June 20 - PYQ Mixed Syntax Mix', type: 'daily_premium' },
-            { title: 'June 18 - TCS High Frequency Shift', type: 'daily_premium' }
-        ]
-    },
-    {
-        id: 'arc-may',
-        month: 'May 2026',
-        quizzes: [
-            { title: 'May 28 - Selection Posts Simulation', type: 'daily_premium' },
-            { title: 'May 15 - CGL Tier-1 Absolute Matrix', type: 'daily_premium' }
-        ]
-    },
-    {
-        id: 'arc-apr',
-        month: 'April 2026',
-        quizzes: [
-            { title: 'April 30 - Core PYQ Vocabulary Baseline', type: 'daily_premium' }
-        ]
-    }
+const PREMIUM_ARCHIVES = [
+    { title: 'Quiz - June 22', type: 'daily_premium', qCount: 100 },
+    { title: 'Quiz - June 20', type: 'daily_premium', qCount: 100 },
+    { title: 'Quiz - June 18', type: 'daily_premium', qCount: 100 },
+    { title: 'Quiz - June 15', type: 'daily_premium', qCount: 100 }
 ];
 
-// Genuine Standings Data
+// Genuine Competitive Leaderboard Data
 const TOP_10_LEADERBOARD = [
     { rank: 1, name: 'Aarav Sharma', score: 100, time: '18m 14s' },
     { rank: 2, name: 'Neha Choudhary', score: 99, time: '19m 31s' },
@@ -60,7 +40,7 @@ const TOP_10_LEADERBOARD = [
     { rank: 10, name: 'Manish Jangra', score: 88, time: '25m 05s' }
 ];
 
-// Comprehensive Question Base with explicit Per-Option Explanations
+// High-Fidelity PYQ Question Bank with Explicit Per-Option Explanations
 const PRACTICE_QUESTIONS = [
     {
         category: 'One Word Substitution',
@@ -68,10 +48,10 @@ const PRACTICE_QUESTIONS = [
         options: ['Stoic', 'Cynic', 'Anarchist', 'Egoist'],
         correctIndex: 0,
         explanations: [
-            'Correct: A Stoic endures hardship or pain without showing feelings or complaining.',
+            'Correct: A Stoic endures hardship or pain without showing feelings or complaining. Highly repeated PYQ.',
             'Incorrect: A Cynic believes human actions are motivated purely by selfishness.',
-            'Incorrect: An Anarchist rejects all forms of coercive control and established government.',
-            'Incorrect: An Egoist is completely self-absorbed and motivated by personal advancement.'
+            'Incorrect: An Anarchist rejects all established government and coercive control.',
+            'Incorrect: An Egoist is completely self-absorbed and motivated purely by personal advancement.'
         ]
     },
     {
@@ -80,9 +60,9 @@ const PRACTICE_QUESTIONS = [
         options: ['To read rapidly', 'To understand an implied meaning', 'To analyze grammatical syntax', 'To memorize verbatim'],
         correctIndex: 1,
         explanations: [
-            'Incorrect: Simply skimming or reading fast does not capture deeper nuances.',
+            'Incorrect: Simply skimming or reading fast does not capture deeper semantic nuances.',
             'Correct: Signifies perceiving a concealed or unexpressed communication masked within words.',
-            'Incorrect: Pertains to error detection or syntax parsing, not semantic interpretation.',
+            'Incorrect: Pertains to error detection or syntax parsing, not deeper interpretation.',
             'Incorrect: Refers to rote memorization rather than contextual comprehension.'
         ]
     },
@@ -117,27 +97,22 @@ const PRACTICE_QUESTIONS = [
         correctIndex: 2,
         explanations: [
             'Incorrect: Standard correlative conjunction initiating the negative condition.',
-            'Incorrect: Correctly links the plural secondary subject.',
+            'Incorrect: Correctly links the secondary plural subject.',
             'Correct: Subject-Verb Agreement rule mandates a plural verb ("were") matching the nearest subject ("teachers").',
             'Incorrect: Grammatically sound prepositional phrase denoting location.'
         ]
     }
 ];
 
-// 2. Application Live Dynamic State
+// 2. Client Application Dynamic State (Vault initialized completely clean)
 let appState = {
     isPremium: false,
     currentUser: { id: null, name: 'SSC Aspirant', username: '' },
     currentView: 'dashboard',
     activeVaultTab: 'weak',
     searchQuery: '',
-    weakWords: [
-        { word: 'Obsequious', meaning: 'Obedient or attentive to an excessive or servile degree.', wrongCount: 2 }
-    ],
-    bookmarkedWords: [
-        { word: 'Perspicacious', meaning: 'Having ready insight into and understanding of things; shrewd.', wrongCount: 0 }
-    ],
-    masteredWords: [],
+    weakWords: [],       // Clean storage array
+    bookmarkedWords: [], // Clean storage array
     quiz: {
         active: false,
         type: 'free', // 'free', 'daily_premium', or 'topic'
@@ -145,6 +120,7 @@ let appState = {
         questions: [],
         currentIndex: 0,
         selectedOption: null,
+        isBookmarked: false,
         correctCount: 0,
         wrongCount: 0,
         timeSeconds: 0,
@@ -152,14 +128,14 @@ let appState = {
     }
 };
 
-// 3. Client System Controller
+// 3. Core Engine Controller
 class SSCMaxVocabEngine {
     constructor() {
         this.initDOMNodes();
         this.initTelegramContext();
         this.bindNavigationEvents();
-        this.renderPremiumTopics();
-        this.renderArchiveFolders();
+        this.renderPremiumTopicsDeck();
+        this.renderPreviousPremiumTests();
         this.renderVault();
         this.renderLeaderboard();
     }
@@ -172,14 +148,15 @@ class SSCMaxVocabEngine {
         this.vaultItemsContainer = document.getElementById('vault-items-container');
         this.leaderboardContainer = document.getElementById('leaderboard-master-container');
         
-        // Quiz DOM bindings
+        // Quiz Sandbox Bindings
         this.quizFrame = document.getElementById('question-card-frame');
         this.optionsContainer = document.getElementById('question-options-container');
         this.btnNextQ = document.getElementById('btn-next-q');
+        this.btnBookmarkCurrent = document.getElementById('btn-bookmark-current');
         this.btnStartQuizConfirm = document.getElementById('btn-confirm-start-quiz');
 
         this.btnNextQ.addEventListener('click', () => this.advanceQuestion());
-        this.btnStartQuizConfirm.addEventListener('click', () => this.initiateQuizExecution());
+        this.btnStartQuizConfirm.addEventListener('click', () => this.executeQuizInstance());
     }
 
     initTelegramContext() {
@@ -187,6 +164,9 @@ class SSCMaxVocabEngine {
         if (tg) {
             tg.ready();
             tg.expand();
+            
+            // Modern SDK feature: prevent accidental vertical drag-to-close bounce during rapid tapping
+            if (tg.disableVerticalSwipes) tg.disableVerticalSwipes();
             
             const user = tg.initDataUnsafe?.user;
             if (user) {
@@ -205,7 +185,7 @@ class SSCMaxVocabEngine {
         // Automatic User Verification against Premium Database
         appState.isPremium = PREMIUM_USERS.includes(appState.currentUser.id);
 
-        // Update Top Right Indicator Badge Automatically
+        // Update Top-Right Indicator Badge Automatically
         const badge = document.getElementById('header-tier-indicator');
         if (appState.isPremium) {
             badge.innerHTML = `<i class="fa-solid fa-crown text-gold"></i> Elite Member`;
@@ -218,7 +198,7 @@ class SSCMaxVocabEngine {
         }
     }
 
-    // --- HAPTIC FEEDBACK BRIDGE ---
+    // --- TELEGRAM WEBAPP HAPTIC BRIDGE ---
     triggerHaptic(type) {
         const haptic = window.Telegram?.WebApp?.HapticFeedback;
         if (!haptic) return;
@@ -229,7 +209,7 @@ class SSCMaxVocabEngine {
             if (type === 'wrong') haptic.notificationOccurred('error');
             if (type === 'result') haptic.notificationOccurred('warning');
         } catch (e) {
-            console.log("Haptic feedback error silenced.");
+            console.log("Haptic execution silenced.");
         }
     }
 
@@ -266,7 +246,7 @@ class SSCMaxVocabEngine {
         if (viewId === 'ranks') this.renderLeaderboard();
     }
 
-    handlePremiumNavigation() {
+    navigateToPremiumView() {
         if (!appState.isPremium) {
             this.triggerPremiumPaywallGate();
             return;
@@ -275,82 +255,62 @@ class SSCMaxVocabEngine {
     }
 
     triggerPremiumPaywallGate() {
-        const message = encodeURIComponent("Hello, I am interested in SSC MAX VOCAB premium membership.");
+        const message = encodeURIComponent("I am interested in Premium Membership.");
         const tgBotLink = `https://t.me/jangra854x?text=${message}`;
-        if (confirm("This elite test suite requires Premium authorization. Contact @jangra854x on Telegram to unlock?")) {
-            window.open(tgBotLink, '_blank');
-        }
+        window.open(tgBotLink, '_blank');
     }
 
     // --- PREMIUM SECTION BUILDERS ---
-    renderPremiumTopics() {
+    renderPremiumTopicsDeck() {
         this.premiumTopicsList.innerHTML = PREMIUM_TOPICS.map(topic => {
             const isLocked = topic.locked && !appState.isPremium;
             return `
-                <div class="topic-row ${isLocked ? 'locked-topic' : ''}" 
-                     onclick="app.handleTopicSelection('${topic.name}', ${isLocked})">
-                    <span class="topic-name">${topic.name}</span>
-                    ${isLocked ? `<i class="fa-solid fa-lock lock-icon"></i>` : `<i class="fa-solid fa-arrow-right text-muted"></i>`}
+                <div class="topic-card-item glass-card ${isLocked ? 'locked-topic-card' : ''}" 
+                     onclick="app.handleTopicCardSelection('${topic.name}', ${isLocked})">
+                    <div class="topic-meta-left">
+                        <span class="topic-title">${topic.name}</span>
+                        <span class="topic-timestamp">Last Updated: ${topic.date}</span>
+                    </div>
+                    ${isLocked ? `
+                        <div class="lock-icon-container"><i class="fa-solid fa-lock"></i></div>
+                    ` : `
+                        <i class="fa-solid fa-arrow-right text-muted"></i>
+                    `}
                 </div>
             `;
         }).join('');
     }
 
-    handleTopicSelection(topicName, isLocked) {
+    handleTopicCardSelection(topicName, isLocked) {
         if (isLocked) {
             this.triggerPremiumPaywallGate();
             return;
         }
-        this.showQuizDetails('topic', `Topic Module: ${topicName}`);
+        this.showQuizBlueprint('topic', `Topic: ${topicName}`);
     }
 
-    renderArchiveFolders() {
-        this.premiumArchivesContainer.innerHTML = ARCHIVE_MONTHS.map(monthObj => `
-            <div class="accordion-item glass-card">
-                <div class="accordion-header" onclick="app.toggleArchiveFolder('${monthObj.id}')">
-                    <span>📁 ${monthObj.month}</span>
-                    <i class="fa-solid fa-chevron-down indicator" id="ind-${monthObj.id}"></i>
-                </div>
-                <div class="accordion-body" id="${monthObj.id}">
-                    ${monthObj.quizzes.map(q => `
-                        <div class="archive-quiz-row" onclick="app.showQuizDetails('daily_premium', '${q.title}')">
-                            <span>${q.title}</span>
-                            <i class="fa-solid fa-play text-gold"></i>
-                        </div>
-                    `).join('')}
-                </div>
+    renderPreviousPremiumTests() {
+        this.premiumArchivesContainer.innerHTML = PREMIUM_ARCHIVES.map(arc => `
+            <div class="archive-entry-card" onclick="app.showQuizBlueprint('daily_premium', '${arc.title}')">
+                <span class="archive-title">${arc.title} (Daily Mix)</span>
+                <i class="fa-solid fa-play text-gold"></i>
             </div>
         `).join('');
     }
 
-    toggleArchiveFolder(folderId) {
-        if (!appState.isPremium) {
-            this.triggerPremiumPaywallGate();
-            return;
-        }
-        const body = document.getElementById(folderId);
-        const indicator = document.getElementById(`ind-${folderId}`);
-        const isOpen = body.classList.contains('open');
-        
-        body.classList.toggle('open', !isOpen);
-        indicator.style.transform = isOpen ? 'rotate(0deg)' : 'rotate(180deg)';
-    }
-
-    // --- QUIZ DETAILS & INSTRUCTION BRIDGE ---
-    showQuizDetails(type, title) {
+    // --- QUIZ ENGINE & INSTANT EXPLANATION BRIDGE ---
+    showQuizBlueprint(type, title) {
         appState.quiz.type = type;
         appState.quiz.title = title;
 
         document.getElementById('qd-subtitle').innerText = title;
-        
-        const options = { year: 'numeric', month: 'long', day: 'numeric' };
-        document.getElementById('qd-date').innerText = new Date().toLocaleDateString('en-IN', options);
+        document.getElementById('qd-date').innerText = new Date().toLocaleDateString('en-IN', { month: 'short', day: 'numeric', year: 'numeric' });
         
         let qCount = 30;
-        let rankStatus = "Practice Mode (Unranked)";
+        let rankStatus = "Unranked Practice Mode";
         if (type === 'daily_premium') {
             qCount = 100;
-            rankStatus = "Ranked (Logs to Leaderboard)";
+            rankStatus = "Ranked (Logs to Global Leaderboard)";
         } else if (type === 'topic') {
             qCount = 20;
         }
@@ -361,10 +321,10 @@ class SSCMaxVocabEngine {
         this.switchView('quiz-details');
     }
 
-    initiateQuizExecution() {
+    executeQuizInstance() {
         appState.quiz.active = true;
         
-        // Dynamically build robust target question pool based on Quiz Type
+        // Dynamically compile robust target question pool based on Quiz Type
         let targetCount = appState.quiz.type === 'daily_premium' ? 100 : (appState.quiz.type === 'topic' ? 20 : 30);
         appState.quiz.questions = this.generateTargetQuestionPool(targetCount);
         
@@ -407,6 +367,11 @@ class SSCMaxVocabEngine {
     renderCurrentQuestion() {
         const q = appState.quiz.questions[appState.quiz.currentIndex];
         appState.quiz.selectedOption = null;
+        appState.quiz.isBookmarked = false;
+
+        // Reset Header Bookmarking Button
+        this.btnBookmarkCurrent.classList.remove('bookmarked');
+        this.btnBookmarkCurrent.innerHTML = `<i class="fa-regular fa-bookmark"></i> Bookmark`;
 
         // Hide Next Button initially (Mandatory answer lock required)
         this.btnNextQ.classList.add('hidden');
@@ -414,7 +379,6 @@ class SSCMaxVocabEngine {
 
         const totalQ = appState.quiz.questions.length;
         document.getElementById('quiz-question-counter').innerText = `Question ${appState.quiz.currentIndex + 1} of ${totalQ}`;
-        document.getElementById('quiz-live-score-display').innerText = `Score: ${appState.quiz.correctCount}`;
         
         const progressPercent = (appState.quiz.currentIndex / totalQ) * 100;
         document.getElementById('quiz-progress-fill').style.width = `${progressPercent}%`;
@@ -426,10 +390,10 @@ class SSCMaxVocabEngine {
         document.getElementById('question-category-tag').innerText = q.category;
         document.getElementById('question-text-body').innerText = q.text;
 
-        // Render Options with hidden explanation wrappers directly beneath EVERY option
+        // Render Options with hidden contrasting explanation wrappers below EVERY option
         this.optionsContainer.innerHTML = q.options.map((opt, idx) => `
             <div class="option-wrapper">
-                <div class="option-node" onclick="app.lockAnswer(${idx})">
+                <div class="option-node" onclick="app.lockAnswerSelection(${idx})">
                     <span>${opt}</span>
                     <div class="option-indicator"></div>
                 </div>
@@ -440,9 +404,34 @@ class SSCMaxVocabEngine {
         `).join('');
     }
 
-    // --- MANDATORY ANSWER LOCK & INSTANT BREAKDOWN ---
-    lockAnswer(selectedIndex) {
-        if (appState.quiz.selectedOption !== null) return; // Prevent double taps
+    toggleBookmarkCurrentQuestion() {
+        appState.quiz.isBookmarked = !appState.quiz.isBookmarked;
+        const q = appState.quiz.questions[appState.quiz.currentIndex];
+        const wordKey = q.options[q.correctIndex].split(':')[0].trim();
+
+        if (appState.quiz.isBookmarked) {
+            this.btnBookmarkCurrent.classList.add('bookmarked');
+            this.btnBookmarkCurrent.innerHTML = `<i class="fa-solid fa-bookmark"></i> Saved`;
+            this.triggerHaptic('select');
+
+            // Sync to Vault Bookmarked collection
+            if (!appState.bookmarkedWords.find(w => w.word === wordKey)) {
+                appState.bookmarkedWords.push({
+                    word: wordKey,
+                    meaning: q.explanations[q.correctIndex] || q.text
+                });
+            }
+            this.triggerToast(`Saved "${wordKey}" to Vault Bookmarked items!`);
+        } else {
+            this.btnBookmarkCurrent.classList.remove('bookmarked');
+            this.btnBookmarkCurrent.innerHTML = `<i class="fa-regular fa-bookmark"></i> Bookmark`;
+            appState.bookmarkedWords = appState.bookmarkedWords.filter(w => w.word !== wordKey);
+        }
+    }
+
+    // --- MANDATORY ANSWER LOCK & CONTRASTING BREAKDOWN ---
+    lockAnswerSelection(selectedIndex) {
+        if (appState.quiz.selectedOption !== null) return; // Prevent double commit
 
         appState.quiz.selectedOption = selectedIndex;
         this.optionsContainer.classList.add('locked');
@@ -457,10 +446,10 @@ class SSCMaxVocabEngine {
             appState.quiz.correctCount++;
         } else {
             appState.quiz.wrongCount++;
-            this.registerFailedWordToVault(q);
+            this.routeFailedWordToVault(q);
         }
 
-        // Highlight right/wrong states & simultaneously reveal explanation below EVERY option
+        // Highlight right/wrong option nodes & simultaneously reveal contrasting deep-slate explanation box below EVERY option
         const optionNodes = this.optionsContainer.querySelectorAll('.option-node');
         optionNodes.forEach((node, idx) => {
             const explBox = document.getElementById(`expl-${idx}`);
@@ -475,8 +464,6 @@ class SSCMaxVocabEngine {
             }
         });
 
-        document.getElementById('quiz-live-score-display').innerText = `Score: ${appState.quiz.correctCount}`;
-
         // Automatically display Next Question navigation button
         this.btnNextQ.classList.remove('hidden');
     }
@@ -486,26 +473,21 @@ class SSCMaxVocabEngine {
         if (appState.quiz.currentIndex < appState.quiz.questions.length) {
             this.renderCurrentQuestion();
         } else {
-            this.finalizeQuizAssessment();
+            this.finalizeAssessmentExecution();
         }
     }
 
-    registerFailedWordToVault(qObj) {
+    routeFailedWordToVault(qObj) {
         const wordKey = qObj.options[qObj.correctIndex].split(':')[0].trim();
-        let existing = appState.weakWords.find(w => w.word.toLowerCase() === wordKey.toLowerCase());
-        
-        if (existing) {
-            existing.wrongCount++;
-        } else {
+        if (!appState.weakWords.find(w => w.word.toLowerCase() === wordKey.toLowerCase())) {
             appState.weakWords.push({
                 word: wordKey,
-                meaning: qObj.explanations[qObj.correctIndex] || qObj.text,
-                wrongCount: 1
+                meaning: qObj.explanations[qObj.correctIndex] || qObj.text
             });
         }
     }
 
-    finalizeQuizAssessment() {
+    finalizeAssessmentExecution() {
         clearInterval(appState.quiz.stopwatchInterval);
         appState.quiz.active = false;
         this.triggerHaptic('result');
@@ -522,17 +504,17 @@ class SSCMaxVocabEngine {
         document.getElementById('res-wrong').innerText = appState.quiz.wrongCount;
         document.getElementById('res-time').innerText = `${minutes}m ${seconds}s`;
 
-        document.getElementById('res-tier-badge').innerText = accuracy >= 90 ? "👑 ELITE PERFORMANCE" : "⚡ KEEP PRACTICING";
+        document.getElementById('res-tier-badge').innerText = accuracy >= 90 ? "👑 ELITE ACCURACY STANDINGS" : "⚡ STANDARD EVALUATION";
 
-        // Log rank strictly if Daily Premium Quiz
+        // Only Daily Premium Mix affects ranks
         if (appState.quiz.type === 'daily_premium') {
-            this.triggerToast("Logged performance to Daily Standings!");
+            this.triggerToast("Successfully synchronized performance to Global Rankings!");
         }
 
         this.switchView('result');
     }
 
-    confirmExitQuiz() {
+    confirmAbandonQuiz() {
         if (confirm("Abandoning the assessment will discard live progress. Exit immediately?")) {
             this.forceTerminateQuiz();
         }
@@ -544,7 +526,7 @@ class SSCMaxVocabEngine {
         this.switchView('dashboard');
     }
 
-    // --- VOCABULARY VAULT REFACTOR ---
+    // --- VOCABULARY VAULT REFACTOR (Delete Action & Clean Dual Tabs) ---
     switchVaultTab(tabKey) {
         appState.activeVaultTab = tabKey;
         document.querySelectorAll('.vault-tab-btn').forEach(btn => btn.classList.remove('active'));
@@ -559,9 +541,7 @@ class SSCMaxVocabEngine {
     }
 
     renderVault() {
-        let activeArray = appState.weakWords;
-        if (appState.activeVaultTab === 'bookmarked') activeArray = appState.bookmarkedWords;
-        if (appState.activeVaultTab === 'mastered') activeArray = appState.masteredWords;
+        let activeArray = appState.activeVaultTab === 'bookmarked' ? appState.bookmarkedWords : appState.weakWords;
 
         if (appState.searchQuery) {
             activeArray = activeArray.filter(item => 
@@ -572,10 +552,14 @@ class SSCMaxVocabEngine {
 
         document.getElementById('count-weak').innerText = appState.weakWords.length;
         document.getElementById('count-bookmarked').innerText = appState.bookmarkedWords.length;
-        document.getElementById('count-mastered').innerText = appState.masteredWords.length;
 
         if (activeArray.length === 0) {
-            this.vaultItemsContainer.innerHTML = `<p class="text-muted text-center p-4">No vocabulary items stored in this collection.</p>`;
+            this.vaultItemsContainer.innerHTML = `
+                <div class="glass-card text-center p-4">
+                    <p class="text-muted">No vocabulary items currently stored in this repository.</p>
+                    <p class="text-muted font-size-sm mt-1">Errors during quizzes or clicked bookmarks will instantly route here.</p>
+                </div>
+            `;
             return;
         }
 
@@ -583,41 +567,29 @@ class SSCMaxVocabEngine {
             <div class="glass-card vault-word-card card-animation-swap">
                 <div class="v-header-row">
                     <h4>${item.word}</h4>
-                    ${item.wrongCount > 0 ? `<span class="wrong-badge">Failed ${item.wrongCount}x</span>` : ''}
-                </div>
-                <p class="v-meaning">${item.meaning}</p>
-                <div class="v-action-bar">
-                    ${appState.activeVaultTab !== 'mastered' ? `
-                        <button class="btn-practice-sm" onclick="app.markWordAsMastered('${item.word}')">
-                            <i class="fa-solid fa-check text-success"></i> Mastered
-                        </button>
-                    ` : ''}
-                    <button class="btn-practice-sm" onclick="app.practiceWordIsolated('${item.word}')">
-                        <i class="fa-solid fa-rotate-right text-cyan"></i> Drill Word
+                    <button class="btn-delete-word" onclick="app.deleteVaultWord('${item.word}')">
+                        <i class="fa-solid fa-trash-can"></i> Delete
                     </button>
                 </div>
+                <p class="v-meaning">${item.meaning}</p>
             </div>
         `).join('');
     }
 
-    markWordAsMastered(wordStr) {
-        let wordObj = appState.weakWords.find(w => w.word === wordStr) || appState.bookmarkedWords.find(w => w.word === wordStr);
-        if (wordObj) {
-            appState.weakWords = appState.weakWords.filter(w => w.word !== wordStr);
+    deleteVaultWord(wordStr) {
+        if (appState.activeVaultTab === 'bookmarked') {
             appState.bookmarkedWords = appState.bookmarkedWords.filter(w => w.word !== wordStr);
-            appState.masteredWords.push({...wordObj, wrongCount: 0});
-            this.renderVault();
-            this.triggerToast(`Transferred "${wordStr}" to Mastered collection!`);
+        } else {
+            appState.weakWords = appState.weakWords.filter(w => w.word !== wordStr);
         }
-    }
-
-    practiceWordIsolated(wordStr) {
-        this.showQuizDetails('free', `Isolated Drill: ${wordStr}`);
+        this.triggerHaptic('select');
+        this.renderVault();
+        this.triggerToast(`Removed "${wordStr}" from storage repository.`);
     }
 
     // --- STRICT RANK SYSTEM ---
     renderLeaderboard() {
-        const dateStr = new Date().toLocaleDateString('en-IN', { month: 'short', day: 'numeric', year: 'numeric' });
+        const dateStr = new Date().toLocaleDateString('en-IN', { month: 'long', day: 'numeric', year: 'numeric' });
         document.getElementById('leaderboard-date-subtitle').innerText = `Standings for ${dateStr}`;
 
         if (!appState.isPremium) {
@@ -629,10 +601,10 @@ class SSCMaxVocabEngine {
                     </div>
                     <div class="premium-unlock-overlay">
                         <i class="fa-solid fa-lock"></i>
-                        <h3>Elite Standings Locked</h3>
-                        <p>Only Daily Premium Quiz scores affect ranks. Unlock Premium to compete globally.</p>
-                        <button class="btn-primary-gradient mt-2" onclick="app.triggerPremiumPaywallGate()">
-                            Unlock Premium Access
+                        <h3>Elite Rankings Locked</h3>
+                        <p>Only Daily Premium Mix scores affect ranks. Unlock Premium Membership to compete globally.</p>
+                        <button class="btn-primary-gradient mt-3" onclick="app.triggerPremiumPaywallGate()">
+                            Unlock Premium Membership
                         </button>
                     </div>
                 </div>
@@ -640,7 +612,7 @@ class SSCMaxVocabEngine {
             return;
         }
 
-        // Premium Full Leaderboard (Top 10 strictly ordered)
+        // Premium Full Leaderboard (Top 10 strictly ordered + User pinned rank at bottom)
         const myRankHTML = `
             <div class="leader-row glass-card user-pinned-rank">
                 <div class="leader-meta">
@@ -680,7 +652,11 @@ class SSCMaxVocabEngine {
 
     // --- UTILITIES ---
     triggerToast(msg) {
+        const existing = document.getElementById('app-toast-alert');
+        if (existing) existing.remove();
+
         const toast = document.createElement('div');
+        toast.id = 'app-toast-alert';
         toast.style.position = 'fixed';
         toast.style.bottom = '95px';
         toast.style.left = '50%';
@@ -701,7 +677,7 @@ class SSCMaxVocabEngine {
     }
 }
 
-// Initializing application instance
+// Instantiate Engine on DOM ready
 window.addEventListener('DOMContentLoaded', () => {
     window.app = new SSCMaxVocabEngine();
 });

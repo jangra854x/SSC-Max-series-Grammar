@@ -4,274 +4,257 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
     <title>SSC MAX VOCAB</title>
-    <!-- Fonts & Icons -->
     <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     <link rel="stylesheet" href="style.css">
-    <!-- Telegram Mini App WebApp SDK -->
     <script src="https://telegram.org/js/telegram-web-app.js"></script>
 </head>
 <body>
 
-    <!-- Lightweight Elegant Ambient Background Animations -->
     <div class="bg-glow cyan-glow" id="ambient-cyan"></div>
-    <div class="bg-glow gold-glow" id="ambient-gold"></div>
+    <div class="bg-glow purple-glow-bg" id="ambient-purple"></div>
 
-    <!-- Main Application Canvas -->
     <div id="app">
         
-        <!-- Top Application Navigation Bar -->
         <header class="app-header">
             <div class="brand">
                 <span class="text-cyan">SSC</span> <span class="text-primary">MAX</span> <span class="text-gold">VOCAB</span>
             </div>
             <div class="header-actions">
-                <!-- Automatic Tier Badge (No Manual Switching) -->
                 <div class="tier-indicator-badge" id="header-tier-indicator">
                     <i class="fa-solid fa-user"></i> Free User
                 </div>
             </div>
         </header>
 
-        <!-- SPA Screen Container -->
         <main id="view-container">
             
-            <!-- 1. DASHBOARD SCREEN -->
             <section id="view-dashboard" class="app-view active">
                 
-                <!-- Target Exam Header Banner -->
                 <div class="exam-target-banner">
-                    SSC CGL • CHSL • MTS • GD • CPO • Steno • PYQ Based Vocabulary
+                    SSC CGL • CHSL • MTS • GD • CPO • Steno • Selection Post
+                </div>
+                
+                <div class="pyq-focus-banner mt-2">
+                    Complete SSC Vocabulary Preparation • PYQ Based
                 </div>
 
-                <!-- Telegram Native User Profile Section -->
-                <div class="profile-header glass-card mt-2">
-                    <img src="https://placehold.co/120x120/121627/00f2fe?text=TG" alt="Profile" class="tg-avatar" id="tg-user-avatar">
+                <div class="profile-header glass-card mt-3">
+                    <img src="https://placehold.co/120x120/121627/00f2fe?text=TG" alt="Profile Avatar" class="tg-avatar" id="tg-user-avatar">
                     <div class="profile-info">
-                        <h3 id="tg-user-name">Aspirant</h3>
+                        <h3 id="tg-user-name">SSC Aspirant</h3>
                         <p id="tg-user-handle">@telegram_user</p>
-                        <!-- Animated Dark Purple Glow Badge -->
-                        <span class="purple-glow-badge mt-1" id="tg-user-status">SSC Aspirant</span>
+                        <span class="purple-glow-badge mt-2">SSC Aspirant</span>
                     </div>
                 </div>
 
-                <!-- Core Portal Cards -->
                 <div class="portal-cards-stack mt-4">
-                    <!-- Free Practice Zone Card -->
-                    <div class="portal-card cyan-gradient-card" onclick="app.showQuizDetails('free', 'Daily Free Diagnostic Quiz')">
+                    
+                    <div class="portal-card cyan-gradient-card" onclick="app.showQuizBlueprint('free', 'Daily Free Quiz')">
                         <div class="portal-card-content">
-                            <span class="portal-tag cyan-tag">DAILY FREE QUIZ</span>
-                            <h3>Daily Free Vocabulary Quiz</h3>
+                            <span class="portal-tag cyan-tag">DAILY DIAGNOSTIC</span>
+                            <h3>Daily Free Quiz</h3>
                             <p>Test your standard TCS vocabulary baseline. High-frequency questions without paywalls.</p>
                             <div class="portal-meta">
                                 <span><i class="fa-solid fa-circle-question"></i> 30 Questions</span>
-                                <span><i class="fa-solid fa-check-double"></i> Unlimited Time</span>
+                                <span><i class="fa-solid fa-book-open"></i> PYQ Based</span>
                             </div>
                         </div>
                         <div class="portal-arrow"><i class="fa-solid fa-arrow-right"></i></div>
                     </div>
 
-                    <!-- Premium Elite Zone Card -->
-                    <div class="portal-card gold-gradient-card mt-3" onclick="app.handlePremiumNavigation()">
+                    <div class="portal-card gold-gradient-card mt-3" onclick="app.navigateToPremiumView()">
                         <div class="portal-card-content">
                             <span class="portal-tag gold-tag"><i class="fa-solid fa-crown"></i> ELITE PREMIUM</span>
                             <h3>Topic Wise Vocabulary Quiz</h3>
-                            <p>OWS, Idioms & Phrases, Synonyms, Spelling, Error Detection and Mixed PYQ Practice.</p>
+                            <p>OWS • Idioms & Phrases • Synonyms • Spelling • Error Detection • Mixed PYQ</p>
                             <div class="portal-meta">
                                 <span><i class="fa-solid fa-circle-question"></i> 100 Questions</span>
-                                <span><i class="fa-solid fa-ranking-star"></i> Affects Daily Rank</span>
+                                <span class="text-gold"><i class="fa-solid fa-ranking-star"></i> Affects Daily Ranks</span>
                             </div>
                         </div>
                         <div class="portal-arrow"><i class="fa-solid fa-crown"></i></div>
                     </div>
+
                 </div>
             </section>
 
-            <!-- 2. QUIZ DETAILS & INSTRUCTIONS PAGE -->
             <section id="view-quiz-details" class="app-view">
                 <div class="screen-header">
-                    <h2>Quiz Blueprint</h2>
-                    <p id="qd-subtitle">Review instructions before initiating</p>
+                    <h2>Assessment Overview</h2>
+                    <p id="qd-subtitle">Review configuration parameters before starting</p>
                 </div>
 
                 <div class="glass-card quiz-rules-card">
-                    <div class="rule-row"><span>📅 Date:</span> <strong id="qd-date">June 23, 2026</strong></div>
-                    <div class="rule-row"><span>❓ Questions:</span> <strong id="qd-count">30 Questions</strong></div>
-                    <div class="rule-row"><span>⏱️ Duration:</span> <strong>Unlimited (Elapsed stopwatch active)</strong></div>
-                    <div class="rule-row"><span>🏆 Standings:</span> <strong id="qd-rank-status" class="text-cyan">Practice Mode</strong></div>
+                    <div class="rule-row"><span>📅 Schedule Date:</span> <strong id="qd-date">Today</strong></div>
+                    <div class="rule-row"><span>❓ Payload Count:</span> <strong id="qd-count">30 Questions</strong></div>
+                    <div class="rule-row"><span>⏱️ Execution Timer:</span> <strong>Elapsed Stopwatch (No Countdown)</strong></div>
+                    <div class="rule-row"><span>🏆 Standings Impact:</span> <strong id="qd-rank-status" class="text-cyan">Unranked Practice</strong></div>
                     
                     <hr class="glass-divider">
                     
-                    <h4>Examination Guidelines:</h4>
+                    <h4>Operational Guidelines:</h4>
                     <ul class="rules-list">
-                        <li>You must explicitly select an option to advance. Skipping is disabled to ensure comprehensive learning.</li>
-                        <li>Locking an option instantly reveals thorough breakdowns for **every single option** below it.</li>
-                        <li>Incorrect attempts automatically sync with your personal Vocabulary Vault for targeted future drills.</li>
+                        <li><strong>Mandatory Selection:</strong> Skipping is disabled. You must commit to an answer to proceed.</li>
+                        <li><strong>Instant Isolation:</strong> Locking an option instantly reveals comprehensive color-coded breakdowns below every single choice.</li>
+                        <li><strong>Vault Syncing:</strong> Errors and bookmarked items sync automatically to your personal Vocabulary Vault.</li>
                     </ul>
                 </div>
 
                 <div class="action-stack mt-4">
                     <button class="btn-primary-gradient w-100" id="btn-confirm-start-quiz">
-                        <i class="fa-solid fa-flag-checkered"></i> START QUIZ NOW
+                        <i class="fa-solid fa-flag-checkered"></i> EXECUTE QUIZ NOW
                     </button>
                     <button class="btn-secondary w-100 mt-2" onclick="app.switchView('dashboard')">Cancel & Return</button>
                 </div>
             </section>
 
-            <!-- 3. PREMIUM SECTION SCREEN -->
             <section id="view-premium" class="app-view">
                 <div class="screen-header">
                     <h2>Elite Access Portal</h2>
-                    <p>Targeted PYQ syntax breakdowns & competitive daily tiers</p>
+                    <p>Advanced PYQ syntax modules & live competitive ranking mixes</p>
                 </div>
 
-                <!-- Daily Premium Quiz Card (100 Qs - Affects Rank) -->
-                <div class="portal-card gold-gradient-card mb-4" onclick="app.showQuizDetails('daily_premium', 'Daily Premium Master Blueprint')">
+                <div class="portal-card gold-gradient-card mb-4" onclick="app.showQuizBlueprint('daily_premium', 'Daily Premium Mix')">
                     <div class="portal-card-content">
-                        <span class="portal-tag gold-tag"><i class="fa-solid fa-trophy"></i> RANKS ENABLED</span>
-                        <h3>Daily Premium Master Blueprint</h3>
-                        <p>100 Questions total: 20 OWS, 20 Idioms, 20 Synonyms, 20 Spelling, and 20 Error Detection.</p>
+                        <span class="portal-tag gold-tag"><i class="fa-solid fa-trophy"></i> LEADERBOARD ACTIVE</span>
+                        <h3>Daily Premium Mix</h3>
+                        <p>100 Questions: OWS • Idioms & Phrases • Synonyms • Spelling • Error Detection • Mixed PYQ</p>
                         <div class="portal-meta mt-2">
                             <span><i class="fa-solid fa-circle-question"></i> 100 Questions</span>
-                            <span class="text-gold"><i class="fa-solid fa-chart-line"></i> Logs To Leaderboard</span>
+                            <span class="text-gold"><i class="fa-solid fa-chart-line"></i> Logs To Global Ranks</span>
                         </div>
                     </div>
                     <div class="portal-arrow"><i class="fa-solid fa-play"></i></div>
                 </div>
 
-                <h3 class="section-title">Modern Topic Modules (20 Qs Each)</h3>
-                <div class="topic-list" id="premium-topics-list">
-                    <!-- Dynamic Rendering via JS -->
-                </div>
+                <h3 class="section-title">Premium Topic Modules (20 Questions Each)</h3>
+                <div class="topic-grid" id="premium-topics-list">
+                    </div>
 
                 <h3 class="section-title mt-4">Previous Premium Tests</h3>
-                <div class="archive-accordion-group" id="premium-archives-container">
-                    <!-- Dynamic Rendering via JS -->
-                </div>
+                <div class="archive-list-group" id="premium-archives-container">
+                    </div>
             </section>
 
-            <!-- 4. QUIZ ENGINE SCREEN -->
             <section id="view-quiz" class="app-view full-overlay-view">
                 <div class="quiz-header">
-                    <button class="btn-close" onclick="app.confirmExitQuiz()"><i class="fa-solid fa-xmark"></i></button>
+                    <button class="btn-close" onclick="app.confirmAbandonQuiz()"><i class="fa-solid fa-xmark"></i></button>
                     <div class="quiz-title-context">
                         <h4 id="quiz-title-display">Vocabulary Assessment</h4>
                     </div>
-                    <!-- Unlimited Elapsed Stopwatch Display -->
                     <div class="quiz-timer" id="quiz-stopwatch">00:00</div>
                 </div>
 
-                <!-- Progress Bar -->
                 <div class="quiz-progress-wrapper">
                     <div class="quiz-progress-fill" id="quiz-progress-fill" style="width: 0%;"></div>
                 </div>
 
                 <div class="quiz-meta-indices mb-2">
                     <span id="quiz-question-counter">Question 1 of 30</span>
-                    <span class="score-live-tracker" id="quiz-live-score-display">Score: 0</span>
+                    <div class="meta-right-actions">
+                        <button class="btn-bookmark-q" id="btn-bookmark-current" onclick="app.toggleBookmarkCurrentQuestion()">
+                            <i class="fa-regular fa-bookmark"></i> Bookmark
+                        </button>
+                    </div>
                 </div>
 
-                <!-- Question Card Shell -->
                 <div class="question-wrapper card-animation-swap" id="question-card-frame">
                     <div class="question-tags">
                         <span class="q-tag" id="question-category-tag">Vocabulary</span>
                     </div>
-                    <p class="question-text" id="question-text-body">Loading evaluation parameters...</p>
+                    <p class="question-text" id="question-text-body">Loading assessment syntax...</p>
                     
                     <div class="options-stack" id="question-options-container">
-                        <!-- Dynamically populated options with explanation wrappers -->
-                    </div>
+                        </div>
                 </div>
 
-                <!-- Footer Navigation (Next button appears post-selection) -->
                 <div class="quiz-footer-centered mt-4">
-                    <button class="btn-primary-gradient w-100 hidden" id="btn-next-q">Next Question <i class="fa-solid fa-arrow-right"></i></button>
+                    <button class="btn-primary-gradient w-100 hidden" id="btn-next-q">
+                        Advance To Next <i class="fa-solid fa-arrow-right"></i>
+                    </button>
                 </div>
             </section>
 
-            <!-- 5. RESULT SCREEN -->
             <section id="view-result" class="app-view full-overlay-view">
                 <div class="result-container">
                     <div class="crown-badge-wrapper animate-bounce">
                         <i class="fa-solid fa-trophy text-gold"></i>
                     </div>
-                    <h2 class="result-heading">Assessment Complete</h2>
-                    <div class="rank-badge-dynamic" id="res-tier-badge">EXCELLENT ACCURACY</div>
+                    <h2 class="result-heading">Assessment Finalized</h2>
+                    <div class="rank-badge-dynamic" id="res-tier-badge">PERFORMANCE EVALUATION</div>
 
-                    <!-- Enhanced Premium Stats Matrix -->
                     <div class="result-stats-grid mt-4">
                         <div class="res-card glass-card">
                             <span class="res-val text-cyan" id="res-score">0</span>
-                            <span class="res-lbl">Total Score</span>
+                            <span class="res-lbl">Final Score</span>
                         </div>
                         <div class="res-card glass-card">
                             <span class="res-val text-gold" id="res-accuracy">0%</span>
-                            <span class="res-lbl">Accuracy</span>
+                            <span class="res-lbl">Accuracy Rate</span>
                         </div>
-                        <div class="res-card glass-card">
+                        <div class="res-card glass-card correct-card">
                             <span class="res-val text-success" id="res-correct">0</span>
-                            <span class="res-lbl">Correct</span>
+                            <span class="res-lbl">Correct Answers</span>
                         </div>
-                        <div class="res-card glass-card">
+                        <div class="res-card glass-card wrong-card">
                             <span class="res-val text-danger" id="res-wrong">0</span>
-                            <span class="res-lbl">Wrong</span>
+                            <span class="res-lbl">Incorrect Answers</span>
                         </div>
                         <div class="res-card glass-card col-span-2">
                             <span class="res-val" id="res-time">00:00</span>
-                            <span class="res-lbl">Total Elapsed Time</span>
+                            <span class="res-lbl">Total Time Spent</span>
                         </div>
                     </div>
 
                     <div class="feedback-card glass-card mt-4">
-                        <p class="feedback-text" id="res-feedback">All incorrect choices have been isolated into your personal Vault. Consistent revision is the key to final selection.</p>
+                        <p class="feedback-text" id="res-feedback">
+                            All incorrect selections and bookmarked items have been securely routed to your Vault. Review them daily to guarantee long-term retention.
+                        </p>
                     </div>
 
-                    <button class="btn-primary-gradient w-100" onclick="app.switchView('dashboard')">Return To Dashboard</button>
+                    <button class="btn-primary-gradient w-100" onclick="app.switchView('dashboard')">
+                        Return To Dashboard
+                    </button>
                 </div>
             </section>
 
-            <!-- 6. VOCABULARY VAULT SCREEN -->
             <section id="view-vault" class="app-view">
                 <div class="screen-header">
                     <h2>Vocabulary Vault</h2>
-                    <p>Organized collection tracking your target revisions</p>
+                    <p>Targeted storage repository for weak and bookmarked syntax</p>
                 </div>
 
-                <!-- Search Interface -->
                 <div class="vault-search-wrapper mb-3">
                     <i class="fa-solid fa-magnifying-glass search-icon"></i>
-                    <input type="search" id="vault-search-input" placeholder="Search stored words or meanings..." oninput="app.filterVaultContent()">
+                    <input type="search" id="vault-search-input" placeholder="Filter stored words or semantic meanings..." oninput="app.filterVaultContent()">
                 </div>
 
-                <!-- Simple Clean Tabs -->
-                <div class="vault-tabs">
-                    <button class="vault-tab-btn active" onclick="app.switchVaultTab('weak')">Weak Words (<span id="count-weak">0</span>)</button>
-                    <button class="vault-tab-btn" onclick="app.switchVaultTab('bookmarked')">Bookmarked (<span id="count-bookmarked">0</span>)</button>
-                    <button class="vault-tab-btn" onclick="app.switchVaultTab('mastered')">Mastered (<span id="count-mastered">0</span>)</button>
+                <div class="vault-dual-tabs mb-3">
+                    <button class="vault-tab-btn active" onclick="app.switchVaultTab('weak')">
+                        Weak Words (<span id="count-weak">0</span>)
+                    </button>
+                    <button class="vault-tab-btn" onclick="app.switchVaultTab('bookmarked')">
+                        Bookmarked (<span id="count-bookmarked">0</span>)
+                    </button>
                 </div>
 
-                <!-- Word Cards Container -->
-                <div class="vault-stack-list mt-3" id="vault-items-container">
-                    <!-- Dynamic Rendering via JS -->
-                </div>
+                <div class="vault-stack-list" id="vault-items-container">
+                    </div>
             </section>
 
-            <!-- 7. LEADERBOARD SCREEN -->
             <section id="view-ranks" class="app-view">
                 <div class="screen-header">
                     <h2>Daily Elite Ranks</h2>
                     <p id="leaderboard-date-subtitle">Live Standings</p>
                 </div>
 
-                <!-- Leaderboard Dynamic Wrapper -->
                 <div id="leaderboard-master-container">
-                    <!-- Dynamic rendering via JS based on User Type -->
-                </div>
+                    </div>
             </section>
 
         </main>
 
-        <!-- Persistent Bottom Tab Bar (Strictly 3 Approved Tabs) -->
         <nav class="bottom-nav-bar">
             <button class="nav-tab active" data-target="dashboard">
                 <i class="fa-solid fa-house"></i>
