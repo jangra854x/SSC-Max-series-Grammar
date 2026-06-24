@@ -1,121 +1,26 @@
 /**
- * SSC MAX VOCAB - Production Client Engine
- * Features: Auto ID verification, strictly locked 3-tab layout, mandatory selection with contrasting per-option breakdowns, empty Vault auto-population, and Telegram WebApp vertical swipe locking.
+ * SSC MAX VOCAB - Supabase Production Client Engine
+ * Features: Auto Telegram Verification, Supabase Backend integration, 
+ * Server-side Ranks, Persistent Vault, and High-Performance Local Caching.
  */
 
-// 1. Core Verification Constants
-const PREMIUM_USERS = [
-    123456789,
-    7603262906,
-    512345678
-];
+// 1. SUPABASE INITIALIZATION
+const SUPABASE_URL = 'https://tbiktjhwdlwzrhwursxk.supabase.co';
+const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InRiaWt0amh3ZGx3enJod3Vyc3hrIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODIyNzQ2MjYsImV4cCI6MjA5Nzg1MDYyNn0.aukjIOzRatuQCo_UgUir5WZX4uS2_CQ2t760VgRV-MA'; // <--- PASTE YOUR KEY HERE
+const supabase = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
 
-const PREMIUM_TOPICS = [
-    { id: 'ows', name: 'One Word Substitution', locked: false, date: 'June 22, 2026' },
-    { id: 'idi', name: 'Idioms & Phrases', locked: false, date: 'June 21, 2026' },
-    { id: 'syn', name: 'Synonyms', locked: false, date: 'June 20, 2026' },
-    { id: 'spl', name: 'Spelling', locked: false, date: 'June 19, 2026' },
-    { id: 'ant', name: 'Antonyms', locked: true, date: 'Locked Module' },
-    { id: 'hom', name: 'Homonyms & Homophones', locked: true, date: 'Locked Module' }
-];
-
-const PREMIUM_ARCHIVES = [
-    { title: 'Quiz - June 22', type: 'daily_premium', qCount: 100 },
-    { title: 'Quiz - June 20', type: 'daily_premium', qCount: 100 },
-    { title: 'Quiz - June 18', type: 'daily_premium', qCount: 100 },
-    { title: 'Quiz - June 15', type: 'daily_premium', qCount: 100 }
-];
-
-// Genuine Competitive Leaderboard Data
-const TOP_10_LEADERBOARD = [
-    { rank: 1, name: 'Aarav Sharma', score: 100, time: '18m 14s' },
-    { rank: 2, name: 'Neha Choudhary', score: 99, time: '19m 31s' },
-    { rank: 3, name: 'Vikramaditya Rao', score: 98, time: '17m 58s' },
-    { rank: 4, name: 'Priya Nair', score: 96, time: '20m 45s' },
-    { rank: 5, name: 'Amitabh Verma', score: 95, time: '21m 02s' },
-    { rank: 6, name: 'Siddharth Singh', score: 94, time: '19m 19s' },
-    { rank: 7, name: 'Ananya Gupta', score: 92, time: '22m 40s' },
-    { rank: 8, name: 'Rohan Mehra', score: 91, time: '23m 12s' },
-    { rank: 9, name: 'Kavita Yadav', score: 89, time: '24m 50s' },
-    { rank: 10, name: 'Manish Jangra', score: 88, time: '25m 05s' }
-];
-
-// High-Fidelity PYQ Question Bank with Explicit Per-Option Explanations
-const PRACTICE_QUESTIONS = [
-    {
-        category: 'One Word Substitution',
-        text: 'A person who is completely indifferent to pleasure or pain:',
-        options: ['Stoic', 'Cynic', 'Anarchist', 'Egoist'],
-        correctIndex: 0,
-        explanations: [
-            'Correct: A Stoic endures hardship or pain without showing feelings or complaining. Highly repeated PYQ.',
-            'Incorrect: A Cynic believes human actions are motivated purely by selfishness.',
-            'Incorrect: An Anarchist rejects all established government and coercive control.',
-            'Incorrect: An Egoist is completely self-absorbed and motivated purely by personal advancement.'
-        ]
-    },
-    {
-        category: 'Idioms & Phrases',
-        text: 'Select the precise contextual interpretation: "To read between the lines"',
-        options: ['To read rapidly', 'To understand an implied meaning', 'To analyze grammatical syntax', 'To memorize verbatim'],
-        correctIndex: 1,
-        explanations: [
-            'Incorrect: Simply skimming or reading fast does not capture deeper semantic nuances.',
-            'Correct: Signifies perceiving a concealed or unexpressed communication masked within words.',
-            'Incorrect: Pertains to error detection or syntax parsing, not deeper interpretation.',
-            'Incorrect: Refers to rote memorization rather than contextual comprehension.'
-        ]
-    },
-    {
-        category: 'Synonyms',
-        text: 'Identify the absolute synonym for the given parameter: "LACONIC"',
-        options: ['Loquacious', 'Concise', 'Rambling', 'Exuberant'],
-        correctIndex: 1,
-        explanations: [
-            'Incorrect: Loquacious is the exact antonym, meaning extremely talkative or wordy.',
-            'Correct: Laconic means expressing much in few words; brief, pithy, and concise.',
-            'Incorrect: Rambling denotes lengthy, confused, and inconsequential speech.',
-            'Incorrect: Exuberant indicates lively, high-spirited, and unrestrained enthusiasm.'
-        ]
-    },
-    {
-        category: 'Spelling',
-        text: 'Locate the correctly spelt structural item:',
-        options: ['Accomodation', 'Accomoddation', 'Accommodation', 'Acomodation'],
-        correctIndex: 2,
-        explanations: [
-            'Incorrect: Missing the required second "m" in the root structure.',
-            'Incorrect: Contains an invalid double "d" modification.',
-            'Correct: The standard TCS spelling strictly mandates both double "c" and double "m".',
-            'Incorrect: Lacks both the double "c" and double "m" root configurations.'
-        ]
-    },
-    {
-        category: 'Error Detection',
-        text: 'Identify the segment containing a syntactic anomaly: "Neither the principal nor the teachers was present at the event."',
-        options: ['Neither the principal', 'nor the teachers', 'was present', 'at the event'],
-        correctIndex: 2,
-        explanations: [
-            'Incorrect: Standard correlative conjunction initiating the negative condition.',
-            'Incorrect: Correctly links the secondary plural subject.',
-            'Correct: Subject-Verb Agreement rule mandates a plural verb ("were") matching the nearest subject ("teachers").',
-            'Incorrect: Grammatically sound prepositional phrase denoting location.'
-        ]
-    }
-];
-
-// 2. Client Application Dynamic State (Vault initialized completely clean)
+// 2. Client Application Dynamic State & Cache
 let appState = {
     isPremium: false,
     currentUser: { id: null, name: 'SSC Aspirant', username: '' },
     currentView: 'dashboard',
     activeVaultTab: 'weak',
     searchQuery: '',
-    weakWords: [],       // Clean storage array
-    bookmarkedWords: [], // Clean storage array
+    weakWords: [],       
+    bookmarkedWords: [], 
     quiz: {
         active: false,
-        type: 'free', // 'free', 'daily_premium', or 'topic'
+        type: 'free', 
         title: '',
         questions: [],
         currentIndex: 0,
@@ -125,6 +30,13 @@ let appState = {
         wrongCount: 0,
         timeSeconds: 0,
         stopwatchInterval: null
+    },
+    // Performance Optimization: Local Cache to prevent redundant DB calls
+    cache: {
+        topics: null,
+        archives: null,
+        questions: {},
+        leaderboard: null
     }
 };
 
@@ -132,12 +44,9 @@ let appState = {
 class SSCMaxVocabEngine {
     constructor() {
         this.initDOMNodes();
-        this.initTelegramContext();
         this.bindNavigationEvents();
-        this.renderPremiumTopicsDeck();
-        this.renderPreviousPremiumTests();
-        this.renderVault();
-        this.renderLeaderboard();
+        // The chain starts here: Init TG -> Init Supabase User -> Load DB Data
+        this.initTelegramContext();
     }
 
     initDOMNodes() {
@@ -164,8 +73,6 @@ class SSCMaxVocabEngine {
         if (tg) {
             tg.ready();
             tg.expand();
-            
-            // Modern SDK feature: prevent accidental vertical drag-to-close bounce during rapid tapping
             if (tg.disableVerticalSwipes) tg.disableVerticalSwipes();
             
             const user = tg.initDataUnsafe?.user;
@@ -181,13 +88,54 @@ class SSCMaxVocabEngine {
                 }
             }
         }
+        
+        // Execute Backend Sync post-Telegram extraction
+        this.syncSupabaseUser();
+    }
 
-        // Automatic User Verification against Premium Database
-        appState.isPremium = PREMIUM_USERS.includes(appState.currentUser.id);
+    // --- SUPABASE BACKEND SYNC ---
+    async syncSupabaseUser() {
+        if (!appState.currentUser.id) {
+            this.updateHeaderBadge(false);
+            return;
+        }
 
-        // Update Top-Right Indicator Badge Automatically
+        try {
+            // 1. Upsert User logic (Ignores duplicate inserts gracefully)
+            await supabase.from('users').upsert({
+                telegram_id: appState.currentUser.id,
+                username: appState.currentUser.username,
+                first_name: appState.currentUser.name,
+                joined_date: new Date().toISOString()
+            }, { onConflict: 'telegram_id' });
+
+            // 2. Determine Premium Status purely from Database
+            const { data: premiumCheck } = await supabase
+                .from('premium_users')
+                .select('telegram_id')
+                .eq('telegram_id', appState.currentUser.id)
+                .single();
+
+            appState.isPremium = !!premiumCheck;
+            this.updateHeaderBadge(appState.isPremium);
+
+            // 3. Load user Vault state
+            await this.fetchVaultData();
+            
+            // 4. Pre-fetch premium metadata if user is premium
+            if (appState.isPremium) {
+                this.fetchPremiumMetadata();
+            }
+
+        } catch (error) {
+            console.error("Backend Sync Error:", error);
+            this.triggerToast("Connectivity error. Retrying...");
+        }
+    }
+
+    updateHeaderBadge(isPremium) {
         const badge = document.getElementById('header-tier-indicator');
-        if (appState.isPremium) {
+        if (isPremium) {
             badge.innerHTML = `<i class="fa-solid fa-crown text-gold"></i> Elite Member`;
             badge.classList.add('elite');
             document.body.classList.add('premium-enhanced');
@@ -202,15 +150,12 @@ class SSCMaxVocabEngine {
     triggerHaptic(type) {
         const haptic = window.Telegram?.WebApp?.HapticFeedback;
         if (!haptic) return;
-
         try {
             if (type === 'select') haptic.selectionChanged();
             if (type === 'correct') haptic.notificationOccurred('success');
             if (type === 'wrong') haptic.notificationOccurred('error');
             if (type === 'result') haptic.notificationOccurred('warning');
-        } catch (e) {
-            console.log("Haptic execution silenced.");
-        }
+        } catch (e) { }
     }
 
     bindNavigationEvents() {
@@ -260,37 +205,56 @@ class SSCMaxVocabEngine {
         window.open(tgBotLink, '_blank');
     }
 
-    // --- PREMIUM SECTION BUILDERS ---
-    renderPremiumTopicsDeck() {
-        this.premiumTopicsList.innerHTML = PREMIUM_TOPICS.map(topic => {
-            const isLocked = topic.locked && !appState.isPremium;
+    // --- PREMIUM DB DATA FETCHING ---
+    async fetchPremiumMetadata() {
+        try {
+            // Fetch topics
+            if(!appState.cache.topics) {
+                const { data: topics } = await supabase.from('quizzes').select('*').eq('type', 'topic');
+                appState.cache.topics = topics || [];
+            }
+            
+            // Fetch archives
+            if(!appState.cache.archives) {
+                const { data: archives } = await supabase.from('quizzes').select('*').eq('type', 'daily_premium').order('date', { ascending: false }).limit(10);
+                appState.cache.archives = archives || [];
+            }
+
+            this.renderPremiumTopicsDeck(appState.cache.topics);
+            this.renderPreviousPremiumTests(appState.cache.archives);
+        } catch(e) {
+            console.error("Failed to load premium data", e);
+        }
+    }
+
+    renderPremiumTopicsDeck(topicsDB) {
+        if(!topicsDB || topicsDB.length === 0) {
+            this.premiumTopicsList.innerHTML = `<div class="text-center text-muted p-3">No topics configured in database.</div>`;
+            return;
+        }
+
+        this.premiumTopicsList.innerHTML = topicsDB.map(topic => {
+            // Assuming DB has 'title', 'locked_for_free' etc. Or we just map standard.
+            const isLocked = false; // It's premium view, so they are unlocked for premium users
             return `
-                <div class="topic-card-item glass-card ${isLocked ? 'locked-topic-card' : ''}" 
-                     onclick="app.handleTopicCardSelection('${topic.name}', ${isLocked})">
+                <div class="topic-card-item glass-card" onclick="app.showQuizBlueprint('topic', '${topic.title}')">
                     <div class="topic-meta-left">
-                        <span class="topic-title">${topic.name}</span>
-                        <span class="topic-timestamp">Last Updated: ${topic.date}</span>
+                        <span class="topic-title">${topic.title}</span>
+                        <span class="topic-timestamp">Module Active</span>
                     </div>
-                    ${isLocked ? `
-                        <div class="lock-icon-container"><i class="fa-solid fa-lock"></i></div>
-                    ` : `
-                        <i class="fa-solid fa-arrow-right text-muted"></i>
-                    `}
+                    <i class="fa-solid fa-arrow-right text-muted"></i>
                 </div>
             `;
         }).join('');
     }
 
-    handleTopicCardSelection(topicName, isLocked) {
-        if (isLocked) {
-            this.triggerPremiumPaywallGate();
+    renderPreviousPremiumTests(archivesDB) {
+        if(!archivesDB || archivesDB.length === 0) {
+            this.premiumArchivesContainer.innerHTML = `<div class="text-center text-muted p-3">No archives configured in database.</div>`;
             return;
         }
-        this.showQuizBlueprint('topic', `Topic: ${topicName}`);
-    }
 
-    renderPreviousPremiumTests() {
-        this.premiumArchivesContainer.innerHTML = PREMIUM_ARCHIVES.map(arc => `
+        this.premiumArchivesContainer.innerHTML = archivesDB.map(arc => `
             <div class="archive-entry-card" onclick="app.showQuizBlueprint('daily_premium', '${arc.title}')">
                 <span class="archive-title">${arc.title} (Daily Mix)</span>
                 <i class="fa-solid fa-play text-gold"></i>
@@ -298,7 +262,7 @@ class SSCMaxVocabEngine {
         `).join('');
     }
 
-    // --- QUIZ ENGINE & INSTANT EXPLANATION BRIDGE ---
+    // --- QUIZ ENGINE ---
     showQuizBlueprint(type, title) {
         appState.quiz.type = type;
         appState.quiz.title = title;
@@ -321,30 +285,70 @@ class SSCMaxVocabEngine {
         this.switchView('quiz-details');
     }
 
-    executeQuizInstance() {
-        appState.quiz.active = true;
+    async executeQuizInstance() {
+        this.btnStartQuizConfirm.classList.add('btn-loading');
+        this.btnStartQuizConfirm.innerHTML = `<i class="fa-solid fa-spinner fa-spin"></i> Fetching Data...`;
         
-        // Dynamically compile robust target question pool based on Quiz Type
-        let targetCount = appState.quiz.type === 'daily_premium' ? 100 : (appState.quiz.type === 'topic' ? 20 : 30);
-        appState.quiz.questions = this.generateTargetQuestionPool(targetCount);
-        
-        appState.quiz.currentIndex = 0;
-        appState.quiz.correctCount = 0;
-        appState.quiz.wrongCount = 0;
-        appState.quiz.timeSeconds = 0;
+        try {
+            appState.quiz.active = true;
+            
+            let targetCount = appState.quiz.type === 'daily_premium' ? 100 : (appState.quiz.type === 'topic' ? 20 : 30);
+            
+            // Database Fetch Request with Caching
+            appState.quiz.questions = await this.fetchQuestionsFromDB(appState.quiz.type, targetCount);
+            
+            if(appState.quiz.questions.length === 0) {
+                alert("Database returned 0 questions for this module.");
+                this.forceTerminateQuiz();
+                return;
+            }
 
-        document.getElementById('quiz-title-display').innerText = appState.quiz.title;
-        this.switchView('quiz');
-        this.startElapsedStopwatch();
-        this.renderCurrentQuestion();
+            appState.quiz.currentIndex = 0;
+            appState.quiz.correctCount = 0;
+            appState.quiz.wrongCount = 0;
+            appState.quiz.timeSeconds = 0;
+
+            document.getElementById('quiz-title-display').innerText = appState.quiz.title;
+            this.switchView('quiz');
+            this.startElapsedStopwatch();
+            this.renderCurrentQuestion();
+
+        } catch (e) {
+            console.error("Quiz Launch Error:", e);
+            alert("Failed to establish secure connection to quiz servers.");
+            this.forceTerminateQuiz();
+        } finally {
+            this.btnStartQuizConfirm.classList.remove('btn-loading');
+            this.btnStartQuizConfirm.innerHTML = `<i class="fa-solid fa-flag-checkered"></i> EXECUTE QUIZ NOW`;
+        }
     }
 
-    generateTargetQuestionPool(count) {
-        let pool = [];
-        while (pool.length < count) {
-            pool.push(...PRACTICE_QUESTIONS);
+    async fetchQuestionsFromDB(quizType, limit) {
+        // Use local cache to prevent redundant reads
+        if (appState.cache.questions[quizType] && appState.cache.questions[quizType].length >= limit) {
+            return this.shuffleArray(appState.cache.questions[quizType]).slice(0, limit);
         }
-        return pool.slice(0, count).sort(() => 0.5 - Math.random());
+
+        // Fetch from 'questions' table
+        const { data, error } = await supabase
+            .from('questions')
+            .select('category, text, options, "correctIndex", explanations')
+            .eq('type', quizType)
+            .limit(limit * 2); // Over-fetch slightly for randomness if table is large
+
+        if (error) throw error;
+        
+        appState.cache.questions[quizType] = data || [];
+        return this.shuffleArray(data || []).slice(0, limit);
+    }
+
+    shuffleArray(array) {
+        let shuffled = array.slice();
+        for (let i = shuffled.length - 1; i > 0; i--) {
+            const j = Math.floor(Math.random() * (i + 1));
+            [shuffled[i], shuffled[j]] = [shuffled[j], shuffled[i]];
+        }
+        return shuffled;
     }
 
     startElapsedStopwatch() {
@@ -369,11 +373,9 @@ class SSCMaxVocabEngine {
         appState.quiz.selectedOption = null;
         appState.quiz.isBookmarked = false;
 
-        // Reset Header Bookmarking Button
         this.btnBookmarkCurrent.classList.remove('bookmarked');
         this.btnBookmarkCurrent.innerHTML = `<i class="fa-regular fa-bookmark"></i> Bookmark`;
 
-        // Hide Next Button initially (Mandatory answer lock required)
         this.btnNextQ.classList.add('hidden');
         this.optionsContainer.classList.remove('locked');
 
@@ -387,10 +389,9 @@ class SSCMaxVocabEngine {
         void this.quizFrame.offsetWidth;
         this.quizFrame.classList.add('card-animation-swap');
 
-        document.getElementById('question-category-tag').innerText = q.category;
+        document.getElementById('question-category-tag').innerText = q.category || 'Vocabulary';
         document.getElementById('question-text-body').innerText = q.text;
 
-        // Render Options with hidden contrasting explanation wrappers below EVERY option
         this.optionsContainer.innerHTML = q.options.map((opt, idx) => `
             <div class="option-wrapper">
                 <div class="option-node" onclick="app.lockAnswerSelection(${idx})">
@@ -404,34 +405,48 @@ class SSCMaxVocabEngine {
         `).join('');
     }
 
-    toggleBookmarkCurrentQuestion() {
+    // --- LIVE VAULT SYNC (DB Persisted) ---
+    async toggleBookmarkCurrentQuestion() {
+        if(!appState.currentUser.id) return;
+
         appState.quiz.isBookmarked = !appState.quiz.isBookmarked;
         const q = appState.quiz.questions[appState.quiz.currentIndex];
         const wordKey = q.options[q.correctIndex].split(':')[0].trim();
+        const meaningText = q.explanations[q.correctIndex] || q.text;
 
         if (appState.quiz.isBookmarked) {
             this.btnBookmarkCurrent.classList.add('bookmarked');
             this.btnBookmarkCurrent.innerHTML = `<i class="fa-solid fa-bookmark"></i> Saved`;
             this.triggerHaptic('select');
 
-            // Sync to Vault Bookmarked collection
             if (!appState.bookmarkedWords.find(w => w.word === wordKey)) {
-                appState.bookmarkedWords.push({
-                    word: wordKey,
-                    meaning: q.explanations[q.correctIndex] || q.text
-                });
+                const newWord = { word: wordKey, meaning: meaningText, type: 'bookmarked' };
+                appState.bookmarkedWords.push(newWord);
+                this.triggerToast(`Saved "${wordKey}" to Vault!`);
+                
+                // Async background DB insert
+                supabase.from('vault').insert({
+                    telegram_id: appState.currentUser.id,
+                    word: newWord.word,
+                    meaning: newWord.meaning,
+                    type: newWord.type
+                }).then(); 
             }
-            this.triggerToast(`Saved "${wordKey}" to Vault Bookmarked items!`);
         } else {
             this.btnBookmarkCurrent.classList.remove('bookmarked');
             this.btnBookmarkCurrent.innerHTML = `<i class="fa-regular fa-bookmark"></i> Bookmark`;
             appState.bookmarkedWords = appState.bookmarkedWords.filter(w => w.word !== wordKey);
+            
+            // Async background DB delete
+            supabase.from('vault').delete()
+                .eq('telegram_id', appState.currentUser.id)
+                .eq('word', wordKey)
+                .eq('type', 'bookmarked').then();
         }
     }
 
-    // --- MANDATORY ANSWER LOCK & CONTRASTING BREAKDOWN ---
     lockAnswerSelection(selectedIndex) {
-        if (appState.quiz.selectedOption !== null) return; // Prevent double commit
+        if (appState.quiz.selectedOption !== null) return; 
 
         appState.quiz.selectedOption = selectedIndex;
         this.optionsContainer.classList.add('locked');
@@ -439,7 +454,6 @@ class SSCMaxVocabEngine {
         const q = appState.quiz.questions[appState.quiz.currentIndex];
         const isCorrect = selectedIndex === q.correctIndex;
 
-        // Trigger vibration feedback
         this.triggerHaptic(isCorrect ? 'correct' : 'wrong');
 
         if (isCorrect) {
@@ -449,7 +463,6 @@ class SSCMaxVocabEngine {
             this.routeFailedWordToVault(q);
         }
 
-        // Highlight right/wrong option nodes & simultaneously reveal contrasting deep-slate explanation box below EVERY option
         const optionNodes = this.optionsContainer.querySelectorAll('.option-node');
         optionNodes.forEach((node, idx) => {
             const explBox = document.getElementById(`expl-${idx}`);
@@ -464,7 +477,6 @@ class SSCMaxVocabEngine {
             }
         });
 
-        // Automatically display Next Question navigation button
         this.btnNextQ.classList.remove('hidden');
     }
 
@@ -477,17 +489,26 @@ class SSCMaxVocabEngine {
         }
     }
 
-    routeFailedWordToVault(qObj) {
+    async routeFailedWordToVault(qObj) {
+        if(!appState.currentUser.id) return;
         const wordKey = qObj.options[qObj.correctIndex].split(':')[0].trim();
+        const meaningText = qObj.explanations[qObj.correctIndex] || qObj.text;
+
         if (!appState.weakWords.find(w => w.word.toLowerCase() === wordKey.toLowerCase())) {
-            appState.weakWords.push({
-                word: wordKey,
-                meaning: qObj.explanations[qObj.correctIndex] || qObj.text
-            });
+            const newWeakWord = { word: wordKey, meaning: meaningText, type: 'weak' };
+            appState.weakWords.push(newWeakWord);
+            
+            // Persist to Supabase
+            supabase.from('vault').insert({
+                telegram_id: appState.currentUser.id,
+                word: newWeakWord.word,
+                meaning: newWeakWord.meaning,
+                type: newWeakWord.type
+            }).then();
         }
     }
 
-    finalizeAssessmentExecution() {
+    async finalizeAssessmentExecution() {
         clearInterval(appState.quiz.stopwatchInterval);
         appState.quiz.active = false;
         this.triggerHaptic('result');
@@ -506,9 +527,22 @@ class SSCMaxVocabEngine {
 
         document.getElementById('res-tier-badge').innerText = accuracy >= 90 ? "👑 ELITE ACCURACY STANDINGS" : "⚡ STANDARD EVALUATION";
 
-        // Only Daily Premium Mix affects ranks
-        if (appState.quiz.type === 'daily_premium') {
-            this.triggerToast("Successfully synchronized performance to Global Rankings!");
+        // Push Score to Leaderboard IF Daily Premium Mix
+        if (appState.quiz.type === 'daily_premium' && appState.currentUser.id) {
+            try {
+                await supabase.from('leaderboard').insert({
+                    telegram_id: appState.currentUser.id,
+                    name: appState.currentUser.name,
+                    score: appState.quiz.correctCount,
+                    time_seconds: appState.quiz.timeSeconds,
+                    date: new Date().toISOString().split('T')[0]
+                });
+                // Invalidate leaderboard cache
+                appState.cache.leaderboard = null; 
+                this.triggerToast("Successfully synchronized performance to Global Rankings!");
+            } catch(e) {
+                console.error("Failed to post score", e);
+            }
         }
 
         this.switchView('result');
@@ -526,7 +560,16 @@ class SSCMaxVocabEngine {
         this.switchView('dashboard');
     }
 
-    // --- VOCABULARY VAULT REFACTOR (Delete Action & Clean Dual Tabs) ---
+    // --- VAULT RENDERER ---
+    async fetchVaultData() {
+        if(!appState.currentUser.id) return;
+        const { data, error } = await supabase.from('vault').select('*').eq('telegram_id', appState.currentUser.id);
+        if(!error && data) {
+            appState.weakWords = data.filter(v => v.type === 'weak');
+            appState.bookmarkedWords = data.filter(v => v.type === 'bookmarked');
+        }
+    }
+
     switchVaultTab(tabKey) {
         appState.activeVaultTab = tabKey;
         document.querySelectorAll('.vault-tab-btn').forEach(btn => btn.classList.remove('active'));
@@ -576,8 +619,11 @@ class SSCMaxVocabEngine {
         `).join('');
     }
 
-    deleteVaultWord(wordStr) {
-        if (appState.activeVaultTab === 'bookmarked') {
+    async deleteVaultWord(wordStr) {
+        const type = appState.activeVaultTab;
+        
+        // Remove locally immediately for snappy UI
+        if (type === 'bookmarked') {
             appState.bookmarkedWords = appState.bookmarkedWords.filter(w => w.word !== wordStr);
         } else {
             appState.weakWords = appState.weakWords.filter(w => w.word !== wordStr);
@@ -585,19 +631,28 @@ class SSCMaxVocabEngine {
         this.triggerHaptic('select');
         this.renderVault();
         this.triggerToast(`Removed "${wordStr}" from storage repository.`);
+
+        // DB Background Deletion
+        if(appState.currentUser.id) {
+            await supabase.from('vault').delete()
+                .eq('telegram_id', appState.currentUser.id)
+                .eq('word', wordStr)
+                .eq('type', type);
+        }
     }
 
-    // --- STRICT RANK SYSTEM ---
-    renderLeaderboard() {
+    // --- LEADERBOARD RENDERER ---
+    async renderLeaderboard() {
         const dateStr = new Date().toLocaleDateString('en-IN', { month: 'long', day: 'numeric', year: 'numeric' });
         document.getElementById('leaderboard-date-subtitle').innerText = `Standings for ${dateStr}`;
 
         if (!appState.isPremium) {
-            // Free User Paywall Gate with Exact Prefilled String
             this.leaderboardContainer.innerHTML = `
                 <div class="blurred-leaderboard-box">
                     <div class="leaderboard-list blur-mask">
-                        ${TOP_10_LEADERBOARD.slice(0, 5).map(user => this.getLeaderboardRowHTML(user)).join('')}
+                        <div class="leader-row glass-card"><div class="leader-meta"><span class="leader-num top-3">#1</span><span class="leader-name">Hidden Rank</span></div><div class="leader-scores"><div class="leader-score-pts">100 Qs</div></div></div>
+                        <div class="leader-row glass-card"><div class="leader-meta"><span class="leader-num top-3">#2</span><span class="leader-name">Hidden Rank</span></div><div class="leader-scores"><div class="leader-score-pts">98 Qs</div></div></div>
+                        <div class="leader-row glass-card"><div class="leader-meta"><span class="leader-num top-3">#3</span><span class="leader-name">Hidden Rank</span></div><div class="leader-scores"><div class="leader-score-pts">96 Qs</div></div></div>
                     </div>
                     <div class="premium-unlock-overlay">
                         <i class="fa-solid fa-lock"></i>
@@ -612,42 +667,73 @@ class SSCMaxVocabEngine {
             return;
         }
 
-        // Premium Full Leaderboard (Top 10 strictly ordered + User pinned rank at bottom)
-        const myRankHTML = `
-            <div class="leader-row glass-card user-pinned-rank">
-                <div class="leader-meta">
-                    <span class="leader-num">#14</span>
-                    <span class="leader-name">You (Pinned Standings)</span>
-                </div>
-                <div class="leader-scores">
-                    <div class="leader-score-pts">84 Correct</div>
-                    <div class="leader-score-time">26m 10s</div>
-                </div>
-            </div>
-        `;
+        // Fetch Leaderboard from DB with local caching
+        try {
+            const todayISO = new Date().toISOString().split('T')[0];
+            
+            if(!appState.cache.leaderboard) {
+                const { data } = await supabase
+                    .from('leaderboard')
+                    .select('*')
+                    .eq('date', todayISO)
+                    .order('score', { ascending: false })
+                    .order('time_seconds', { ascending: true }) // Tie breaker
+                    .limit(10);
+                
+                appState.cache.leaderboard = data || [];
+            }
 
-        this.leaderboardContainer.innerHTML = `
-            <div class="leaderboard-list">
-                ${TOP_10_LEADERBOARD.map(user => this.getLeaderboardRowHTML(user)).join('')}
-            </div>
-            ${myRankHTML}
-        `;
-    }
+            const lbData = appState.cache.leaderboard;
 
-    getLeaderboardRowHTML(user) {
-        const isTop3 = user.rank <= 3;
-        return `
-            <div class="leader-row glass-card">
-                <div class="leader-meta">
-                    <span class="leader-num ${isTop3 ? 'top-3' : ''}">#${user.rank}</span>
-                    <span class="leader-name">${user.name}</span>
+            if(lbData.length === 0) {
+                this.leaderboardContainer.innerHTML = `<div class="text-center text-muted p-3">No scores logged today yet. Be the first!</div>`;
+                return;
+            }
+
+            // Find specific user rank logic (Optional extra query if outside top 10, but omitted for UI speed. We check if they are in the array).
+            let myRankHTML = '';
+            const myIndex = lbData.findIndex(row => row.telegram_id === appState.currentUser.id);
+            
+            if(myIndex !== -1) {
+                const me = lbData[myIndex];
+                myRankHTML = `
+                    <div class="leader-row glass-card user-pinned-rank">
+                        <div class="leader-meta">
+                            <span class="leader-num">#${myIndex + 1}</span>
+                            <span class="leader-name">You (Pinned)</span>
+                        </div>
+                        <div class="leader-scores">
+                            <div class="leader-score-pts">${me.score} Correct</div>
+                            <div class="leader-score-time">${Math.floor(me.time_seconds / 60)}m ${me.time_seconds % 60}s</div>
+                        </div>
+                    </div>
+                `;
+            }
+
+            this.leaderboardContainer.innerHTML = `
+                <div class="leaderboard-list">
+                    ${lbData.map((user, idx) => {
+                        const isTop3 = idx < 3;
+                        return `
+                        <div class="leader-row glass-card">
+                            <div class="leader-meta">
+                                <span class="leader-num ${isTop3 ? 'top-3' : ''}">#${idx + 1}</span>
+                                <span class="leader-name">${user.name}</span>
+                            </div>
+                            <div class="leader-scores">
+                                <div class="leader-score-pts">${user.score} Qs</div>
+                                <div class="leader-score-time">${Math.floor(user.time_seconds / 60)}m ${user.time_seconds % 60}s</div>
+                            </div>
+                        </div>
+                        `;
+                    }).join('')}
                 </div>
-                <div class="leader-scores">
-                    <div class="leader-score-pts">${user.score} Qs</div>
-                    <div class="leader-score-time">${user.time}</div>
-                </div>
-            </div>
-        `;
+                ${myRankHTML}
+            `;
+        } catch(e) {
+            console.error("Leaderboard fetch error:", e);
+            this.leaderboardContainer.innerHTML = `<div class="text-center text-muted p-3">Failed to load leaderboard.</div>`;
+        }
     }
 
     // --- UTILITIES ---
@@ -677,7 +763,6 @@ class SSCMaxVocabEngine {
     }
 }
 
-// Instantiate Engine on DOM ready
 window.addEventListener('DOMContentLoaded', () => {
     window.app = new SSCMaxVocabEngine();
 });

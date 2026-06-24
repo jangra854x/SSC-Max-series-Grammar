@@ -3,7 +3,7 @@
     --bg-dark: #07080e;
     --bg-card: rgba(18, 22, 39, 0.75);
     --bg-card-solid: #121627;
-    --bg-explanation: #0f172a; /* Strongly contrasting deep slate tone */
+    --bg-explanation: #0f172a; 
     --neon-cyan: #00f2fe;
     --neon-cyan-glow: rgba(0, 242, 254, 0.35);
     --gold-premium: #ffb800;
@@ -37,7 +37,7 @@ body {
     position: fixed;
     width: 100vw;
     height: 100vh;
-    overscroll-behavior: none; /* Prevents accidental Telegram pull-to-refresh */
+    overscroll-behavior: none; 
 }
 
 /* Elegant Ambient Background Animations */
@@ -56,7 +56,6 @@ body {
 .cyan-glow { top: -60px; left: -60px; background: var(--neon-cyan); }
 .purple-glow-bg { bottom: 80px; right: -60px; background: var(--purple-neon); animation-delay: -6s; }
 
-/* Enriched Particle & Ambient Glow for Premium Users */
 body.premium-enhanced .bg-glow {
     opacity: 0.65;
     filter: blur(110px);
@@ -72,7 +71,6 @@ body.premium-enhanced .bg-glow {
     100% { transform: translate(70px, -60px) scale(1.3) rotate(20deg); }
 }
 
-/* Master Application Frame */
 #app {
     position: relative;
     z-index: 1;
@@ -87,7 +85,6 @@ body.premium-enhanced .bg-glow {
     border-right: 1px solid var(--border-glass);
 }
 
-/* Header UI */
 .app-header {
     height: 64px;
     padding: 0 20px;
@@ -105,7 +102,6 @@ body.premium-enhanced .bg-glow {
 .text-success { color: var(--success-green); }
 .text-danger { color: var(--danger-red); }
 
-/* Dynamic Tier Indicator Badge */
 .tier-indicator-badge {
     background: rgba(255, 255, 255, 0.05);
     border: 1px solid var(--border-glass);
@@ -123,7 +119,6 @@ body.premium-enhanced .bg-glow {
     box-shadow: 0 0 12px var(--gold-glow);
 }
 
-/* Target Exam & PYQ Focus Banners */
 .exam-target-banner, .pyq-focus-banner {
     font-size: 0.7rem;
     font-weight: 700;
@@ -141,7 +136,6 @@ body.premium-enhanced .bg-glow {
     border-color: rgba(0, 242, 254, 0.15);
 }
 
-/* Single Page Application Architecture */
 #view-container {
     flex: 1;
     overflow-y: auto;
@@ -169,7 +163,6 @@ body.premium-enhanced .bg-glow {
     overflow-y: auto;
 }
 
-/* Glassmorphic Foundation */
 .glass-card {
     background: var(--bg-card);
     backdrop-filter: blur(16px); -webkit-backdrop-filter: blur(16px);
@@ -178,7 +171,6 @@ body.premium-enhanced .bg-glow {
     padding: 16px;
 }
 
-/* Telegram Native Profile Card */
 .profile-header { display: flex; align-items: center; gap: 16px; padding: 18px; }
 .tg-avatar {
     width: 56px; height: 56px; border-radius: 50%;
@@ -189,7 +181,6 @@ body.premium-enhanced .bg-glow {
 .profile-info h3 { font-size: 1.1rem; font-weight: 700; color: var(--text-primary); }
 .profile-info p { font-size: 0.8rem; color: var(--text-muted); margin-top: 1px; }
 
-/* Animated Dark Purple Glassmorphic Glow Label */
 .purple-glow-badge {
     display: inline-block;
     background: rgba(147, 51, 234, 0.2);
@@ -209,7 +200,6 @@ body.premium-enhanced .bg-glow {
     to { box-shadow: 0 0 18px rgba(168, 85, 247, 0.85); }
 }
 
-/* Portal Access Cards */
 .portal-cards-stack { display: flex; flex-direction: column; gap: 16px; }
 .portal-card {
     display: flex; align-items: center; justify-content: space-between;
@@ -245,7 +235,6 @@ body.premium-enhanced .bg-glow {
     font-size: 1.1rem; color: #fff; flex-shrink: 0; margin-left: 12px;
 }
 
-/* Utility Layout Spacings */
 .section-title { font-size: 1.05rem; font-weight: 700; margin-bottom: 12px; color: var(--text-primary); }
 .mt-2 { margin-top: 8px; }
 .mt-3 { margin-top: 16px; }
@@ -257,7 +246,9 @@ body.premium-enhanced .bg-glow {
 .text-center { text-align: center; }
 .hidden { display: none !important; }
 
-/* Action Buttons */
+/* Backend integration specific utility class */
+.btn-loading { opacity: 0.7; pointer-events: none; }
+
 .btn-primary-gradient {
     background: linear-gradient(135deg, var(--neon-cyan) 0%, #0064fe 100%);
     color: #fff; border: none; padding: 16px 24px;
@@ -274,7 +265,6 @@ body.premium-enhanced .bg-glow {
     font-size: 0.95rem; font-weight: 600; cursor: pointer;
 }
 
-/* Quiz Blueprint View */
 .screen-header { margin-bottom: 20px; }
 .screen-header h2 { font-size: 1.5rem; font-weight: 800; }
 .screen-header p { font-size: 0.85rem; color: var(--text-muted); margin-top: 2px; }
@@ -284,7 +274,6 @@ body.premium-enhanced .bg-glow {
 .glass-divider { border: none; border-top: 1px solid var(--border-glass); margin: 8px 0; }
 .rules-list { margin-left: 20px; font-size: 0.85rem; color: var(--text-muted); display: flex; flex-direction: column; gap: 8px; line-height: 1.4; }
 
-/* Premium Topic Cards Grid */
 .topic-grid { display: flex; flex-direction: column; gap: 12px; }
 .topic-card-item {
     display: flex; align-items: center; justify-content: space-between;
@@ -313,7 +302,6 @@ body.premium-enhanced .bg-glow {
     color: var(--gold-premium); font-size: 0.9rem;
 }
 
-/* Previous Premium Tests List */
 .archive-list-group { display: flex; flex-direction: column; gap: 10px; }
 .archive-entry-card {
     padding: 16px 20px; border-radius: 14px;
@@ -324,7 +312,6 @@ body.premium-enhanced .bg-glow {
 .archive-entry-card:hover { background: rgba(255, 255, 255, 0.05); }
 .archive-title { font-size: 0.9rem; font-weight: 600; color: var(--text-primary); }
 
-/* Live Quiz Execution Engine */
 .quiz-header { display: flex; align-items: center; justify-content: space-between; margin-bottom: 16px; }
 .btn-close {
     background: rgba(255, 255, 255, 0.05); border: 1px solid var(--border-glass);
@@ -361,7 +348,6 @@ body.premium-enhanced .bg-glow {
 }
 .question-text { font-size: 1.1rem; font-weight: 600; line-height: 1.45; margin-bottom: 24px; }
 
-/* Options & Distinct Color Explanation Breakdown Boxes */
 .options-stack { display: flex; flex-direction: column; gap: 14px; flex: 1; }
 .option-wrapper { display: flex; flex-direction: column; gap: 6px; }
 
@@ -374,7 +360,6 @@ body.premium-enhanced .bg-glow {
 .option-node span { font-size: 0.9rem; font-weight: 500; }
 .option-indicator { width: 20px; height: 20px; border-radius: 50%; border: 2px solid var(--border-glass); display: flex; align-items: center; justify-content: center; font-size: 0.7rem; }
 
-/* Locked Assessment Highlight States */
 .options-stack.locked .option-node { pointer-events: none; }
 .option-node.correct { background: rgba(16, 185, 129, 0.15); border-color: var(--success-green); }
 .option-node.correct .option-indicator { border-color: var(--success-green); background: var(--success-green); color: #000; }
@@ -384,7 +369,6 @@ body.premium-enhanced .bg-glow {
 .option-node.incorrect .option-indicator { border-color: var(--danger-red); background: var(--danger-red); color: #fff; }
 .option-node.incorrect .option-indicator::after { content: "✖"; font-weight: 800; }
 
-/* Distinct Explanation Callout Box (Solid Deep Slate Tone) */
 .option-explanation-box {
     font-size: 0.8rem; line-height: 1.45; padding: 12px 16px;
     border-radius: 12px; background-color: var(--bg-explanation);
@@ -395,7 +379,6 @@ body.premium-enhanced .bg-glow {
 .option-explanation-box.expl-correct { border-left-color: var(--success-green); }
 .option-explanation-box.expl-incorrect { border-left-color: var(--danger-red); }
 
-/* Assessment Result View */
 .result-container { display: flex; flex-direction: column; align-items: center; padding: 40px 10px 20px 10px; text-align: center; }
 .crown-badge-wrapper {
     width: 80px; height: 80px; border-radius: 50%;
@@ -417,7 +400,6 @@ body.premium-enhanced .bg-glow {
 .feedback-card { width: 100%; padding: 16px; margin-bottom: 32px; text-align: left; }
 .feedback-text { font-size: 0.85rem; line-height: 1.45; color: #b3bcce; }
 
-/* Vocabulary Vault View */
 .vault-search-wrapper { position: relative; display: flex; align-items: center; }
 .search-icon { position: absolute; left: 16px; color: var(--text-muted); font-size: 0.9rem; }
 #vault-search-input {
@@ -427,7 +409,6 @@ body.premium-enhanced .bg-glow {
 }
 #vault-search-input:focus { border-color: var(--border-glass-focus); }
 
-/* Clean Dual Tab Layout */
 .vault-dual-tabs {
     display: grid; grid-template-columns: repeat(2, 1fr); gap: 8px;
     background: rgba(255,255,255,0.03); border: 1px solid var(--border-glass);
@@ -455,7 +436,6 @@ body.premium-enhanced .bg-glow {
 }
 .btn-delete-word:hover { background: var(--danger-red); color: #fff; }
 
-/* Leaderboard Ranks View */
 .leaderboard-list { display: flex; flex-direction: column; gap: 10px; }
 .leader-row { display: flex; align-items: center; justify-content: space-between; padding: 14px 16px; }
 .leader-meta { display: flex; align-items: center; gap: 14px; }
@@ -468,7 +448,6 @@ body.premium-enhanced .bg-glow {
 
 .user-pinned-rank { border-color: var(--gold-premium); background: linear-gradient(90deg, rgba(255,184,0,0.1), transparent); margin-top: 16px; }
 
-/* Blurred Leaderboard Paywall Mask for Free Users */
 .blurred-leaderboard-box { position: relative; overflow: hidden; border-radius: 16px; border: 1px solid var(--border-glass); }
 .blur-mask { filter: blur(8px); opacity: 0.4; pointer-events: none; }
 .premium-unlock-overlay {
@@ -481,7 +460,6 @@ body.premium-enhanced .bg-glow {
 .premium-unlock-overlay h3 { font-size: 1.2rem; font-weight: 800; margin-bottom: 8px; }
 .premium-unlock-overlay p { font-size: 0.8rem; color: var(--text-muted); margin-bottom: 20px; max-width: 260px; line-height: 1.4; }
 
-/* Strictly Locked 3-Tab Bottom Navigation Bar */
 .bottom-nav-bar {
     position: absolute; bottom: 0; left: 0;
     width: 100%; height: calc(64px + var(--safe-area-bottom));
@@ -500,7 +478,6 @@ body.premium-enhanced .bg-glow {
 .nav-tab span { font-size: 0.65rem; font-weight: 600; }
 .nav-tab.active { color: var(--neon-cyan); }
 
-/* Optimization Transform Animations */
 .card-animation-swap { animation: slideCardIn 0.3s cubic-bezier(0.16, 1, 0.3, 1) forwards; }
 @keyframes slideCardIn { from { opacity: 0; transform: translateX(16px); } to { opacity: 1; transform: translateX(0); } }
 @keyframes fadeIn { from { opacity: 0; transform: translateY(-4px); } to { opacity: 1; transform: translateY(0); } }

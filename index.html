@@ -22,7 +22,7 @@
             </div>
             <div class="header-actions">
                 <div class="tier-indicator-badge" id="header-tier-indicator">
-                    <i class="fa-solid fa-user"></i> Free User
+                    <i class="fa-solid fa-spinner fa-spin"></i> Checking...
                 </div>
             </div>
         </header>
@@ -42,8 +42,8 @@
                 <div class="profile-header glass-card mt-3">
                     <img src="https://placehold.co/120x120/121627/00f2fe?text=TG" alt="Profile Avatar" class="tg-avatar" id="tg-user-avatar">
                     <div class="profile-info">
-                        <h3 id="tg-user-name">SSC Aspirant</h3>
-                        <p id="tg-user-handle">@telegram_user</p>
+                        <h3 id="tg-user-name">Loading...</h3>
+                        <p id="tg-user-handle">Connecting to Telegram</p>
                         <span class="purple-glow-badge mt-2">SSC Aspirant</span>
                     </div>
                 </div>
@@ -130,11 +130,13 @@
 
                 <h3 class="section-title">Premium Topic Modules (20 Questions Each)</h3>
                 <div class="topic-grid" id="premium-topics-list">
-                    </div>
+                    <div class="text-center text-muted p-3"><i class="fa-solid fa-spinner fa-spin"></i> Loading topics...</div>
+                </div>
 
                 <h3 class="section-title mt-4">Previous Premium Tests</h3>
                 <div class="archive-list-group" id="premium-archives-container">
-                    </div>
+                    <div class="text-center text-muted p-3"><i class="fa-solid fa-spinner fa-spin"></i> Loading archives...</div>
+                </div>
             </section>
 
             <section id="view-quiz" class="app-view full-overlay-view">
@@ -151,7 +153,7 @@
                 </div>
 
                 <div class="quiz-meta-indices mb-2">
-                    <span id="quiz-question-counter">Question 1 of 30</span>
+                    <span id="quiz-question-counter">Initializing...</span>
                     <div class="meta-right-actions">
                         <button class="btn-bookmark-q" id="btn-bookmark-current" onclick="app.toggleBookmarkCurrentQuestion()">
                             <i class="fa-regular fa-bookmark"></i> Bookmark
@@ -161,9 +163,9 @@
 
                 <div class="question-wrapper card-animation-swap" id="question-card-frame">
                     <div class="question-tags">
-                        <span class="q-tag" id="question-category-tag">Vocabulary</span>
+                        <span class="q-tag" id="question-category-tag">Database</span>
                     </div>
-                    <p class="question-text" id="question-text-body">Loading assessment syntax...</p>
+                    <p class="question-text" id="question-text-body">Fetching latest database payload...</p>
                     
                     <div class="options-stack" id="question-options-container">
                         </div>
@@ -240,7 +242,8 @@
                 </div>
 
                 <div class="vault-stack-list" id="vault-items-container">
-                    </div>
+                    <div class="text-center text-muted p-3"><i class="fa-solid fa-spinner fa-spin"></i> Syncing vault...</div>
+                </div>
             </section>
 
             <section id="view-ranks" class="app-view">
@@ -250,7 +253,8 @@
                 </div>
 
                 <div id="leaderboard-master-container">
-                    </div>
+                    <div class="text-center text-muted p-3"><i class="fa-solid fa-spinner fa-spin"></i> Fetching global standings...</div>
+                </div>
             </section>
 
         </main>
@@ -271,6 +275,7 @@
         </nav>
     </div>
 
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
     <script src="script.js"></script>
 </body>
 </html>
