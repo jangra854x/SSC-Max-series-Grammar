@@ -4,10 +4,18 @@
  * Server-side Ranks, Persistent Vault, and High-Performance Local Caching.
  */
 
-// 1. SUPABASE INITIALIZATION
+// 1. SUPABASE INITIALIZATION (Fixed Duplicate Identifier Crash)
 const SUPABASE_URL = 'https://tbiktjhwdlwzrhwursxk.supabase.co';
-const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InRiaWt0amh3ZGx3enJod3Vyc3hrIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODIyNzQ2MjYsImV4cCI6MjA5Nzg1MDYyNn0.aukjIOzRatuQCo_UgUir5WZX4uS2_CQ2t760VgRV-MA'; // <--- PASTE YOUR KEY HERE
-const supabase = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+const SUPABASE_ANON_KEY = 'YOUR_SUPABASE_ANON_KEY'; // <--- PASTE YOUR KEY HERE
+
+let supabaseClient = null;
+try {
+    if (window.supabase && typeof window.supabase.createClient === 'function' && SUPABASE_ANON_KEY !== 'YOUR_SUPABASE_ANON_KEY') {
+        supabaseClient = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+    }
+} catch (err) {
+    console.error("Supabase initialization failed safely:", err);
+}
 
 // 2. Client Application Dynamic State & Cache
 let appState = {
@@ -31,7 +39,6 @@ let appState = {
         timeSeconds: 0,
         stopwatchInterval: null
     },
-    // Performance Optimization: Local Cache to prevent redundant DB calls
     cache: {
         topics: null,
         archives: null,
@@ -45,7 +52,7 @@ class SSCMaxVocabEngine {
     constructor() {
         this.initDOMNodes();
         this.bindNavigationEvents();
-        // The chain starts here: Init TG -> Init Supabase User -> Load DB Data
+        // Step 1: Immediately render local Telegram UI context first
         this.initTelegramContext();
     }
 
@@ -70,6 +77,12 @@ class SSCMaxVocabEngine {
 
     initTelegramContext() {
         const tg = window.Telegram?.WebApp;
+        
+        // Fallback or Initial generic UI values to prevent lock-up
+        let userId = null;
+        let displayName = 'SSC Aspirant';
+        let handleName = 'Offline Mode';
+
         if (tg) {
             tg.ready();
             tg.expand();
@@ -77,32 +90,39 @@ class SSCMaxVocabEngine {
             
             const user = tg.initDataUnsafe?.user;
             if (user) {
-                appState.currentUser.id = user.id;
-                appState.currentUser.name = `${user.first_name} ${user.last_name || ''}`.trim();
-                appState.currentUser.username = user.username ? `@${user.username}` : `ID: ${user.id}`;
+                userId = user.id;
+                displayName = `${user.first_name} ${user.last_name || ''}`.trim();
+                handleName = user.username ? `@${user.username}` : `ID: ${user.id}`;
                 
-                document.getElementById('tg-user-name').innerText = appState.currentUser.name;
-                document.getElementById('tg-user-handle').innerText = appState.currentUser.username;
                 if (user.photo_url) {
                     document.getElementById('tg-user-avatar').src = user.photo_url;
                 }
             }
         }
         
-        // Execute Backend Sync post-Telegram extraction
+        // Update state
+        appState.currentUser.id = userId;
+        appState.currentUser.name = displayName;
+        appState.currentUser.username = handleName;
+
+        // Force immediate non-blocking DOM paint for the profile card
+        document.getElementById('tg-user-name').innerText = displayName;
+        document.getElementById('tg-user-handle').innerText = handleName;
+        
+        // Step 2: Kick off network tasks purely in the background
         this.syncSupabaseUser();
     }
 
-    // --- SUPABASE BACKEND SYNC ---
+    // --- SUPABASE BACKEND SYNC (Gracefully Handles Offline/Missing Client) ---
     async syncSupabaseUser() {
-        if (!appState.currentUser.id) {
-            this.updateHeaderBadge(false);
+        if (!supabaseClient || !appState.currentUser.id) {
+            this.updateHeaderBadge(false); // Default back to free state gracefully
             return;
         }
 
         try {
             // 1. Upsert User logic (Ignores duplicate inserts gracefully)
-            await supabase.from('users').upsert({
+            await supabaseClient.from('users').upsert({
                 telegram_id: appState.currentUser.id,
                 username: appState.currentUser.username,
                 first_name: appState.currentUser.name,
@@ -110,7 +130,7 @@ class SSCMaxVocabEngine {
             }, { onConflict: 'telegram_id' });
 
             // 2. Determine Premium Status purely from Database
-            const { data: premiumCheck } = await supabase
+            const { data: premiumCheck } = await supabaseClient
                 .from('premium_users')
                 .select('telegram_id')
                 .eq('telegram_id', appState.currentUser.id)
@@ -129,12 +149,13 @@ class SSCMaxVocabEngine {
 
         } catch (error) {
             console.error("Backend Sync Error:", error);
-            this.triggerToast("Connectivity error. Retrying...");
+            this.updateHeaderBadge(false);
         }
     }
 
     updateHeaderBadge(isPremium) {
         const badge = document.getElementById('header-tier-indicator');
+        if (!badge) return;
         if (isPremium) {
             badge.innerHTML = `<i class="fa-solid fa-crown text-gold"></i> Elite Member`;
             badge.classList.add('elite');
@@ -207,16 +228,17 @@ class SSCMaxVocabEngine {
 
     // --- PREMIUM DB DATA FETCHING ---
     async fetchPremiumMetadata() {
+        if (!supabaseClient) return;
         try {
             // Fetch topics
             if(!appState.cache.topics) {
-                const { data: topics } = await supabase.from('quizzes').select('*').eq('type', 'topic');
+                const { data: topics } = await supabaseClient.from('quizzes').select('*').eq('type', 'topic');
                 appState.cache.topics = topics || [];
             }
             
             // Fetch archives
             if(!appState.cache.archives) {
-                const { data: archives } = await supabase.from('quizzes').select('*').eq('type', 'daily_premium').order('date', { ascending: false }).limit(10);
+                const { data: archives } = await supabaseClient.from('quizzes').select('*').eq('type', 'daily_premium').order('date', { ascending: false }).limit(10);
                 appState.cache.archives = archives || [];
             }
 
@@ -228,14 +250,13 @@ class SSCMaxVocabEngine {
     }
 
     renderPremiumTopicsDeck(topicsDB) {
+        if(!this.premiumTopicsList) return;
         if(!topicsDB || topicsDB.length === 0) {
             this.premiumTopicsList.innerHTML = `<div class="text-center text-muted p-3">No topics configured in database.</div>`;
             return;
         }
 
         this.premiumTopicsList.innerHTML = topicsDB.map(topic => {
-            // Assuming DB has 'title', 'locked_for_free' etc. Or we just map standard.
-            const isLocked = false; // It's premium view, so they are unlocked for premium users
             return `
                 <div class="topic-card-item glass-card" onclick="app.showQuizBlueprint('topic', '${topic.title}')">
                     <div class="topic-meta-left">
@@ -249,6 +270,7 @@ class SSCMaxVocabEngine {
     }
 
     renderPreviousPremiumTests(archivesDB) {
+        if(!this.premiumArchivesContainer) return;
         if(!archivesDB || archivesDB.length === 0) {
             this.premiumArchivesContainer.innerHTML = `<div class="text-center text-muted p-3">No archives configured in database.</div>`;
             return;
@@ -294,11 +316,10 @@ class SSCMaxVocabEngine {
             
             let targetCount = appState.quiz.type === 'daily_premium' ? 100 : (appState.quiz.type === 'topic' ? 20 : 30);
             
-            // Database Fetch Request with Caching
             appState.quiz.questions = await this.fetchQuestionsFromDB(appState.quiz.type, targetCount);
             
             if(appState.quiz.questions.length === 0) {
-                alert("Database returned 0 questions for this module.");
+                alert("No questions configured or application is currently offline.");
                 this.forceTerminateQuiz();
                 return;
             }
@@ -324,17 +345,17 @@ class SSCMaxVocabEngine {
     }
 
     async fetchQuestionsFromDB(quizType, limit) {
-        // Use local cache to prevent redundant reads
         if (appState.cache.questions[quizType] && appState.cache.questions[quizType].length >= limit) {
             return this.shuffleArray(appState.cache.questions[quizType]).slice(0, limit);
         }
 
-        // Fetch from 'questions' table
-        const { data, error } = await supabase
+        if (!supabaseClient) return [];
+
+        const { data, error } = await supabaseClient
             .from('questions')
             .select('category, text, options, "correctIndex", explanations')
             .eq('type', quizType)
-            .limit(limit * 2); // Over-fetch slightly for randomness if table is large
+            .limit(limit * 2);
 
         if (error) throw error;
         
@@ -399,7 +420,7 @@ class SSCMaxVocabEngine {
                     <div class="option-indicator"></div>
                 </div>
                 <div class="option-explanation-box hidden" id="expl-${idx}">
-                    ${q.explanations[idx]}
+                    ${q.explanations && q.explanations[idx] ? q.explanations[idx] : 'No explanation provided.'}
                 </div>
             </div>
         `).join('');
@@ -407,12 +428,12 @@ class SSCMaxVocabEngine {
 
     // --- LIVE VAULT SYNC (DB Persisted) ---
     async toggleBookmarkCurrentQuestion() {
-        if(!appState.currentUser.id) return;
+        if(!supabaseClient || !appState.currentUser.id) return;
 
         appState.quiz.isBookmarked = !appState.quiz.isBookmarked;
         const q = appState.quiz.questions[appState.quiz.currentIndex];
         const wordKey = q.options[q.correctIndex].split(':')[0].trim();
-        const meaningText = q.explanations[q.correctIndex] || q.text;
+        const meaningText = (q.explanations && q.explanations[q.correctIndex]) || q.text;
 
         if (appState.quiz.isBookmarked) {
             this.btnBookmarkCurrent.classList.add('bookmarked');
@@ -424,8 +445,7 @@ class SSCMaxVocabEngine {
                 appState.bookmarkedWords.push(newWord);
                 this.triggerToast(`Saved "${wordKey}" to Vault!`);
                 
-                // Async background DB insert
-                supabase.from('vault').insert({
+                supabaseClient.from('vault').insert({
                     telegram_id: appState.currentUser.id,
                     word: newWord.word,
                     meaning: newWord.meaning,
@@ -437,8 +457,7 @@ class SSCMaxVocabEngine {
             this.btnBookmarkCurrent.innerHTML = `<i class="fa-regular fa-bookmark"></i> Bookmark`;
             appState.bookmarkedWords = appState.bookmarkedWords.filter(w => w.word !== wordKey);
             
-            // Async background DB delete
-            supabase.from('vault').delete()
+            supabaseClient.from('vault').delete()
                 .eq('telegram_id', appState.currentUser.id)
                 .eq('word', wordKey)
                 .eq('type', 'bookmarked').then();
@@ -466,14 +485,14 @@ class SSCMaxVocabEngine {
         const optionNodes = this.optionsContainer.querySelectorAll('.option-node');
         optionNodes.forEach((node, idx) => {
             const explBox = document.getElementById(`expl-${idx}`);
-            explBox.classList.remove('hidden');
+            if(explBox) explBox.classList.remove('hidden');
 
             if (idx === q.correctIndex) {
                 node.classList.add('correct');
-                explBox.classList.add('expl-correct');
+                if(explBox) explBox.classList.add('expl-correct');
             } else if (idx === selectedIndex) {
                 node.classList.add('incorrect');
-                explBox.classList.add('expl-incorrect');
+                if(explBox) explBox.classList.add('expl-incorrect');
             }
         });
 
@@ -490,16 +509,15 @@ class SSCMaxVocabEngine {
     }
 
     async routeFailedWordToVault(qObj) {
-        if(!appState.currentUser.id) return;
+        if(!supabaseClient || !appState.currentUser.id) return;
         const wordKey = qObj.options[qObj.correctIndex].split(':')[0].trim();
-        const meaningText = qObj.explanations[qObj.correctIndex] || qObj.text;
+        const meaningText = (qObj.explanations && qObj.explanations[qObj.correctIndex]) || qObj.text;
 
         if (!appState.weakWords.find(w => w.word.toLowerCase() === wordKey.toLowerCase())) {
             const newWeakWord = { word: wordKey, meaning: meaningText, type: 'weak' };
             appState.weakWords.push(newWeakWord);
             
-            // Persist to Supabase
-            supabase.from('vault').insert({
+            supabaseClient.from('vault').insert({
                 telegram_id: appState.currentUser.id,
                 word: newWeakWord.word,
                 meaning: newWeakWord.meaning,
@@ -527,17 +545,15 @@ class SSCMaxVocabEngine {
 
         document.getElementById('res-tier-badge').innerText = accuracy >= 90 ? "👑 ELITE ACCURACY STANDINGS" : "⚡ STANDARD EVALUATION";
 
-        // Push Score to Leaderboard IF Daily Premium Mix
-        if (appState.quiz.type === 'daily_premium' && appState.currentUser.id) {
+        if (appState.quiz.type === 'daily_premium' && appState.currentUser.id && supabaseClient) {
             try {
-                await supabase.from('leaderboard').insert({
+                await supabaseClient.from('leaderboard').insert({
                     telegram_id: appState.currentUser.id,
                     name: appState.currentUser.name,
                     score: appState.quiz.correctCount,
                     time_seconds: appState.quiz.timeSeconds,
                     date: new Date().toISOString().split('T')[0]
                 });
-                // Invalidate leaderboard cache
                 appState.cache.leaderboard = null; 
                 this.triggerToast("Successfully synchronized performance to Global Rankings!");
             } catch(e) {
@@ -562,8 +578,8 @@ class SSCMaxVocabEngine {
 
     // --- VAULT RENDERER ---
     async fetchVaultData() {
-        if(!appState.currentUser.id) return;
-        const { data, error } = await supabase.from('vault').select('*').eq('telegram_id', appState.currentUser.id);
+        if(!supabaseClient || !appState.currentUser.id) return;
+        const { data, error } = await supabaseClient.from('vault').select('*').eq('telegram_id', appState.currentUser.id);
         if(!error && data) {
             appState.weakWords = data.filter(v => v.type === 'weak');
             appState.bookmarkedWords = data.filter(v => v.type === 'bookmarked');
@@ -573,7 +589,9 @@ class SSCMaxVocabEngine {
     switchVaultTab(tabKey) {
         appState.activeVaultTab = tabKey;
         document.querySelectorAll('.vault-tab-btn').forEach(btn => btn.classList.remove('active'));
-        event.currentTarget.classList.add('active');
+        if (window.event) {
+            window.event.currentTarget.classList.add('active');
+        }
         this.triggerHaptic('select');
         this.renderVault();
     }
@@ -584,6 +602,7 @@ class SSCMaxVocabEngine {
     }
 
     renderVault() {
+        if (!this.vaultItemsContainer) return;
         let activeArray = appState.activeVaultTab === 'bookmarked' ? appState.bookmarkedWords : appState.weakWords;
 
         if (appState.searchQuery) {
@@ -622,7 +641,6 @@ class SSCMaxVocabEngine {
     async deleteVaultWord(wordStr) {
         const type = appState.activeVaultTab;
         
-        // Remove locally immediately for snappy UI
         if (type === 'bookmarked') {
             appState.bookmarkedWords = appState.bookmarkedWords.filter(w => w.word !== wordStr);
         } else {
@@ -632,9 +650,8 @@ class SSCMaxVocabEngine {
         this.renderVault();
         this.triggerToast(`Removed "${wordStr}" from storage repository.`);
 
-        // DB Background Deletion
-        if(appState.currentUser.id) {
-            await supabase.from('vault').delete()
+        if(supabaseClient && appState.currentUser.id) {
+            await supabaseClient.from('vault').delete()
                 .eq('telegram_id', appState.currentUser.id)
                 .eq('word', wordStr)
                 .eq('type', type);
@@ -643,6 +660,7 @@ class SSCMaxVocabEngine {
 
     // --- LEADERBOARD RENDERER ---
     async renderLeaderboard() {
+        if (!this.leaderboardContainer) return;
         const dateStr = new Date().toLocaleDateString('en-IN', { month: 'long', day: 'numeric', year: 'numeric' });
         document.getElementById('leaderboard-date-subtitle').innerText = `Standings for ${dateStr}`;
 
@@ -667,17 +685,21 @@ class SSCMaxVocabEngine {
             return;
         }
 
-        // Fetch Leaderboard from DB with local caching
+        if (!supabaseClient) {
+            this.leaderboardContainer.innerHTML = `<div class="text-center text-muted p-3">Database connection unavailable.</div>`;
+            return;
+        }
+
         try {
             const todayISO = new Date().toISOString().split('T')[0];
             
             if(!appState.cache.leaderboard) {
-                const { data } = await supabase
+                const { data } = await supabaseClient
                     .from('leaderboard')
                     .select('*')
                     .eq('date', todayISO)
                     .order('score', { ascending: false })
-                    .order('time_seconds', { ascending: true }) // Tie breaker
+                    .order('time_seconds', { ascending: true }) 
                     .limit(10);
                 
                 appState.cache.leaderboard = data || [];
@@ -690,7 +712,6 @@ class SSCMaxVocabEngine {
                 return;
             }
 
-            // Find specific user rank logic (Optional extra query if outside top 10, but omitted for UI speed. We check if they are in the array).
             let myRankHTML = '';
             const myIndex = lbData.findIndex(row => row.telegram_id === appState.currentUser.id);
             
