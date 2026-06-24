@@ -6,11 +6,11 @@
 
 // 1. SUPABASE INITIALIZATION (Fixed Duplicate Identifier Crash)
 const SUPABASE_URL = 'https://tbiktjhwdlwzrhwursxk.supabase.co';
-const SUPABASE_ANON_KEY = 'YOUR_SUPABASE_ANON_KEY'; // <--- PASTE YOUR KEY HERE
+const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InRiaWt0amh3ZGx3enJod3Vyc3hrIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODIyNzQ2MjYsImV4cCI6MjA5Nzg1MDYyNn0.aukjIOzRatuQCo_UgUir5WZX4uS2_CQ2t760VgRV-MA';
 
 let supabaseClient = null;
 try {
-    if (window.supabase && typeof window.supabase.createClient === 'function' && SUPABASE_ANON_KEY !== 'YOUR_SUPABASE_ANON_KEY') {
+    if (window.supabase && typeof window.supabase.createClient === 'function') {
         supabaseClient = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
     }
 } catch (err) {
@@ -20,7 +20,7 @@ try {
 // 2. Client Application Dynamic State & Cache
 let appState = {
     isPremium: false,
-    currentUser: { id: null, name: 'SSC Aspirant', username: '' },
+    currentUser: { id: null, name: 'SSC Aspirant', username: '', photo_url: '' },
     currentView: 'dashboard',
     activeVaultTab: 'weak',
     searchQuery: '',
@@ -82,6 +82,7 @@ class SSCMaxVocabEngine {
         let userId = null;
         let displayName = 'SSC Aspirant';
         let handleName = 'Offline Mode';
+        let avatarUrl = '';
 
         if (tg) {
             tg.ready();
@@ -93,9 +94,11 @@ class SSCMaxVocabEngine {
                 userId = user.id;
                 displayName = `${user.first_name} ${user.last_name || ''}`.trim();
                 handleName = user.username ? `@${user.username}` : `ID: ${user.id}`;
+                avatarUrl = user.photo_url || '';
                 
-                if (user.photo_url) {
-                    document.getElementById('tg-user-avatar').src = user.photo_url;
+                if (avatarUrl) {
+                    const avatarNode = document.getElementById('tg-user-avatar');
+                    if (avatarNode) avatarNode.src = avatarUrl;
                 }
             }
         }
@@ -104,10 +107,13 @@ class SSCMaxVocabEngine {
         appState.currentUser.id = userId;
         appState.currentUser.name = displayName;
         appState.currentUser.username = handleName;
+        appState.currentUser.photo_url = avatarUrl;
 
         // Force immediate non-blocking DOM paint for the profile card
-        document.getElementById('tg-user-name').innerText = displayName;
-        document.getElementById('tg-user-handle').innerText = handleName;
+        const nameNode = document.getElementById('tg-user-name');
+        const handleNode = document.getElementById('tg-user-handle');
+        if (nameNode) nameNode.innerText = displayName;
+        if (handleNode) handleNode.innerText = handleName;
         
         // Step 2: Kick off network tasks purely in the background
         this.syncSupabaseUser();
@@ -121,11 +127,12 @@ class SSCMaxVocabEngine {
         }
 
         try {
-            // 1. Upsert User logic (Ignores duplicate inserts gracefully)
+            // 1. Automatically create/upsert user on launch
             await supabaseClient.from('users').upsert({
                 telegram_id: appState.currentUser.id,
                 username: appState.currentUser.username,
                 first_name: appState.currentUser.name,
+                profile_photo: appState.currentUser.photo_url,
                 joined_date: new Date().toISOString()
             }, { onConflict: 'telegram_id' });
 
@@ -139,7 +146,7 @@ class SSCMaxVocabEngine {
             appState.isPremium = !!premiumCheck;
             this.updateHeaderBadge(appState.isPremium);
 
-            // 3. Load user Vault state
+            // 3. Load user Vault state reactively
             await this.fetchVaultData();
             
             // 4. Pre-fetch premium metadata if user is premium
@@ -445,22 +452,22 @@ class SSCMaxVocabEngine {
                 appState.bookmarkedWords.push(newWord);
                 this.triggerToast(`Saved "${wordKey}" to Vault!`);
                 
-                supabaseClient.from('vault').insert({
+                await supabaseClient.from('vault').insert({
                     telegram_id: appState.currentUser.id,
                     word: newWord.word,
                     meaning: newWord.meaning,
                     type: newWord.type
-                }).then(); 
+                }); 
             }
         } else {
             this.btnBookmarkCurrent.classList.remove('bookmarked');
             this.btnBookmarkCurrent.innerHTML = `<i class="fa-regular fa-bookmark"></i> Bookmark`;
             appState.bookmarkedWords = appState.bookmarkedWords.filter(w => w.word !== wordKey);
             
-            supabaseClient.from('vault').delete()
+            await supabaseClient.from('vault').delete()
                 .eq('telegram_id', appState.currentUser.id)
                 .eq('word', wordKey)
-                .eq('type', 'bookmarked').then();
+                .eq('type', 'bookmarked');
         }
     }
 
@@ -517,12 +524,12 @@ class SSCMaxVocabEngine {
             const newWeakWord = { word: wordKey, meaning: meaningText, type: 'weak' };
             appState.weakWords.push(newWeakWord);
             
-            supabaseClient.from('vault').insert({
+            await supabaseClient.from('vault').insert({
                 telegram_id: appState.currentUser.id,
                 word: newWeakWord.word,
                 meaning: newWeakWord.meaning,
                 type: newWeakWord.type
-            }).then();
+            });
         }
     }
 
@@ -547,6 +554,7 @@ class SSCMaxVocabEngine {
 
         if (appState.quiz.type === 'daily_premium' && appState.currentUser.id && supabaseClient) {
             try {
+                // Logs performance directly to live leaderboard table
                 await supabaseClient.from('leaderboard').insert({
                     telegram_id: appState.currentUser.id,
                     name: appState.currentUser.name,
