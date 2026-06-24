@@ -1,7 +1,8 @@
 /**
  * SSC MAX VOCAB - Supabase Production Client Engine
  * Features: Auto Telegram Verification, Supabase Backend integration, 
- * Server-side Ranks, Persistent Vault, and High-Performance Local Caching.
+ * Server-side Ranks, Persistent Vault, High-Performance Local Caching,
+ * and Secure Dynamic Command Center (Admin Portal).
  */
 
 // 1. SUPABASE INITIALIZATION (Fixed Duplicate Identifier Crash)
@@ -22,7 +23,7 @@ let appState = {
     isPremium: false,
     currentUser: { id: null, name: 'SSC Aspirant', username: '', photo_url: '' },
     currentView: 'dashboard',
-    activeVaultTab: 'weak', // Internal UI logic filtering remains intact
+    activeVaultTab: 'weak', 
     searchQuery: '',
     weakWords: [],       
     bookmarkedWords: [], 
@@ -52,7 +53,6 @@ class SSCMaxVocabEngine {
     constructor() {
         this.initDOMNodes();
         this.bindNavigationEvents();
-        // Step 1: Immediately render local Telegram UI context first
         this.initTelegramContext();
     }
 
@@ -78,7 +78,6 @@ class SSCMaxVocabEngine {
     initTelegramContext() {
         const tg = window.Telegram?.WebApp;
         
-        // Fallback or Initial generic UI values to prevent lock-up
         let userId = null;
         let displayName = 'SSC Aspirant';
         let handleName = 'Offline Mode';
@@ -103,41 +102,314 @@ class SSCMaxVocabEngine {
             }
         }
         
-        // Update state
         appState.currentUser.id = userId;
         appState.currentUser.name = displayName;
         appState.currentUser.username = handleName;
         appState.currentUser.photo_url = avatarUrl;
 
-        // Force immediate non-blocking DOM paint for the profile card
         const nameNode = document.getElementById('tg-user-name');
         const handleNode = document.getElementById('tg-user-handle');
         if (nameNode) nameNode.innerText = displayName;
         if (handleNode) handleNode.innerText = handleName;
         
-        // Step 2: Kick off network tasks purely in the background
+        // SECURE ADMIN GATE: Only display Admin panel to authorized Telegram ID
+        if (appState.currentUser.id === 7603262906 || appState.currentUser.id === '7603262906') {
+            this.buildAdminCommandCenter();
+        }
+
         this.syncSupabaseUser();
+    }
+
+    // --- SECURE ADMIN COMMAND CENTER (Injected dynamically for ID: 7603262906) ---
+    buildAdminCommandCenter() {
+        const dashboardView = document.getElementById('view-dashboard');
+        if (!dashboardView) return;
+
+        // 1. Inject subtle gear icon on dashboard
+        dashboardView.style.position = 'relative';
+        const gearBtn = document.createElement('div');
+        gearBtn.id = 'admin-portal-btn';
+        gearBtn.innerHTML = `⚙`;
+        gearBtn.style.cssText = `
+            position: absolute;
+            top: 16px;
+            right: 16px;
+            width: 34px;
+            height: 34px;
+            background: rgba(18, 22, 39, 0.85);
+            border: 1px solid var(--neon-cyan, #00f0ff);
+            box-shadow: 0 0 10px rgba(0, 240, 255, 0.4);
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: var(--neon-cyan, #00f0ff);
+            cursor: pointer;
+            z-index: 100;
+            font-size: 1.1rem;
+        `;
+        gearBtn.onclick = () => this.switchView('admin');
+        dashboardView.appendChild(gearBtn);
+
+        // 2. Inject Admin View Page into view-container
+        const adminView = document.createElement('div');
+        adminView.id = 'view-admin';
+        adminView.className = 'app-view';
+        adminView.innerHTML = `
+            <div class="p-3 pb-1">
+                <div class="d-flex align-items-center justify-content-between mb-3" style="display:flex; justify-content:space-between; align-items:center;">
+                    <h3 class="m-0" style="color:#ffd700; margin:0;">⚙ COMMAND CENTER</h3>
+                    <button style="background:#222; color:#fff; border:1px solid #555; padding:4px 10px; border-radius:6px;" onclick="app.switchView('dashboard')">Exit</button>
+                </div>
+                <div style="display:flex; gap:8px; overflow-x:auto; padding-bottom:10px; border-bottom:1px solid #333;">
+                    <button class="adm-pill active" style="background:var(--neon-cyan); color:#000; border:none; padding:6px 12px; border-radius:15px; font-weight:bold;" onclick="app.switchAdminTab('free', this)">Free Quiz</button>
+                    <button class="adm-pill" style="background:#222; color:#fff; border:1px solid #444; padding:6px 12px; border-radius:15px; font-weight:bold;" onclick="app.switchAdminTab('prem', this)">Premium Quiz</button>
+                    <button class="adm-pill" style="background:#222; color:#fff; border:1px solid #444; padding:6px 12px; border-radius:15px; font-weight:bold;" onclick="app.switchAdminTab('topic', this)">Topics</button>
+                    <button class="adm-pill" style="background:#222; color:#fff; border:1px solid #444; padding:6px 12px; border-radius:15px; font-weight:bold;" onclick="app.switchAdminTab('users', this)">Users</button>
+                </div>
+            </div>
+
+            <div class="p-3 pt-1" style="padding:15px; overflow-y:auto; max-height:calc(100vh - 150px);">
+                <div id="adm-sec-free" class="adm-sec block">
+                    <div class="glass-card" style="background:rgba(255,255,255,0.05); border:1px solid #333; padding:15px; border-radius:12px; margin-bottom:15px;">
+                        <h4 style="margin-top:0; color:#00f0ff;">Deploy Daily Free Quiz</h4>
+                        <label style="font-size:0.8rem; color:#aaa;">Quiz Date</label>
+                        <input type="date" id="adm-free-date" style="width:100%; background:#111; color:#fff; border:1px solid #444; padding:8px; border-radius:6px; margin-bottom:10px;" value="${new Date().toISOString().split('T')[0]}">
+                        <label style="font-size:0.8rem; color:#aaa;">Instructions</label>
+                        <input type="text" id="adm-free-inst" style="width:100%; background:#111; color:#fff; border:1px solid #444; padding:8px; border-radius:6px; margin-bottom:10px;" placeholder="e.g. Complete all 30 questions accurately.">
+                        <label style="font-size:0.8rem; color:#aaa;">Questions (Paste 30 Qs format)</label>
+                        <textarea id="adm-free-txt" rows="10" style="width:100%; background:#111; color:#fff; border:1px solid #444; padding:8px; border-radius:6px; margin-bottom:10px; font-family:monospace; font-size:0.85rem;" placeholder="1. Question text\nA. Option\nB. Option\nC. Option\nD. Option\nAnswer: A\nExplanation: Hindi meaning"></textarea>
+                        <button style="width:100%; background:linear-gradient(45deg, #00f0ff, #0072ff); color:#000; font-weight:bold; padding:10px; border:none; border-radius:8px;" onclick="app.publishAdminFreeQuiz()">🚀 PUBLISH FREE QUIZ</button>
+                    </div>
+                </div>
+
+                <div id="adm-sec-prem" class="adm-sec" style="display:none;">
+                    <div class="glass-card" style="background:rgba(255,255,255,0.05); border:1px solid #333; padding:15px; border-radius:12px; margin-bottom:15px;">
+                        <h4 style="margin-top:0; color:#ffd700;">Deploy Daily Premium Mix</h4>
+                        <label style="font-size:0.8rem; color:#aaa;">Quiz Date</label>
+                        <input type="date" id="adm-prem-date" style="width:100%; background:#111; color:#fff; border:1px solid #444; padding:8px; border-radius:6px; margin-bottom:10px;" value="${new Date().toISOString().split('T')[0]}">
+                        <label style="font-size:0.8rem; color:#aaa;">Questions (Paste 100 Qs format)</label>
+                        <textarea id="adm-prem-txt" rows="10" style="width:100%; background:#111; color:#fff; border:1px solid #444; padding:8px; border-radius:6px; margin-bottom:10px; font-family:monospace; font-size:0.85rem;" placeholder="1. Question text\nA. Option..."></textarea>
+                        <button style="width:100%; background:linear-gradient(45deg, #ffd700, #ffa500); color:#000; font-weight:bold; padding:10px; border:none; border-radius:8px;" onclick="app.publishAdminPremiumQuiz()">👑 PUBLISH PREMIUM MIX</button>
+                    </div>
+                </div>
+
+                <div id="adm-sec-topic" class="adm-sec" style="display:none;">
+                    <div class="glass-card" style="background:rgba(255,255,255,0.05); border:1px solid #333; padding:15px; border-radius:12px; margin-bottom:15px;">
+                        <h4 style="margin-top:0; color:#00f0ff;">Deploy Topic Questions</h4>
+                        <label style="font-size:0.8rem; color:#aaa;">Select Category</label>
+                        <select id="adm-topic-sel" style="width:100%; background:#111; color:#fff; border:1px solid #444; padding:8px; border-radius:6px; margin-bottom:10px;">
+                            <option value="One Word Substitution">One Word Substitution</option>
+                            <option value="Idioms & Phrases">Idioms & Phrases</option>
+                            <option value="Synonyms">Synonyms</option>
+                            <option value="Spelling">Spelling</option>
+                            <option value="Antonyms">Antonyms</option>
+                            <option value="Homophones">Homophones</option>
+                        </select>
+                        <label style="font-size:0.8rem; color:#aaa;">Questions (Standard format)</label>
+                        <textarea id="adm-topic-txt" rows="10" style="width:100%; background:#111; color:#fff; border:1px solid #444; padding:8px; border-radius:6px; margin-bottom:10px; font-family:monospace; font-size:0.85rem;" placeholder="1. Question text\nA. Option..."></textarea>
+                        <button style="width:100%; background:linear-gradient(45deg, #00f0ff, #0072ff); color:#000; font-weight:bold; padding:10px; border:none; border-radius:8px;" onclick="app.publishAdminTopicDeck()">📚 PUBLISH TOPIC DECK</button>
+                    </div>
+                </div>
+
+                <div id="adm-sec-users" class="adm-sec" style="display:none;">
+                    <div class="glass-card" style="background:rgba(255,255,255,0.05); border:1px solid #333; padding:15px; border-radius:12px; margin-bottom:15px;">
+                        <h4 style="margin-top:0; color:#ffd700;">Premium Access Manager</h4>
+                        <label style="font-size:0.8rem; color:#aaa;">Target Telegram ID</label>
+                        <input type="number" id="adm-user-tgid" style="width:100%; background:#111; color:#fff; border:1px solid #444; padding:10px; border-radius:6px; margin-bottom:15px;" placeholder="e.g. 123456789">
+                        <div style="display:flex; gap:10px;">
+                            <button style="flex:1; background:linear-gradient(45deg, #00f0ff, #0072ff); color:#000; font-weight:bold; padding:10px; border:none; border-radius:8px;" onclick="app.adminGrantPremium()">Grant Premium</button>
+                            <button style="flex:1; background:#dc3545; color:#fff; font-weight:bold; padding:10px; border:none; border-radius:8px;" onclick="app.adminRevokePremium()">Remove</button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        `;
+        
+        const container = document.getElementById('view-container') || document.body;
+        container.appendChild(adminView);
+    }
+
+    switchAdminTab(secId, btnElem) {
+        document.querySelectorAll('.adm-sec').forEach(s => s.style.display = 'none');
+        document.querySelectorAll('.adm-pill').forEach(b => {
+            b.style.background = '#222';
+            b.style.color = '#fff';
+            b.style.border = '1px solid #444';
+        });
+        document.getElementById(`adm-sec-${secId}`).style.display = 'block';
+        btnElem.style.background = secId === 'prem' || secId === 'users' ? '#ffd700' : 'var(--neon-cyan)';
+        btnElem.style.color = '#000';
+        btnElem.style.border = 'none';
+        this.triggerHaptic('select');
+    }
+
+    // --- QUESTION BLOCK PARSER ---
+    parseAdminQuestions(rawText, quizType, categoryName) {
+        const blocks = rawText.replace(/\r\n/g, '\n').split(/\n(?=\d+[\.\)])/);
+        const results = [];
+
+        for (let block of blocks) {
+            const lines = block.trim().split('\n').map(l => l.trim()).filter(Boolean);
+            if (lines.length < 6) continue;
+
+            const qText = lines[0].replace(/^\d+[\.\)]\s*/, '').trim();
+            const options = [];
+            let ansLetter = 'A';
+            let explanationText = '';
+
+            for (let i = 1; i < lines.length; i++) {
+                const line = lines[i];
+                if (/^[A-D][\.\)]\s*/i.test(line)) {
+                    options.push(line.replace(/^[A-D][\.\)]\s*/i, '').trim());
+                } else if (/^Answer:\s*/i.test(line)) {
+                    ansLetter = line.replace(/^Answer:\s*/i, '').trim().toUpperCase().charAt(0);
+                } else if (/^Explanation:\s*/i.test(line)) {
+                    explanationText = line.replace(/^Explanation:\s*/i, '').trim();
+                }
+            }
+
+            if (options.length >= 4 && qText) {
+                const mapLetter = { 'A': 0, 'B': 1, 'C': 2, 'D': 3 };
+                const correctIdx = mapLetter[ansLetter] !== undefined ? mapLetter[ansLetter] : 0;
+
+                const explArray = ['', '', '', ''];
+                explArray[correctIdx] = explanationText;
+
+                results.push({
+                    type: quizType,
+                    category: categoryName,
+                    text: qText,
+                    options: options.slice(0, 4),
+                    correctIndex: correctIdx,
+                    explanations: explArray
+                });
+            }
+        }
+        return results;
+    }
+
+    // --- ADMIN BACKEND DEPLOY METHODS ---
+    async publishAdminFreeQuiz() {
+        const dateVal = document.getElementById('adm-free-date').value;
+        const instVal = document.getElementById('adm-free-inst').value || 'Complete all vocabulary questions accurately.';
+        const textVal = document.getElementById('adm-free-txt').value;
+
+        if (!textVal.trim()) return alert("Please paste questions first.");
+        const parsed = this.parseAdminQuestions(textVal, 'free', 'Daily Free');
+        if (parsed.length === 0) return alert("Could not parse any valid questions. Please check the numbering/format.");
+
+        try {
+            await supabaseClient.from('quizzes').upsert({
+                title: `Daily Free Quiz - ${dateVal}`,
+                type: 'free',
+                date: dateVal,
+                instructions: instVal
+            }, { onConflict: 'title' });
+
+            await supabaseClient.from('questions').insert(parsed);
+            alert(`Successfully deployed Free Quiz! Parsed & uploaded ${parsed.length} questions.`);
+            document.getElementById('adm-free-txt').value = '';
+        } catch(e) {
+            alert("Deploy Error: " + e.message);
+        }
+    }
+
+    async publishAdminPremiumQuiz() {
+        const dateVal = document.getElementById('adm-prem-date').value;
+        const textVal = document.getElementById('adm-prem-txt').value;
+
+        if (!textVal.trim()) return alert("Please paste questions first.");
+        const parsed = this.parseAdminQuestions(textVal, 'daily_premium', 'Premium Mix');
+        if (parsed.length === 0) return alert("Could not parse any valid questions.");
+
+        try {
+            await supabaseClient.from('quizzes').upsert({
+                title: `Daily Premium Mix - ${dateVal}`,
+                type: 'daily_premium',
+                date: dateVal
+            }, { onConflict: 'title' });
+
+            await supabaseClient.from('questions').insert(parsed);
+            alert(`Successfully deployed Premium Mix! Uploaded ${parsed.length} questions.`);
+            document.getElementById('adm-prem-txt').value = '';
+        } catch(e) {
+            alert("Deploy Error: " + e.message);
+        }
+    }
+
+    async publishAdminTopicDeck() {
+        const topicVal = document.getElementById('adm-topic-sel').value;
+        const textVal = document.getElementById('adm-topic-txt').value;
+
+        if (!textVal.trim()) return alert("Please paste questions first.");
+        const parsed = this.parseAdminQuestions(textVal, 'topic', topicVal);
+        if (parsed.length === 0) return alert("Could not parse any valid questions.");
+
+        try {
+            await supabaseClient.from('quizzes').upsert({
+                title: topicVal,
+                type: 'topic',
+                date: new Date().toISOString().split('T')[0]
+            }, { onConflict: 'title' });
+
+            await supabaseClient.from('questions').insert(parsed);
+            alert(`Successfully added ${parsed.length} questions to ${topicVal}!`);
+            document.getElementById('adm-topic-txt').value = '';
+        } catch(e) {
+            alert("Deploy Error: " + e.message);
+        }
+    }
+
+    async adminGrantPremium() {
+        const targetId = document.getElementById('adm-user-tgid').value.trim();
+        if (!targetId) return alert("Enter a valid Telegram ID.");
+
+        try {
+            await supabaseClient.from('premium_users').upsert({
+                telegram_id: parseInt(targetId),
+                added_at: new Date().toISOString()
+            }, { onConflict: 'telegram_id' });
+
+            await supabaseClient.from('users').update({ premium: true }).eq('telegram_id', parseInt(targetId));
+            alert(`Successfully granted Premium Access to ID: ${targetId}`);
+            document.getElementById('adm-user-tgid').value = '';
+        } catch(e) {
+            alert("Manager Error: " + e.message);
+        }
+    }
+
+    async adminRevokePremium() {
+        const targetId = document.getElementById('adm-user-tgid').value.trim();
+        if (!targetId) return alert("Enter a valid Telegram ID.");
+
+        try {
+            await supabaseClient.from('premium_users').delete().eq('telegram_id', parseInt(targetId));
+            await supabaseClient.from('users').update({ premium: false }).eq('telegram_id', parseInt(targetId));
+            alert(`Successfully revoked Premium Access from ID: ${targetId}`);
+            document.getElementById('adm-user-tgid').value = '';
+        } catch(e) {
+            alert("Manager Error: " + e.message);
+        }
     }
 
     // --- SUPABASE BACKEND SYNC (Using Valid Columns Exclusively) ---
     async syncSupabaseUser() {
         if (!supabaseClient || !appState.currentUser.id) {
-            this.updateHeaderBadge(false); // Default back to free state gracefully
+            this.updateHeaderBadge(false); 
             return;
         }
 
         try {
-            // 1. Automatically create/upsert user on launch matching schema exactly
             await supabaseClient.from('users').upsert({
                 telegram_id: appState.currentUser.id,
                 username: appState.currentUser.username,
                 first_name: appState.currentUser.name,
                 photo_url: appState.currentUser.photo_url,
-                premium: false, // Default tracking state configuration
+                premium: false, 
                 joined_at: new Date().toISOString()
             }, { onConflict: 'telegram_id' });
 
-            // 2. Determine Premium Status purely from configured premium_users table
             const { data: premiumCheck } = await supabaseClient
                 .from('premium_users')
                 .select('telegram_id')
@@ -146,15 +418,11 @@ class SSCMaxVocabEngine {
 
             appState.isPremium = !!premiumCheck;
             this.updateHeaderBadge(appState.isPremium);
-
-            // 3. Load user Vault state reactively
             await this.fetchVaultData();
             
-            // 4. Pre-fetch premium metadata if user is premium
             if (appState.isPremium) {
                 this.fetchPremiumMetadata();
             }
-
         } catch (error) {
             console.error("Backend Sync Error:", error);
             this.updateHeaderBadge(false);
@@ -238,13 +506,10 @@ class SSCMaxVocabEngine {
     async fetchPremiumMetadata() {
         if (!supabaseClient) return;
         try {
-            // Fetch topics
             if(!appState.cache.topics) {
                 const { data: topics } = await supabaseClient.from('quizzes').select('*').eq('type', 'topic');
                 appState.cache.topics = topics || [];
             }
-            
-            // Fetch archives
             if(!appState.cache.archives) {
                 const { data: archives } = await supabaseClient.from('quizzes').select('*').eq('type', 'daily_premium').order('date', { ascending: false }).limit(10);
                 appState.cache.archives = archives || [];
@@ -321,9 +586,7 @@ class SSCMaxVocabEngine {
         
         try {
             appState.quiz.active = true;
-            
             let targetCount = appState.quiz.type === 'daily_premium' ? 100 : (appState.quiz.type === 'topic' ? 20 : 30);
-            
             appState.quiz.questions = await this.fetchQuestionsFromDB(appState.quiz.type, targetCount);
             
             if(appState.quiz.questions.length === 0) {
@@ -434,7 +697,7 @@ class SSCMaxVocabEngine {
         `).join('');
     }
 
-    // --- LIVE VAULT SYNC (Matches Vault Table Schema Strictly) ---
+    // --- LIVE VAULT SYNC ---
     async toggleBookmarkCurrentQuestion() {
         if(!supabaseClient || !appState.currentUser.id) return;
 
@@ -449,12 +712,10 @@ class SSCMaxVocabEngine {
             this.triggerHaptic('select');
 
             if (!appState.bookmarkedWords.find(w => w.word === wordKey)) {
-                // UI references packed inside local state structure safely
                 const newWord = { word: wordKey, category: 'bookmarked', meaning: meaningText };
                 appState.bookmarkedWords.push(newWord);
                 this.triggerToast(`Saved "${wordKey}" to Vault!`);
                 
-                // Matches exact vault table layout configuration
                 await supabaseClient.from('vault').insert({
                     telegram_id: appState.currentUser.id,
                     word: newWord.word,
@@ -557,7 +818,6 @@ class SSCMaxVocabEngine {
 
         if (appState.quiz.type === 'daily_premium' && appState.currentUser.id && supabaseClient) {
             try {
-                // Logs performance parameters directly to the live leaderboard interface
                 await supabaseClient.from('leaderboard').insert({
                     telegram_id: appState.currentUser.id,
                     name: appState.currentUser.name,
@@ -587,7 +847,7 @@ class SSCMaxVocabEngine {
         this.switchView('dashboard');
     }
 
-    // --- VAULT RENDERER (Extracts Valid Elements Safely) ---
+    // --- VAULT RENDERER ---
     async fetchVaultData() {
         if(!supabaseClient || !appState.currentUser.id) return;
         const { data, error } = await supabaseClient
@@ -596,7 +856,6 @@ class SSCMaxVocabEngine {
             .eq('telegram_id', appState.currentUser.id);
 
         if(!error && data) {
-            // Reconstruct meaning internally or map cleanly to fallback layout configurations
             appState.weakWords = data.filter(v => v.category === 'weak').map(v => ({ word: v.word, category: v.category, meaning: 'Review required vocabulary module context.' }));
             appState.bookmarkedWords = data.filter(v => v.category === 'bookmarked').map(v => ({ word: v.word, category: v.category, meaning: 'Saved vocabulary item references.' }));
         }
@@ -707,7 +966,6 @@ class SSCMaxVocabEngine {
 
         try {
             const todayISO = new Date().toISOString().split('T')[0];
-            
             if(!appState.cache.leaderboard) {
                 const { data } = await supabaseClient
                     .from('leaderboard')
