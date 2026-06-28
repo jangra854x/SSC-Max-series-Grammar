@@ -1,11 +1,9 @@
 /**
- * SSC MAX VOCAB - Supabase Production Client Engine
- * Features: Auto Telegram Verification, Supabase Backend integration, 
- * Server-side Ranks, Persistent Vault, High-Performance Local Caching,
- * and Secure Dynamic Command Center (Admin Portal).
+ * SSC MAX VOCAB — Client Engine v2
+ * Updated: Admin Panel, Topic Sets, Premium Access, Rank Fix, 406 Fix
  */
 
-// 1. SUPABASE INITIALIZATION (Fixed Duplicate Identifier Crash)
+// ── SUPABASE INIT ──────────────────────────────────────────────
 const SUPABASE_URL = 'https://tbiktjhwdlwzrhwursxk.supabase.co';
 const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InRiaWt0amh3ZGx3enJod3Vyc3hrIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODIyNzQ2MjYsImV4cCI6MjA5Nzg1MDYyNn0.aukjIOzRatuQCo_UgUir5WZX4uS2_CQ2t760VgRV-MA';
 
@@ -14,844 +12,717 @@ try {
     if (window.supabase && typeof window.supabase.createClient === 'function') {
         supabaseClient = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
     }
-} catch (err) {
-    console.error("Supabase initialization failed safely:", err);
-}
+} catch (err) { console.error('Supabase init failed:', err); }
 
-// 2. Client Application Dynamic State & Cache
+// ── FIXED 6 TOPICS ─────────────────────────────────────────────
+const TOPICS = [
+    'One Word Substitution',
+    'Idioms & Phrases',
+    'Synonyms',
+    'Spelling',
+    'Antonyms',
+    'Homophones'
+];
+
+// ── APP STATE ──────────────────────────────────────────────────
 let appState = {
     isPremium: false,
+    isAdmin: false,
     currentUser: { id: null, name: 'SSC Aspirant', username: '', photo_url: '' },
     currentView: 'dashboard',
-    activeVaultTab: 'weak', 
+    activeVaultTab: 'weak',
     searchQuery: '',
-    weakWords: [],       
-    bookmarkedWords: [], 
+    weakWords: [],
+    bookmarkedWords: [],
+    selectedTopic: null,
     quiz: {
-        active: false,
-        type: 'free', 
-        title: '',
-        questions: [],
-        currentIndex: 0,
-        selectedOption: null,
-        isBookmarked: false,
-        correctCount: 0,
-        wrongCount: 0,
-        timeSeconds: 0,
-        stopwatchInterval: null
+        active: false, type: 'free', title: '', quizCategory: null,
+        isPremiumLocked: false, questions: [], currentIndex: 0,
+        selectedOption: null, isBookmarked: false,
+        correctCount: 0, wrongCount: 0, timeSeconds: 0, stopwatchInterval: null
     },
     cache: {
-        topics: null,
-        archives: null,
-        questions: {},
-        leaderboard: null
+        activePremiumQuiz: null, archives: null,
+        topicSets: {}, questions: {}, leaderboard: null
     }
 };
 
-// 3. Core Engine Controller
+// ── ENGINE CLASS ───────────────────────────────────────────────
 class SSCMaxVocabEngine {
+
     constructor() {
         this.initDOMNodes();
         this.bindNavigationEvents();
         this.initTelegramContext();
     }
 
-    // --- Helper Utility for Safe DOM Updates ---
-    safeSetText(id, text) {
-        const el = document.getElementById(id);
-        if (el) el.innerText = text;
-    }
-
+    // ── DOM SETUP ──────────────────────────────────────────────
     initDOMNodes() {
-        this.viewContainer = document.getElementById('view-container');
-        this.navTabs = document.querySelectorAll('.nav-tab');
-        this.premiumTopicsList = document.getElementById('premium-topics-list');
-        this.premiumArchivesContainer = document.getElementById('premium-archives-container');
-        this.vaultItemsContainer = document.getElementById('vault-items-container');
-        this.leaderboardContainer = document.getElementById('leaderboard-master-container');
-        
-        // Quiz Sandbox Bindings
-        this.quizFrame = document.getElementById('question-card-frame');
-        this.optionsContainer = document.getElementById('question-options-container');
-        this.btnNextQ = document.getElementById('btn-next-q');
-        this.btnBookmarkCurrent = document.getElementById('btn-bookmark-current');
-        this.btnStartQuizConfirm = document.getElementById('btn-confirm-start-quiz');
-
-        // Safe Event Bindings
-        if (this.btnNextQ) {
-            this.btnNextQ.addEventListener('click', () => this.advanceQuestion());
-        }
-        if (this.btnStartQuizConfirm) {
-            this.btnStartQuizConfirm.addEventListener('click', () => this.executeQuizInstance());
-        }
+        this.premiumTopicsList      = document.getElementById('premium-topics-list');
+        this.premiumArchivesEl      = document.getElementById('premium-archives-container');
+        this.vaultItemsContainer    = document.getElementById('vault-items-container');
+        this.leaderboardContainer   = document.getElementById('leaderboard-master-container');
+        this.quizFrame              = document.getElementById('question-card-frame');
+        this.optionsContainer       = document.getElementById('question-options-container');
+        this.btnNextQ               = document.getElementById('btn-next-q');
+        this.btnBookmarkCurrent     = document.getElementById('btn-bookmark-current');
+        this.btnStartQuiz           = document.getElementById('btn-confirm-start-quiz');
+        this.btnNextQ.addEventListener('click', () => this.advanceQuestion());
+        this.btnStartQuiz.addEventListener('click', () => this.handleStartQuizClick());
     }
 
+    // ── TELEGRAM INIT ──────────────────────────────────────────
     initTelegramContext() {
         const tg = window.Telegram?.WebApp;
-        
-        let userId = null;
-        let displayName = 'SSC Aspirant';
-        let handleName = 'Offline Mode';
-        let avatarUrl = '';
+        let userId = null, displayName = 'SSC Aspirant', handleName = 'Offline Mode', avatarUrl = '';
 
         if (tg) {
-            tg.ready();
-            tg.expand();
+            tg.ready(); tg.expand();
             if (tg.disableVerticalSwipes) tg.disableVerticalSwipes();
-            
             const user = tg.initDataUnsafe?.user;
             if (user) {
-                userId = user.id;
+                userId      = user.id;
                 displayName = `${user.first_name} ${user.last_name || ''}`.trim();
-                handleName = user.username ? `@${user.username}` : `ID: ${user.id}`;
-                avatarUrl = user.photo_url || '';
-                
-                if (avatarUrl) {
-                    const avatarNode = document.getElementById('tg-user-avatar');
-                    if (avatarNode) avatarNode.src = avatarUrl;
-                }
+                handleName  = user.username ? `@${user.username}` : `ID: ${user.id}`;
+                avatarUrl   = user.photo_url || '';
+                if (avatarUrl) { const av = document.getElementById('tg-user-avatar'); if (av) av.src = avatarUrl; }
             }
         }
-        
-        appState.currentUser.id = userId;
-        appState.currentUser.name = displayName;
-        appState.currentUser.username = handleName;
-        appState.currentUser.photo_url = avatarUrl;
 
-        this.safeSetText('tg-user-name', displayName);
-        this.safeSetText('tg-user-handle', handleName);
-        
-        // SECURE ADMIN GATE: Only display Admin panel to authorized Telegram ID
-        if (appState.currentUser.id === 7603262906 || appState.currentUser.id === '7603262906') {
-            this.buildAdminCommandCenter();
+        appState.currentUser = { id: userId, name: displayName, username: handleName, photo_url: avatarUrl };
+        const n = document.getElementById('tg-user-name');   if (n) n.innerText = displayName;
+        const h = document.getElementById('tg-user-handle'); if (h) h.innerText = handleName;
+
+        // Admin ID updated to: 7990149560
+        if (userId === 7990149560 || userId === '7990149560') {
+            appState.isAdmin = true;
+            this.buildAdminPanel();
         }
 
         this.syncSupabaseUser();
     }
 
-    // --- SECURE ADMIN COMMAND CENTER (Injected dynamically for ID: 7603262906) ---
-    buildAdminCommandCenter() {
-        const dashboardView = document.getElementById('view-dashboard');
-        if (!dashboardView) return;
+    // ── ADMIN PANEL (Secure — ID: 7990149560) ──────────────────
+    buildAdminPanel() {
+        // Add 4th tab to bottom nav
+        const navBar = document.querySelector('.bottom-nav-bar');
+        if (navBar) {
+            navBar.classList.add('admin-nav');
+            const tab = document.createElement('button');
+            tab.className = 'nav-tab';
+            tab.setAttribute('data-target', 'admin');
+            tab.innerHTML = `<i class="fa-solid fa-shield-halved"></i><span>Admin</span>`;
+            navBar.appendChild(tab);
+            this.bindNavigationEvents(); // rebind to include new tab
+        }
 
-        // 1. Inject subtle gear icon on dashboard
-        dashboardView.style.position = 'relative';
-        const gearBtn = document.createElement('div');
-        gearBtn.id = 'admin-portal-btn';
-        gearBtn.innerHTML = `⚙`;
-        gearBtn.style.cssText = `
-            position: absolute;
-            top: 16px;
-            right: 16px;
-            width: 34px;
-            height: 34px;
-            background: rgba(18, 22, 39, 0.85);
-            border: 1px solid var(--neon-cyan, #00f0ff);
-            box-shadow: 0 0 10px rgba(0, 240, 255, 0.4);
-            border-radius: 50%;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            color: var(--neon-cyan, #00f0ff);
-            cursor: pointer;
-            z-index: 100;
-            font-size: 1.1rem;
-        `;
-        gearBtn.onclick = () => this.switchView('admin');
-        dashboardView.appendChild(gearBtn);
-
-        // 2. Inject Admin View Page into view-container
+        const today = new Date().toISOString().split('T')[0];
         const adminView = document.createElement('div');
         adminView.id = 'view-admin';
         adminView.className = 'app-view';
         adminView.innerHTML = `
-            <div class="p-3 pb-1">
-                <div class="d-flex align-items-center justify-content-between mb-3" style="display:flex; justify-content:space-between; align-items:center;">
-                    <h3 class="m-0" style="color:#ffd700; margin:0;">⚙ COMMAND CENTER</h3>
-                    <button style="background:#222; color:#fff; border:1px solid #555; padding:4px 10px; border-radius:6px;" onclick="app.switchView('dashboard')">Exit</button>
-                </div>
-                <div style="display:flex; gap:8px; overflow-x:auto; padding-bottom:10px; border-bottom:1px solid #333;">
-                    <button class="adm-pill active" style="background:var(--neon-cyan); color:#000; border:none; padding:6px 12px; border-radius:15px; font-weight:bold;" onclick="app.switchAdminTab('free', this)">Free Quiz</button>
-                    <button class="adm-pill" style="background:#222; color:#fff; border:1px solid #444; padding:6px 12px; border-radius:15px; font-weight:bold;" onclick="app.switchAdminTab('prem', this)">Premium Quiz</button>
-                    <button class="adm-pill" style="background:#222; color:#fff; border:1px solid #444; padding:6px 12px; border-radius:15px; font-weight:bold;" onclick="app.switchAdminTab('topic', this)">Topics</button>
-                    <button class="adm-pill" style="background:#222; color:#fff; border:1px solid #444; padding:6px 12px; border-radius:15px; font-weight:bold;" onclick="app.switchAdminTab('users', this)">Users</button>
+            <div class="screen-header">
+                <h2>Admin Panel</h2><p>Secure Command Interface</p>
+            </div>
+            <div style="display:flex;gap:8px;overflow-x:auto;padding-bottom:10px;margin-bottom:16px;scrollbar-width:none;">
+                <button class="adm-pill active" onclick="app.switchAdminTab('free',this)">Free Quiz</button>
+                <button class="adm-pill" onclick="app.switchAdminTab('prem',this)">Premium Mix</button>
+                <button class="adm-pill" onclick="app.switchAdminTab('topic',this)">Topics</button>
+                <button class="adm-pill" onclick="app.switchAdminTab('users',this)">Users</button>
+            </div>
+
+            <div id="adm-sec-free" class="adm-sec">
+                <div class="glass-card mb-3">
+                    <h4 style="color:var(--neon-cyan);margin-bottom:14px;">Deploy Daily Free Quiz</h4>
+                    <label class="adm-label">Quiz Date</label>
+                    <input type="date" id="adm-free-date" class="adm-input" value="${today}">
+                    <label class="adm-label">Instructions</label>
+                    <input type="text" id="adm-free-inst" class="adm-input" placeholder="Complete all 30 questions accurately.">
+                    <label class="adm-label">Questions (30 Qs)</label>
+                    <textarea id="adm-free-txt" class="adm-textarea" rows="8" placeholder="1. Question\nA. Opt\nB. Opt\nC. Opt\nD. Opt\nAnswer: A\nExplanation: Meaning"></textarea>
+                    <button class="adm-btn-cyan w-100 mt-3" onclick="app.publishAdminFreeQuiz()">🚀 PUBLISH FREE QUIZ</button>
                 </div>
             </div>
 
-            <div class="p-3 pt-1" style="padding:15px; overflow-y:auto; max-height:calc(100vh - 150px);">
-                <div id="adm-sec-free" class="adm-sec block">
-                    <div class="glass-card" style="background:rgba(255,255,255,0.05); border:1px solid #333; padding:15px; border-radius:12px; margin-bottom:15px;">
-                        <h4 style="margin-top:0; color:#00f0ff;">Deploy Daily Free Quiz</h4>
-                        <label style="font-size:0.8rem; color:#aaa;">Quiz Date</label>
-                        <input type="date" id="adm-free-date" style="width:100%; background:#111; color:#fff; border:1px solid #444; padding:8px; border-radius:6px; margin-bottom:10px;" value="${new Date().toISOString().split('T')[0]}">
-                        <label style="font-size:0.8rem; color:#aaa;">Instructions</label>
-                        <input type="text" id="adm-free-inst" style="width:100%; background:#111; color:#fff; border:1px solid #444; padding:8px; border-radius:6px; margin-bottom:10px;" placeholder="e.g. Complete all 30 questions accurately.">
-                        <label style="font-size:0.8rem; color:#aaa;">Questions (Paste 30 Qs format)</label>
-                        <textarea id="adm-free-txt" rows="10" style="width:100%; background:#111; color:#fff; border:1px solid #444; padding:8px; border-radius:6px; margin-bottom:10px; font-family:monospace; font-size:0.85rem;" placeholder="1. Question text\nA. Option\nB. Option\nC. Option\nD. Option\nAnswer: A\nExplanation: Hindi meaning"></textarea>
-                        <button style="width:100%; background:linear-gradient(45deg, #00f0ff, #0072ff); color:#000; font-weight:bold; padding:10px; border:none; border-radius:8px;" onclick="app.publishAdminFreeQuiz()">🚀 PUBLISH FREE QUIZ</button>
-                    </div>
-                </div>
-
-                <div id="adm-sec-prem" class="adm-sec" style="display:none;">
-                    <div class="glass-card" style="background:rgba(255,255,255,0.05); border:1px solid #333; padding:15px; border-radius:12px; margin-bottom:15px;">
-                        <h4 style="margin-top:0; color:#ffd700;">Deploy Daily Premium Mix</h4>
-                        <label style="font-size:0.8rem; color:#aaa;">Quiz Date</label>
-                        <input type="date" id="adm-prem-date" style="width:100%; background:#111; color:#fff; border:1px solid #444; padding:8px; border-radius:6px; margin-bottom:10px;" value="${new Date().toISOString().split('T')[0]}">
-                        <label style="font-size:0.8rem; color:#aaa;">Questions (Paste 100 Qs format)</label>
-                        <textarea id="adm-prem-txt" rows="10" style="width:100%; background:#111; color:#fff; border:1px solid #444; padding:8px; border-radius:6px; margin-bottom:10px; font-family:monospace; font-size:0.85rem;" placeholder="1. Question text\nA. Option..."></textarea>
-                        <button style="width:100%; background:linear-gradient(45deg, #ffd700, #ffa500); color:#000; font-weight:bold; padding:10px; border:none; border-radius:8px;" onclick="app.publishAdminPremiumQuiz()">👑 PUBLISH PREMIUM MIX</button>
-                    </div>
-                </div>
-
-                <div id="adm-sec-topic" class="adm-sec" style="display:none;">
-                    <div class="glass-card" style="background:rgba(255,255,255,0.05); border:1px solid #333; padding:15px; border-radius:12px; margin-bottom:15px;">
-                        <h4 style="margin-top:0; color:#00f0ff;">Deploy Topic Questions</h4>
-                        <label style="font-size:0.8rem; color:#aaa;">Select Category</label>
-                        <select id="adm-topic-sel" style="width:100%; background:#111; color:#fff; border:1px solid #444; padding:8px; border-radius:6px; margin-bottom:10px;">
-                            <option value="One Word Substitution">One Word Substitution</option>
-                            <option value="Idioms & Phrases">Idioms & Phrases</option>
-                            <option value="Synonyms">Synonyms</option>
-                            <option value="Spelling">Spelling</option>
-                            <option value="Antonyms">Antonyms</option>
-                            <option value="Homophones">Homophones</option>
-                        </select>
-                        <label style="font-size:0.8rem; color:#aaa;">Questions (Standard format)</label>
-                        <textarea id="adm-topic-txt" rows="10" style="width:100%; background:#111; color:#fff; border:1px solid #444; padding:8px; border-radius:6px; margin-bottom:10px; font-family:monospace; font-size:0.85rem;" placeholder="1. Question text\nA. Option..."></textarea>
-                        <button style="width:100%; background:linear-gradient(45deg, #00f0ff, #0072ff); color:#000; font-weight:bold; padding:10px; border:none; border-radius:8px;" onclick="app.publishAdminTopicDeck()">📚 PUBLISH TOPIC DECK</button>
-                    </div>
-                </div>
-
-                <div id="adm-sec-users" class="adm-sec" style="display:none;">
-                    <div class="glass-card" style="background:rgba(255,255,255,0.05); border:1px solid #333; padding:15px; border-radius:12px; margin-bottom:15px;">
-                        <h4 style="margin-top:0; color:#ffd700;">Premium Access Manager</h4>
-                        <label style="font-size:0.8rem; color:#aaa;">Target Telegram ID</label>
-                        <input type="number" id="adm-user-tgid" style="width:100%; background:#111; color:#fff; border:1px solid #444; padding:10px; border-radius:6px; margin-bottom:15px;" placeholder="e.g. 123456789">
-                        <div style="display:flex; gap:10px;">
-                            <button style="flex:1; background:linear-gradient(45deg, #00f0ff, #0072ff); color:#000; font-weight:bold; padding:10px; border:none; border-radius:8px;" onclick="app.adminGrantPremium()">Grant Premium</button>
-                            <button style="flex:1; background:#dc3545; color:#fff; font-weight:bold; padding:10px; border:none; border-radius:8px;" onclick="app.adminRevokePremium()">Remove</button>
-                        </div>
-                    </div>
+            <div id="adm-sec-prem" class="adm-sec" style="display:none;">
+                <div class="glass-card mb-3">
+                    <h4 style="color:var(--gold-premium);margin-bottom:14px;">Deploy Daily Premium Mix</h4>
+                    <label class="adm-label">Quiz Date</label>
+                    <input type="date" id="adm-prem-date" class="adm-input" value="${today}">
+                    <label class="adm-label">Questions (100 Qs)</label>
+                    <textarea id="adm-prem-txt" class="adm-textarea" rows="8" placeholder="1. Question\nA. Opt..."></textarea>
+                    <button class="adm-btn-gold w-100 mt-3" onclick="app.publishAdminPremiumQuiz()">👑 PUBLISH PREMIUM MIX</button>
                 </div>
             </div>
-        `;
-        
-        const container = document.getElementById('view-container') || document.body;
-        container.appendChild(adminView);
+
+            <div id="adm-sec-topic" class="adm-sec" style="display:none;">
+                <div class="glass-card mb-3">
+                    <h4 style="color:var(--neon-cyan);margin-bottom:14px;">Deploy Topic Set</h4>
+                    <label class="adm-label">Topic</label>
+                    <select id="adm-topic-sel" class="adm-input">
+                        ${TOPICS.map(t => `<option value="${t}">${t}</option>`).join('')}
+                    </select>
+                    <label class="adm-label">Questions (20 Qs per set)</label>
+                    <textarea id="adm-topic-txt" class="adm-textarea" rows="8" placeholder="1. Question\nA. Opt..."></textarea>
+                    <button class="adm-btn-cyan w-100 mt-3" onclick="app.publishAdminTopicDeck()">📚 PUBLISH TOPIC SET</button>
+                </div>
+            </div>
+
+            <div id="adm-sec-users" class="adm-sec" style="display:none;">
+                <div class="glass-card mb-3">
+                    <h4 style="color:var(--gold-premium);margin-bottom:14px;">Grant / Revoke Access</h4>
+                    <label class="adm-label">Telegram ID</label>
+                    <input type="number" id="adm-user-tgid" class="adm-input" placeholder="e.g. 123456789">
+                    <div style="display:flex;gap:10px;margin-top:12px;">
+                        <button class="adm-btn-cyan" style="flex:1;" onclick="app.adminGrantPremium()">✅ Grant</button>
+                        <button class="adm-btn-red" style="flex:1;" onclick="app.adminRevokePremium()">❌ Revoke</button>
+                    </div>
+                </div>
+                <div class="glass-card">
+                    <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:14px;">
+                        <h4 style="color:var(--gold-premium);">Premium Members</h4>
+                        <button class="adm-btn-cyan" style="padding:6px 12px;font-size:0.72rem;" onclick="app.loadPremiumUsersList()">↻ Refresh</button>
+                    </div>
+                    <div id="adm-premium-users-list"><div class="text-center text-muted p-3"><i class="fa-solid fa-spinner fa-spin"></i></div></div>
+                </div>
+            </div>`;
+
+        document.getElementById('view-container').appendChild(adminView);
     }
 
-    switchAdminTab(secId, btnElem) {
+    switchAdminTab(secId, btn) {
         document.querySelectorAll('.adm-sec').forEach(s => s.style.display = 'none');
-        document.querySelectorAll('.adm-pill').forEach(b => {
-            b.style.background = '#222';
-            b.style.color = '#fff';
-            b.style.border = '1px solid #444';
-        });
-        const targetSec = document.getElementById(`adm-sec-${secId}`);
-        if (targetSec) targetSec.style.display = 'block';
-        if (btnElem) {
-            btnElem.style.background = secId === 'prem' || secId === 'users' ? '#ffd700' : 'var(--neon-cyan)';
-            btnElem.style.color = '#000';
-            btnElem.style.border = 'none';
-        }
+        document.querySelectorAll('.adm-pill').forEach(b => b.classList.remove('active'));
+        const sec = document.getElementById(`adm-sec-${secId}`);
+        if (sec) sec.style.display = 'block';
+        if (btn) btn.classList.add('active');
         this.triggerHaptic('select');
+        if (secId === 'users') this.loadPremiumUsersList();
     }
 
-    // --- QUESTION BLOCK PARSER ---
+    async loadPremiumUsersList() {
+        const el = document.getElementById('adm-premium-users-list');
+        if (!el || !supabaseClient) return;
+        el.innerHTML = `<div class="text-center text-muted p-2"><i class="fa-solid fa-spinner fa-spin"></i> Loading...</div>`;
+        try {
+            const { data: prem, error } = await supabaseClient.from('premium_users').select('telegram_id, added_at');
+            if (error) throw error;
+            if (!prem || prem.length === 0) { el.innerHTML = `<p class="text-muted text-center p-3">No premium users found.</p>`; return; }
+
+            const ids = prem.map(u => u.telegram_id);
+            const { data: usrs } = await supabaseClient.from('users').select('telegram_id, first_name, username').in('telegram_id', ids);
+            const uMap = {}; (usrs || []).forEach(u => { uMap[u.telegram_id] = u; });
+
+            el.innerHTML = prem.map(pu => {
+                const u = uMap[pu.telegram_id];
+                const name = u ? (u.first_name || u.username || 'Unknown') : 'Unknown';
+                const dt = pu.added_at ? new Date(pu.added_at).toLocaleDateString('en-IN') : '—';
+                return `<div style="display:flex;align-items:center;justify-content:space-between;padding:10px 0;border-bottom:1px solid rgba(255,255,255,0.05);">
+                    <div>
+                        <div style="font-size:0.85rem;font-weight:700;">${name}</div>
+                        <div style="font-size:0.72rem;color:var(--text-muted);">ID: ${pu.telegram_id} · ${dt}</div>
+                    </div>
+                    <button class="adm-btn-red" style="padding:5px 10px;font-size:0.72rem;" onclick="app.adminRevokeById(${pu.telegram_id})">Remove</button>
+                </div>`;
+            }).join('');
+        } catch(e) { el.innerHTML = `<p style="color:var(--danger-red);text-align:center;padding:12px;">Error: ${e.message}</p>`; }
+    }
+
+    // ── QUESTION PARSER ────────────────────────────────────────
     parseAdminQuestions(rawText, quizType, categoryName) {
         const blocks = rawText.replace(/\r\n/g, '\n').split(/\n(?=\d+[\.\)])/);
         const results = [];
-
         for (let block of blocks) {
             const lines = block.trim().split('\n').map(l => l.trim()).filter(Boolean);
             if (lines.length < 6) continue;
-
             const qText = lines[0].replace(/^\d+[\.\)]\s*/, '').trim();
-            const options = [];
-            let ansLetter = 'A';
-            let explanationText = '';
-
+            const options = []; let ansLetter = 'A', explText = '';
             for (let i = 1; i < lines.length; i++) {
-                const line = lines[i];
-                if (/^[A-D][\.\)]\s*/i.test(line)) {
-                    options.push(line.replace(/^[A-D][\.\)]\s*/i, '').trim());
-                } else if (/^Answer:\s*/i.test(line)) {
-                    ansLetter = line.replace(/^Answer:\s*/i, '').trim().toUpperCase().charAt(0);
-                } else if (/^Explanation:\s*/i.test(line)) {
-                    explanationText = line.replace(/^Explanation:\s*/i, '').trim();
-                }
+                const ln = lines[i];
+                if (/^[A-D][\.\)]\s*/i.test(ln))      options.push(ln.replace(/^[A-D][\.\)]\s*/i, '').trim());
+                else if (/^Answer:\s*/i.test(ln))       ansLetter = ln.replace(/^Answer:\s*/i, '').trim().toUpperCase().charAt(0);
+                else if (/^Explanation:\s*/i.test(ln))  explText  = ln.replace(/^Explanation:\s*/i, '').trim();
             }
-
             if (options.length >= 4 && qText) {
-                const mapLetter = { 'A': 0, 'B': 1, 'C': 2, 'D': 3 };
-                const correctIdx = mapLetter[ansLetter] !== undefined ? mapLetter[ansLetter] : 0;
-
-                const explArray = ['', '', '', ''];
-                explArray[correctIdx] = explanationText;
-
-                results.push({
-                    type: quizType,
-                    category: categoryName,
-                    text: qText,
-                    options: options.slice(0, 4),
-                    correctIndex: correctIdx,
-                    explanations: explArray
-                });
+                const ci = { A:0, B:1, C:2, D:3 }[ansLetter] ?? 0;
+                const ea = ['','','','']; ea[ci] = explText;
+                results.push({ type: quizType, category: categoryName, text: qText, options: options.slice(0,4), correctIndex: ci, explanations: ea });
             }
         }
         return results;
     }
 
-    // --- ADMIN BACKEND DEPLOY METHODS ---
+    // ── ADMIN DEPLOY METHODS ───────────────────────────────────
     async publishAdminFreeQuiz() {
-        if (!supabaseClient) return alert("Database connection unavailable.");
-        const dateVal = document.getElementById('adm-free-date')?.value || new Date().toISOString().split('T')[0];
-        const instVal = document.getElementById('adm-free-inst')?.value || 'Complete all vocabulary questions accurately.';
-        const txtEl = document.getElementById('adm-free-txt');
-        const textVal = txtEl?.value || '';
-
-        if (!textVal.trim()) return alert("Please paste questions first.");
+        const dateVal = document.getElementById('adm-free-date').value;
+        const instVal = document.getElementById('adm-free-inst').value || 'Complete all 30 vocabulary questions accurately.';
+        const textVal = document.getElementById('adm-free-txt').value;
+        if (!textVal.trim()) return alert('Paste questions first.');
         const parsed = this.parseAdminQuestions(textVal, 'free', 'Daily Free');
-        if (parsed.length === 0) return alert("Could not parse any valid questions. Please check the numbering/format.");
-
+        if (!parsed.length) return alert('Could not parse questions. Check format.');
         try {
-            await supabaseClient.from('quizzes').upsert({
-                title: `Daily Free Quiz - ${dateVal}`,
-                type: 'free',
-                date: dateVal,
-                instructions: instVal
-            }, { onConflict: 'title' });
-
+            // Delete ALL old free quiz data (only 1 active free quiz at a time)
+            await supabaseClient.from('questions').delete().eq('type', 'free');
+            await supabaseClient.from('quizzes').delete().eq('type', 'free');
+            await supabaseClient.from('quizzes').insert({ title: `Daily Free Quiz - ${dateVal}`, type: 'free', date: dateVal, instructions: instVal });
             await supabaseClient.from('questions').insert(parsed);
-            alert(`Successfully deployed Free Quiz! Parsed & uploaded ${parsed.length} questions.`);
-            if (txtEl) txtEl.value = '';
-        } catch(e) {
-            alert("Deploy Error: " + e.message);
-        }
+            appState.cache.questions['free'] = null;
+            alert(`✅ Free Quiz published! ${parsed.length} questions uploaded.`);
+            document.getElementById('adm-free-txt').value = '';
+        } catch(e) { alert('Error: ' + e.message); }
     }
 
     async publishAdminPremiumQuiz() {
-        if (!supabaseClient) return alert("Database connection unavailable.");
-        const dateVal = document.getElementById('adm-prem-date')?.value || new Date().toISOString().split('T')[0];
-        const txtEl = document.getElementById('adm-prem-txt');
-        const textVal = txtEl?.value || '';
-
-        if (!textVal.trim()) return alert("Please paste questions first.");
-        const parsed = this.parseAdminQuestions(textVal, 'daily_premium', 'Premium Mix');
-        if (parsed.length === 0) return alert("Could not parse any valid questions.");
-
+        const dateVal = document.getElementById('adm-prem-date').value;
+        const textVal = document.getElementById('adm-prem-txt').value;
+        if (!textVal.trim()) return alert('Paste questions first.');
+        // Category encodes the date so each quiz's questions can be fetched individually
+        const cat = `Premium Mix - ${dateVal}`;
+        const parsed = this.parseAdminQuestions(textVal, 'daily_premium', cat);
+        if (!parsed.length) return alert('Could not parse questions.');
         try {
-            await supabaseClient.from('quizzes').upsert({
-                title: `Daily Premium Mix - ${dateVal}`,
-                type: 'daily_premium',
-                date: dateVal
-            }, { onConflict: 'title' });
-
+            // INSERT (not upsert) — old quiz becomes archive automatically
+            await supabaseClient.from('quizzes').insert({ title: `Daily Premium Mix - ${dateVal}`, type: 'daily_premium', date: dateVal });
             await supabaseClient.from('questions').insert(parsed);
-            alert(`Successfully deployed Premium Mix! Uploaded ${parsed.length} questions.`);
-            if (txtEl) txtEl.value = '';
-        } catch(e) {
-            alert("Deploy Error: " + e.message);
-        }
+            appState.cache.archives = null;
+            appState.cache.activePremiumQuiz = null;
+            alert(`✅ Premium Mix published! ${parsed.length} questions uploaded.`);
+            document.getElementById('adm-prem-txt').value = '';
+        } catch(e) { alert('Error: ' + e.message); }
     }
 
     async publishAdminTopicDeck() {
-        if (!supabaseClient) return alert("Database connection unavailable.");
-        const topicVal = document.getElementById('adm-topic-sel')?.value || 'Topic';
-        const txtEl = document.getElementById('adm-topic-txt');
-        const textVal = txtEl?.value || '';
-
-        if (!textVal.trim()) return alert("Please paste questions first.");
-        const parsed = this.parseAdminQuestions(textVal, 'topic', topicVal);
-        if (parsed.length === 0) return alert("Could not parse any valid questions.");
-
+        const topicVal = document.getElementById('adm-topic-sel').value;
+        const textVal  = document.getElementById('adm-topic-txt').value;
+        if (!textVal.trim()) return alert('Paste questions first.');
         try {
-            await supabaseClient.from('quizzes').upsert({
-                title: topicVal,
-                type: 'topic',
-                date: new Date().toISOString().split('T')[0]
-            }, { onConflict: 'title' });
-
+            // Count existing sets for this topic to auto-number the new set
+            const { data: existing } = await supabaseClient.from('quizzes').select('id').eq('type','topic').like('title', `${topicVal} - Set%`);
+            const setNum   = (existing?.length || 0) + 1;
+            const setTitle = `${topicVal} - Set ${setNum}`;
+            const parsed   = this.parseAdminQuestions(textVal, 'topic', setTitle);
+            if (!parsed.length) return alert('Could not parse questions.');
+            await supabaseClient.from('quizzes').insert({ title: setTitle, type: 'topic', date: new Date().toISOString().split('T')[0] });
             await supabaseClient.from('questions').insert(parsed);
-            alert(`Successfully added ${parsed.length} questions to ${topicVal}!`);
-            if (txtEl) txtEl.value = '';
-        } catch(e) {
-            alert("Deploy Error: " + e.message);
-        }
+            appState.cache.topicSets[topicVal] = null;
+            alert(`✅ ${setTitle} published! ${parsed.length} questions uploaded.`);
+            document.getElementById('adm-topic-txt').value = '';
+        } catch(e) { alert('Error: ' + e.message); }
     }
 
     async adminGrantPremium() {
-        if (!supabaseClient) return alert("Database connection unavailable.");
-        const tgIdEl = document.getElementById('adm-user-tgid');
-        const targetId = tgIdEl?.value.trim();
-        if (!targetId) return alert("Enter a valid Telegram ID.");
-
+        const id = document.getElementById('adm-user-tgid').value.trim();
+        if (!id) return alert('Enter Telegram ID.');
         try {
-            await supabaseClient.from('premium_users').upsert({
-                telegram_id: parseInt(targetId),
-                added_at: new Date().toISOString()
-            }, { onConflict: 'telegram_id' });
-
-            await supabaseClient.from('users').update({ premium: true }).eq('telegram_id', parseInt(targetId));
-            alert(`Successfully granted Premium Access to ID: ${targetId}`);
-            if (tgIdEl) tgIdEl.value = '';
-        } catch(e) {
-            alert("Manager Error: " + e.message);
-        }
+            await supabaseClient.from('premium_users').upsert({ telegram_id: parseInt(id), added_at: new Date().toISOString() }, { onConflict: 'telegram_id' });
+            await supabaseClient.from('users').update({ premium: true }).eq('telegram_id', parseInt(id));
+            this.triggerToast(`✅ Premium granted to ${id}`);
+            document.getElementById('adm-user-tgid').value = '';
+            this.loadPremiumUsersList();
+        } catch(e) { alert('Error: ' + e.message); }
     }
 
     async adminRevokePremium() {
-        if (!supabaseClient) return alert("Database connection unavailable.");
-        const tgIdEl = document.getElementById('adm-user-tgid');
-        const targetId = tgIdEl?.value.trim();
-        if (!targetId) return alert("Enter a valid Telegram ID.");
-
-        try {
-            await supabaseClient.from('premium_users').delete().eq('telegram_id', parseInt(targetId));
-            await supabaseClient.from('users').update({ premium: false }).eq('telegram_id', parseInt(targetId));
-            alert(`Successfully revoked Premium Access from ID: ${targetId}`);
-            if (tgIdEl) tgIdEl.value = '';
-        } catch(e) {
-            alert("Manager Error: " + e.message);
-        }
+        const id = document.getElementById('adm-user-tgid').value.trim();
+        if (!id) return alert('Enter Telegram ID.');
+        await this.adminRevokeById(parseInt(id));
+        document.getElementById('adm-user-tgid').value = '';
     }
 
-    // --- SUPABASE BACKEND SYNC (Using Valid Columns Exclusively) ---
-    async syncSupabaseUser() {
-        if (!supabaseClient || !appState.currentUser.id) {
-            this.updateHeaderBadge(false); 
-            return;
-        }
+    async adminRevokeById(targetId) {
+        try {
+            await supabaseClient.from('premium_users').delete().eq('telegram_id', targetId);
+            await supabaseClient.from('users').update({ premium: false }).eq('telegram_id', targetId);
+            this.triggerToast(`❌ Premium revoked from ${targetId}`);
+            this.loadPremiumUsersList();
+        } catch(e) { alert('Error: ' + e.message); }
+    }
 
+    // ── SUPABASE USER SYNC ─────────────────────────────────────
+    async syncSupabaseUser() {
+        if (!supabaseClient || !appState.currentUser.id) { this.updateHeaderBadge(false); return; }
         try {
             await supabaseClient.from('users').upsert({
                 telegram_id: appState.currentUser.id,
                 username: appState.currentUser.username,
                 first_name: appState.currentUser.name,
                 photo_url: appState.currentUser.photo_url,
-                premium: false, 
+                premium: false,
                 joined_at: new Date().toISOString()
             }, { onConflict: 'telegram_id' });
 
-            const { data: premiumCheck } = await supabaseClient
-                .from('premium_users')
-                .select('telegram_id')
-                .eq('telegram_id', appState.currentUser.id)
-                .single();
+            // Fix 406 error: use maybeSingle() instead of single()
+            const { data: premCheck } = await supabaseClient
+                .from('premium_users').select('telegram_id')
+                .eq('telegram_id', appState.currentUser.id).maybeSingle();
 
-            appState.isPremium = !!premiumCheck;
+            appState.isPremium = !!premCheck;
             this.updateHeaderBadge(appState.isPremium);
             await this.fetchVaultData();
-            
-            if (appState.isPremium) {
-                this.fetchPremiumMetadata();
-            }
-        } catch (error) {
-            console.error("Backend Sync Error:", error);
-            this.updateHeaderBadge(false);
-        }
+        } catch(err) { console.error('Sync error:', err); this.updateHeaderBadge(false); }
     }
 
     updateHeaderBadge(isPremium) {
-        const badge = document.getElementById('header-tier-indicator');
-        if (!badge) return;
-        if (isPremium) {
-            badge.innerHTML = `<i class="fa-solid fa-crown text-gold"></i> Elite Member`;
-            badge.classList.add('elite');
-            document.body.classList.add('premium-enhanced');
-        } else {
-            badge.innerHTML = `<i class="fa-solid fa-user"></i> Free User`;
-            badge.classList.remove('elite');
-            document.body.classList.remove('premium-enhanced');
-        }
+        const b = document.getElementById('header-tier-indicator');
+        if (!b) return;
+        if (isPremium) { b.innerHTML = `<i class="fa-solid fa-crown text-gold"></i> Elite`; b.classList.add('elite'); document.body.classList.add('premium-enhanced'); }
+        else           { b.innerHTML = `<i class="fa-solid fa-user"></i> Free`;               b.classList.remove('elite'); document.body.classList.remove('premium-enhanced'); }
     }
 
-    // --- TELEGRAM WEBAPP HAPTIC BRIDGE ---
     triggerHaptic(type) {
-        const haptic = window.Telegram?.WebApp?.HapticFeedback;
-        if (!haptic) return;
+        const h = window.Telegram?.WebApp?.HapticFeedback; if (!h) return;
         try {
-            if (type === 'select') haptic.selectionChanged();
-            if (type === 'correct') haptic.notificationOccurred('success');
-            if (type === 'wrong') haptic.notificationOccurred('error');
-            if (type === 'result') haptic.notificationOccurred('warning');
-        } catch (e) { }
+            if (type === 'select')  h.selectionChanged();
+            if (type === 'correct') h.notificationOccurred('success');
+            if (type === 'wrong')   h.notificationOccurred('error');
+            if (type === 'result')  h.notificationOccurred('warning');
+        } catch(e) {}
     }
 
+    // ── NAVIGATION ─────────────────────────────────────────────
     bindNavigationEvents() {
-        if (this.navTabs) {
-            this.navTabs.forEach(tab => {
-                tab.addEventListener('click', () => {
-                    const target = tab.getAttribute('data-target');
-                    this.switchView(target);
-                });
-            });
-        }
+        document.querySelectorAll('.nav-tab').forEach(tab => {
+            tab.onclick = () => this.switchView(tab.getAttribute('data-target'));
+        });
     }
 
-    // --- VIEW ROUTER ---
     switchView(viewId) {
         if (appState.quiz.active && viewId !== 'quiz' && viewId !== 'result') {
-            if (!confirm('An active vocabulary assessment is running. Discard progress?')) return;
+            if (!confirm('Assessment running. Discard and exit?')) return;
             this.forceTerminateQuiz();
         }
+        document.querySelector('.app-view.active')?.classList.remove('active');
+        const target = document.getElementById(`view-${viewId}`);
+        if (target) { target.classList.add('active'); appState.currentView = viewId; }
+        document.querySelectorAll('.nav-tab').forEach(t => t.classList.toggle('active', t.getAttribute('data-target') === viewId));
 
-        const activeView = document.querySelector('.app-view.active');
-        if (activeView) activeView.classList.remove('active');
-
-        const targetView = document.getElementById(`view-${viewId}`);
-        if (targetView) {
-            targetView.classList.add('active');
-            appState.currentView = viewId;
-        }
-
-        if (this.navTabs) {
-            this.navTabs.forEach(tab => {
-                tab.classList.toggle('active', tab.getAttribute('data-target') === viewId);
-            });
-        }
-
-        if (viewId === 'vault') this.renderVault();
-        if (viewId === 'ranks') this.renderLeaderboard();
+        if (viewId === 'vault')   this.renderVault();
+        if (viewId === 'ranks')   this.renderLeaderboard();
+        if (viewId === 'premium') this.fetchAndRenderPremiumView();
     }
 
-    navigateToPremiumView() {
-        if (!appState.isPremium) {
-            this.triggerPremiumPaywallGate();
-            return;
-        }
-        this.switchView('premium');
-    }
+    // Free users can VIEW premium, start buttons will be locked
+    navigateToPremiumView() { this.switchView('premium'); }
 
     triggerPremiumPaywallGate() {
-        const message = encodeURIComponent("I am interested in Premium Membership.");
-        const tgBotLink = `https://t.me/jangra854x?text=${message}`;
-        window.open(tgBotLink, '_blank');
+        const msg  = encodeURIComponent('Hi! I want to unlock Premium Membership for SSC MAX VOCAB.');
+        const link = `https://t.me/jangra854x?text=${msg}`;
+        if (window.Telegram?.WebApp?.openTelegramLink) window.Telegram.WebApp.openTelegramLink(link);
+        else window.open(link, '_blank');
     }
 
-    // --- PREMIUM DB DATA FETCHING ---
-    async fetchPremiumMetadata() {
+    // ── PREMIUM VIEW ───────────────────────────────────────────
+    async fetchAndRenderPremiumView() {
         if (!supabaseClient) return;
         try {
-            if(!appState.cache.topics) {
-                const { data: topics } = await supabaseClient.from('quizzes').select('*').eq('type', 'topic');
-                appState.cache.topics = topics || [];
+            // Fetch latest active daily premium quiz
+            if (!appState.cache.activePremiumQuiz) {
+                const { data } = await supabaseClient.from('quizzes').select('*').eq('type','daily_premium').order('date', { ascending: false }).limit(1).maybeSingle();
+                appState.cache.activePremiumQuiz = data || null;
             }
-            if(!appState.cache.archives) {
-                const { data: archives } = await supabaseClient.from('quizzes').select('*').eq('type', 'daily_premium').order('date', { ascending: false }).limit(10);
-                appState.cache.archives = archives || [];
+            // Update date label on active card
+            if (appState.cache.activePremiumQuiz) {
+                const d = new Date(appState.cache.activePremiumQuiz.date).toLocaleDateString('en-IN', { month: 'long', day: 'numeric', year: 'numeric' });
+                const lbl = document.getElementById('active-prem-date-label');
+                if (lbl) lbl.innerText = d;
             }
-
-            this.renderPremiumTopicsDeck(appState.cache.topics);
-            this.renderPreviousPremiumTests(appState.cache.archives);
-        } catch(e) {
-            console.error("Failed to load premium data", e);
-        }
+            // Fetch all archives
+            if (!appState.cache.archives) {
+                const { data: arcs } = await supabaseClient.from('quizzes').select('*').eq('type','daily_premium').order('date', { ascending: false });
+                appState.cache.archives = arcs || [];
+            }
+            // Past = all except the latest (index 0)
+            this.renderPastPremiumQuizzes(appState.cache.archives.slice(1));
+            // Render 6 fixed topics
+            this.renderTopicsSection();
+        } catch(e) { console.error('Premium view error:', e); }
     }
 
-    renderPremiumTopicsDeck(topicsDB) {
-        if(!this.premiumTopicsList) return;
-        if(!topicsDB || topicsDB.length === 0) {
-            this.premiumTopicsList.innerHTML = `<div class="text-center text-muted p-3">No topics configured in database.</div>`;
-            return;
-        }
-
-        this.premiumTopicsList.innerHTML = topicsDB.map(topic => {
-            return `
-                <div class="topic-card-item glass-card" onclick="app.showQuizBlueprint('topic', '${topic.title}')">
-                    <div class="topic-meta-left">
-                        <span class="topic-title">${topic.title}</span>
-                        <span class="topic-timestamp">Module Active</span>
-                    </div>
-                    <i class="fa-solid fa-arrow-right text-muted"></i>
+    renderTopicsSection() {
+        if (!this.premiumTopicsList) return;
+        this.premiumTopicsList.innerHTML = TOPICS.map(t => `
+            <div class="topic-card-item glass-card" onclick="app.openTopicSets('${t}')">
+                <div class="topic-meta-left">
+                    <span class="topic-title">${t}</span>
+                    <span class="topic-timestamp" id="tmeta-${t.replace(/\W+/g,'_')}">Loading sets...</span>
                 </div>
-            `;
-        }).join('');
+                <i class="fa-solid fa-chevron-right text-muted"></i>
+            </div>`).join('');
+
+        // Load set counts in background for each topic
+        TOPICS.forEach(async t => {
+            try {
+                if (!appState.cache.topicSets[t]) {
+                    const { data } = await supabaseClient.from('quizzes').select('id,title,date').eq('type','topic').like('title', `${t} - Set%`).order('date', { ascending: true });
+                    appState.cache.topicSets[t] = data || [];
+                }
+                const cnt = appState.cache.topicSets[t].length;
+                const el  = document.getElementById(`tmeta-${t.replace(/\W+/g,'_')}`);
+                if (el) el.innerText = cnt > 0 ? `${cnt} Set${cnt > 1 ? 's' : ''} · ${cnt * 20} Questions` : 'No sets yet';
+            } catch(e) {}
+        });
     }
 
-    renderPreviousPremiumTests(archivesDB) {
-        if(!this.premiumArchivesContainer) return;
-        if(!archivesDB || archivesDB.length === 0) {
-            this.premiumArchivesContainer.innerHTML = `<div class="text-center text-muted p-3">No archives configured in database.</div>`;
+    async openTopicSets(topicKey) {
+        this.triggerHaptic('select');
+        appState.selectedTopic = topicKey;
+
+        if (!appState.cache.topicSets[topicKey]) {
+            const { data } = await supabaseClient.from('quizzes').select('id,title,date').eq('type','topic').like('title', `${topicKey} - Set%`).order('date', { ascending: true });
+            appState.cache.topicSets[topicKey] = data || [];
+        }
+        const sets = appState.cache.topicSets[topicKey];
+        document.getElementById('topic-sets-title').innerText = topicKey;
+        const container = document.getElementById('topic-sets-list');
+
+        if (!sets.length) {
+            container.innerHTML = `<div class="glass-card text-center p-4"><p class="text-muted">No question sets available yet for this topic.</p></div>`;
+        } else {
+            container.innerHTML = sets.map((set, i) => {
+                const dateStr = new Date(set.date).toLocaleDateString('en-IN', { month: 'short', day: 'numeric', year: 'numeric' });
+                const setNum  = i + 1;
+                const s = (setNum - 1) * 20 + 1, e = setNum * 20;
+                const locked  = !appState.isPremium;
+                return `
+                    <div class="topic-set-card glass-card ${locked ? 'locked-set' : ''}" onclick="app.handleTopicSetClick('${set.title}')">
+                        <div class="set-info">
+                            <span class="set-label">Set ${setNum}</span>
+                            <span class="set-range-tag">Q ${s}–${e}</span>
+                        </div>
+                        <div class="set-meta">
+                            <span><i class="fa-solid fa-circle-question"></i> 20 Questions</span>
+                            <span><i class="fa-regular fa-calendar"></i> ${dateStr}</span>
+                        </div>
+                        ${locked ? `<div class="set-lock-bar" onclick="event.stopPropagation();app.triggerPremiumPaywallGate()"><i class="fa-solid fa-lock"></i> Unlock Premium</div>` : ''}
+                    </div>`;
+            }).join('');
+        }
+        this.switchView('topic-sets');
+    }
+
+    handleTopicSetClick(setTitle) {
+        if (!appState.isPremium) { this.triggerPremiumPaywallGate(); return; }
+        this.showQuizBlueprint('topic', setTitle, setTitle, 20);
+    }
+
+    handleActivePremiumClick() {
+        const q = appState.cache.activePremiumQuiz;
+        if (!q) { this.triggerToast('No active quiz found.'); return; }
+        const cat = `Premium Mix - ${q.date}`;
+        this.showQuizBlueprint('daily_premium', q.title || 'Daily Premium Mix', cat, 100);
+    }
+
+    renderPastPremiumQuizzes(pastQuizzes) {
+        if (!this.premiumArchivesEl) return;
+        if (!pastQuizzes || !pastQuizzes.length) {
+            this.premiumArchivesEl.innerHTML = `<div class="text-center text-muted p-3">No past quizzes yet.</div>`;
             return;
         }
-
-        this.premiumArchivesContainer.innerHTML = archivesDB.map(arc => `
-            <div class="archive-entry-card" onclick="app.showQuizBlueprint('daily_premium', '${arc.title}')">
-                <span class="archive-title">${arc.title} (Daily Mix)</span>
-                <i class="fa-solid fa-play text-gold"></i>
-            </div>
-        `).join('');
+        // Group by month
+        const byMonth = {};
+        pastQuizzes.forEach(q => {
+            const key = new Date(q.date).toLocaleDateString('en-IN', { month: 'long', year: 'numeric' });
+            (byMonth[key] = byMonth[key] || []).push(q);
+        });
+        this.premiumArchivesEl.innerHTML = Object.entries(byMonth).map(([month, quizzes]) => `
+            <div class="archive-month-group">
+                <div class="archive-month-header glass-card" onclick="this.parentElement.classList.toggle('open')">
+                    <span><i class="fa-regular fa-calendar" style="margin-right:8px;"></i>${month}</span>
+                    <i class="fa-solid fa-chevron-down arc-chevron"></i>
+                </div>
+                <div class="archive-month-dates">
+                    ${quizzes.map(q => {
+                        const dl = new Date(q.date).toLocaleDateString('en-IN', { month: 'long', day: 'numeric' });
+                        const locked = !appState.isPremium;
+                        return `<div class="archive-date-entry" onclick="app.handlePastQuizClick('${q.title}','${q.date}')">
+                            <span><i class="fa-solid fa-calendar-day text-gold" style="margin-right:6px;"></i>${dl}</span>
+                            ${locked ? `<span class="locked-tag"><i class="fa-solid fa-lock"></i> Premium</span>` : `<i class="fa-solid fa-play text-gold"></i>`}
+                        </div>`;
+                    }).join('')}
+                </div>
+            </div>`).join('');
     }
 
-    // --- QUIZ ENGINE ---
-    showQuizBlueprint(type, title) {
-        appState.quiz.type = type;
-        appState.quiz.title = title;
+    handlePastQuizClick(title, date) {
+        if (!appState.isPremium) { this.triggerPremiumPaywallGate(); return; }
+        const cat = `Premium Mix - ${date}`;
+        this.showQuizBlueprint('daily_premium', title, cat, 100);
+    }
 
-        this.safeSetText('qd-subtitle', title);
-        this.safeSetText('qd-date', new Date().toLocaleDateString('en-IN', { month: 'short', day: 'numeric', year: 'numeric' }));
-        
-        let qCount = 30;
-        let rankStatus = "Unranked Practice Mode";
-        if (type === 'daily_premium') {
-            qCount = 100;
-            rankStatus = "Ranked (Logs to Global Leaderboard)";
-        } else if (type === 'topic') {
-            qCount = 20;
+    // ── QUIZ BLUEPRINT ─────────────────────────────────────────
+    showQuizBlueprint(type, title, category = null, qCount = null) {
+        appState.quiz.type         = type;
+        appState.quiz.title        = title;
+        appState.quiz.quizCategory = category;
+
+        const isPremContent = type === 'daily_premium' || type === 'topic';
+        appState.quiz.isPremiumLocked = isPremContent && !appState.isPremium;
+
+        document.getElementById('qd-subtitle').innerText = title;
+        document.getElementById('qd-date').innerText = new Date().toLocaleDateString('en-IN', { month:'short', day:'numeric', year:'numeric' });
+
+        const total = qCount || (type === 'daily_premium' ? 100 : type === 'topic' ? 20 : 30);
+        const rank  = type === 'daily_premium' ? 'Ranked (Logs to Global Leaderboard)' : 'Unranked Practice';
+        document.getElementById('qd-count').innerText = `${total} Questions`;
+        document.getElementById('qd-rank-status').innerText = rank;
+
+        // Update start button based on premium lock
+        if (appState.quiz.isPremiumLocked) {
+            this.btnStartQuiz.className = 'btn-unlock-premium w-100';
+            this.btnStartQuiz.innerHTML = `<i class="fa-solid fa-lock"></i> Unlock Premium`;
+        } else {
+            this.btnStartQuiz.className = 'btn-primary-gradient w-100';
+            this.btnStartQuiz.innerHTML = `<i class="fa-solid fa-flag-checkered"></i> START QUIZ`;
         }
-
-        this.safeSetText('qd-count', `${qCount} Questions`);
-        this.safeSetText('qd-rank-status', rankStatus);
-
         this.switchView('quiz-details');
     }
 
+    handleStartQuizClick() {
+        if (appState.quiz.isPremiumLocked) { this.triggerPremiumPaywallGate(); return; }
+        this.executeQuizInstance();
+    }
+
+    // ── QUIZ EXECUTION ─────────────────────────────────────────
     async executeQuizInstance() {
-        if (this.btnStartQuizConfirm) {
-            this.btnStartQuizConfirm.classList.add('btn-loading');
-            this.btnStartQuizConfirm.innerHTML = `<i class="fa-solid fa-spinner fa-spin"></i> Fetching Data...`;
-        }
-        
+        this.btnStartQuiz.disabled = true;
+        this.btnStartQuiz.innerHTML = `<i class="fa-solid fa-spinner fa-spin"></i> Loading...`;
         try {
             appState.quiz.active = true;
-            let targetCount = appState.quiz.type === 'daily_premium' ? 100 : (appState.quiz.type === 'topic' ? 20 : 30);
-            appState.quiz.questions = await this.fetchQuestionsFromDB(appState.quiz.type, targetCount);
-            
-            if(appState.quiz.questions.length === 0) {
-                alert("No questions configured or application is currently offline.");
-                this.forceTerminateQuiz();
-                return;
-            }
-
-            appState.quiz.currentIndex = 0;
-            appState.quiz.correctCount = 0;
-            appState.quiz.wrongCount = 0;
-            appState.quiz.timeSeconds = 0;
-
-            this.safeSetText('quiz-title-display', appState.quiz.title);
+            const limit = appState.quiz.type === 'daily_premium' ? 100 : appState.quiz.type === 'topic' ? 20 : 30;
+            appState.quiz.questions = await this.fetchQuestionsFromDB(appState.quiz.type, appState.quiz.quizCategory, limit);
+            if (!appState.quiz.questions.length) { alert('No questions found. Database may be empty.'); this.forceTerminateQuiz(); return; }
+            appState.quiz.currentIndex = 0; appState.quiz.correctCount = 0;
+            appState.quiz.wrongCount   = 0; appState.quiz.timeSeconds  = 0;
+            document.getElementById('quiz-title-display').innerText = appState.quiz.title;
             this.switchView('quiz');
             this.startElapsedStopwatch();
             this.renderCurrentQuestion();
-
-        } catch (e) {
-            console.error("Quiz Launch Error:", e);
-            alert("Failed to establish secure connection to quiz servers.");
-            this.forceTerminateQuiz();
-        } finally {
-            if (this.btnStartQuizConfirm) {
-                this.btnStartQuizConfirm.classList.remove('btn-loading');
-                this.btnStartQuizConfirm.innerHTML = `<i class="fa-solid fa-flag-checkered"></i> EXECUTE QUIZ NOW`;
-            }
-        }
+        } catch(e) { console.error('Quiz error:', e); alert('Failed to load quiz.'); this.forceTerminateQuiz(); }
+        finally { this.btnStartQuiz.disabled = false; this.btnStartQuiz.innerHTML = `<i class="fa-solid fa-flag-checkered"></i> START QUIZ`; }
     }
 
-    async fetchQuestionsFromDB(quizType, limit) {
-        if (appState.cache.questions[quizType] && appState.cache.questions[quizType].length >= limit) {
-            return this.shuffleArray(appState.cache.questions[quizType]).slice(0, limit);
+    async fetchQuestionsFromDB(quizType, category, limit) {
+        if (!supabaseClient) return [];
+        let query = supabaseClient.from('questions').select('category, text, options, "correctIndex", explanations');
+
+        if (quizType === 'free') {
+            // Free quiz — only one active, fetch by type
+            query = query.eq('type', 'free');
+        } else if (quizType === 'daily_premium') {
+            // Fetch by exact category (category = 'Premium Mix - YYYY-MM-DD')
+            query = category ? query.eq('type','daily_premium').eq('category', category) : query.eq('type','daily_premium');
+        } else if (quizType === 'topic') {
+            // Fetch by set title as category (category = 'TopicName - Set N')
+            query = query.eq('type','topic').eq('category', category);
         }
 
-        if (!supabaseClient) return [];
-
-        const { data, error } = await supabaseClient
-            .from('questions')
-            .select('category, text, options, "correctIndex", explanations')
-            .eq('type', quizType)
-            .limit(limit * 2);
-
+        const { data, error } = await query.limit(limit * 2);
         if (error) throw error;
-        
-        appState.cache.questions[quizType] = data || [];
         return this.shuffleArray(data || []).slice(0, limit);
     }
 
-    shuffleArray(array) {
-        let shuffled = array.slice();
-        for (let i = shuffled.length - 1; i > 0; i--) {
-            const j = Math.floor(Math.random() * (i + 1));
-            [shuffled[i], shuffled[j]] = [shuffled[j], shuffled[i]];
-        }
-        return shuffled;
+    shuffleArray(arr) {
+        const a = arr.slice();
+        for (let i = a.length - 1; i > 0; i--) { const j = Math.floor(Math.random()*(i+1)); [a[i],a[j]] = [a[j],a[i]]; }
+        return a;
     }
 
     startElapsedStopwatch() {
         clearInterval(appState.quiz.stopwatchInterval);
-        const stopwatchDisplay = document.getElementById('quiz-stopwatch');
-        
-        const formatTime = (sec) => {
-            const m = Math.floor(sec / 60).toString().padStart(2, '0');
-            const s = (sec % 60).toString().padStart(2, '0');
-            return `${m}:${s}`;
-        };
-
-        if (stopwatchDisplay) stopwatchDisplay.innerText = formatTime(appState.quiz.timeSeconds);
-        appState.quiz.stopwatchInterval = setInterval(() => {
-            appState.quiz.timeSeconds++;
-            if (stopwatchDisplay) stopwatchDisplay.innerText = formatTime(appState.quiz.timeSeconds);
-        }, 1000);
+        const el  = document.getElementById('quiz-stopwatch');
+        const fmt = s => `${Math.floor(s/60).toString().padStart(2,'0')}:${(s%60).toString().padStart(2,'0')}`;
+        el.innerText = fmt(0);
+        appState.quiz.stopwatchInterval = setInterval(() => { appState.quiz.timeSeconds++; el.innerText = fmt(appState.quiz.timeSeconds); }, 1000);
     }
 
     renderCurrentQuestion() {
         const q = appState.quiz.questions[appState.quiz.currentIndex];
-        if (!q) return;
-
         appState.quiz.selectedOption = null;
         appState.quiz.isBookmarked = false;
+        this.btnBookmarkCurrent.classList.remove('bookmarked');
+        this.btnBookmarkCurrent.innerHTML = `<i class="fa-regular fa-bookmark"></i> Bookmark`;
+        this.btnNextQ.classList.add('hidden');
+        this.optionsContainer.classList.remove('locked');
 
-        if (this.btnBookmarkCurrent) {
-            this.btnBookmarkCurrent.classList.remove('bookmarked');
-            this.btnBookmarkCurrent.innerHTML = `<i class="fa-regular fa-bookmark"></i> Bookmark`;
-        }
+        const total = appState.quiz.questions.length;
+        document.getElementById('quiz-question-counter').innerText = `Q ${appState.quiz.currentIndex + 1} / ${total}`;
+        document.getElementById('quiz-progress-fill').style.width  = `${(appState.quiz.currentIndex / total) * 100}%`;
+        document.getElementById('question-category-tag').innerText  = q.category || 'Vocabulary';
+        document.getElementById('question-text-body').innerText     = q.text;
 
-        if (this.btnNextQ) this.btnNextQ.classList.add('hidden');
-        if (this.optionsContainer) this.optionsContainer.classList.remove('locked');
+        this.quizFrame.classList.remove('card-animation-swap');
+        void this.quizFrame.offsetWidth;
+        this.quizFrame.classList.add('card-animation-swap');
 
-        const totalQ = appState.quiz.questions.length;
-        this.safeSetText('quiz-question-counter', `Question ${appState.quiz.currentIndex + 1} of ${totalQ}`);
-        
-        const progressPercent = (appState.quiz.currentIndex / totalQ) * 100;
-        const progFill = document.getElementById('quiz-progress-fill');
-        if (progFill) progFill.style.width = `${progressPercent}%`;
-
-        if (this.quizFrame) {
-            this.quizFrame.classList.remove('card-animation-swap');
-            void this.quizFrame.offsetWidth;
-            this.quizFrame.classList.add('card-animation-swap');
-        }
-
-        this.safeSetText('question-category-tag', q.category || 'Vocabulary');
-        this.safeSetText('question-text-body', q.text);
-
-        if (this.optionsContainer && q.options) {
-            this.optionsContainer.innerHTML = q.options.map((opt, idx) => `
-                <div class="option-wrapper">
-                    <div class="option-node" onclick="app.lockAnswerSelection(${idx})">
-                        <span>${opt}</span>
-                        <div class="option-indicator"></div>
-                    </div>
-                    <div class="option-explanation-box hidden" id="expl-${idx}">
-                        ${q.explanations && q.explanations[idx] ? q.explanations[idx] : 'No explanation provided.'}
-                    </div>
+        // opt-letter + opt-text spans for better CSS styling
+        this.optionsContainer.innerHTML = q.options.map((opt, idx) => `
+            <div class="option-wrapper">
+                <div class="option-node" onclick="app.lockAnswerSelection(${idx})">
+                    <span class="opt-letter">${String.fromCharCode(65+idx)}.</span>
+                    <span class="opt-text">${opt}</span>
+                    <div class="option-indicator"></div>
                 </div>
-            `).join('');
-        }
+                <div class="option-explanation-box hidden" id="expl-${idx}">
+                    ${q.explanations && q.explanations[idx] ? q.explanations[idx] : (idx === q.correctIndex ? '✓ Correct answer' : '✗ Incorrect choice')}
+                </div>
+            </div>`).join('');
     }
 
-    // --- LIVE VAULT SYNC ---
     async toggleBookmarkCurrentQuestion() {
-        if(!supabaseClient || !appState.currentUser.id) return;
-
+        if (!supabaseClient || !appState.currentUser.id) return;
         appState.quiz.isBookmarked = !appState.quiz.isBookmarked;
         const q = appState.quiz.questions[appState.quiz.currentIndex];
-        if (!q) return;
+        const word = q.options[q.correctIndex].split(':')[0].trim();
+        const meaning = (q.explanations && q.explanations[q.correctIndex]) || q.text;
 
-        const correctOpt = q.options && q.options[q.correctIndex] ? q.options[q.correctIndex] : 'Unknown';
-        const wordKey = correctOpt.split(':')[0].trim();
-        const meaningText = (q.explanations && q.explanations[q.correctIndex]) || q.text;
-
-        try {
-            if (appState.quiz.isBookmarked) {
-                if (this.btnBookmarkCurrent) {
-                    this.btnBookmarkCurrent.classList.add('bookmarked');
-                    this.btnBookmarkCurrent.innerHTML = `<i class="fa-solid fa-bookmark"></i> Saved`;
-                }
-                this.triggerHaptic('select');
-
-                if (!appState.bookmarkedWords.find(w => w.word === wordKey)) {
-                    const newWord = { word: wordKey, category: 'bookmarked', meaning: meaningText };
-                    appState.bookmarkedWords.push(newWord);
-                    this.triggerToast(`Saved "${wordKey}" to Vault!`);
-                    
-                    await supabaseClient.from('vault').insert({
-                        telegram_id: appState.currentUser.id,
-                        word: newWord.word,
-                        category: newWord.category, 
-                        saved_at: new Date().toISOString()
-                    }); 
-                }
-            } else {
-                if (this.btnBookmarkCurrent) {
-                    this.btnBookmarkCurrent.classList.remove('bookmarked');
-                    this.btnBookmarkCurrent.innerHTML = `<i class="fa-regular fa-bookmark"></i> Bookmark`;
-                }
-                appState.bookmarkedWords = appState.bookmarkedWords.filter(w => w.word !== wordKey);
-                
-                await supabaseClient.from('vault').delete()
-                    .eq('telegram_id', appState.currentUser.id)
-                    .eq('word', wordKey)
-                    .eq('category', 'bookmarked');
+        if (appState.quiz.isBookmarked) {
+            this.btnBookmarkCurrent.classList.add('bookmarked');
+            this.btnBookmarkCurrent.innerHTML = `<i class="fa-solid fa-bookmark"></i> Saved`;
+            this.triggerHaptic('select');
+            if (!appState.bookmarkedWords.find(w => w.word === word)) {
+                appState.bookmarkedWords.push({ word, category:'bookmarked', meaning });
+                this.triggerToast(`Saved "${word}" to Vault!`);
+                await supabaseClient.from('vault').insert({ telegram_id: appState.currentUser.id, word, category:'bookmarked', saved_at: new Date().toISOString() });
             }
-        } catch (err) {
-            console.error("Vault Sync Error:", err);
+        } else {
+            this.btnBookmarkCurrent.classList.remove('bookmarked');
+            this.btnBookmarkCurrent.innerHTML = `<i class="fa-regular fa-bookmark"></i> Bookmark`;
+            appState.bookmarkedWords = appState.bookmarkedWords.filter(w => w.word !== word);
+            await supabaseClient.from('vault').delete().eq('telegram_id', appState.currentUser.id).eq('word', word).eq('category', 'bookmarked');
         }
     }
 
     lockAnswerSelection(selectedIndex) {
-        if (appState.quiz.selectedOption !== null) return; 
-
+        if (appState.quiz.selectedOption !== null) return;
         appState.quiz.selectedOption = selectedIndex;
-        if (this.optionsContainer) this.optionsContainer.classList.add('locked');
-
+        this.optionsContainer.classList.add('locked');
         const q = appState.quiz.questions[appState.quiz.currentIndex];
-        if (!q) return;
-        const isCorrect = selectedIndex === q.correctIndex;
+        const correct = selectedIndex === q.correctIndex;
+        this.triggerHaptic(correct ? 'correct' : 'wrong');
+        if (correct) appState.quiz.correctCount++; else { appState.quiz.wrongCount++; this.routeFailedWordToVault(q); }
 
-        this.triggerHaptic(isCorrect ? 'correct' : 'wrong');
-
-        if (isCorrect) {
-            appState.quiz.correctCount++;
-        } else {
-            appState.quiz.wrongCount++;
-            this.routeFailedWordToVault(q);
-        }
-
-        if (this.optionsContainer) {
-            const optionNodes = this.optionsContainer.querySelectorAll('.option-node');
-            optionNodes.forEach((node, idx) => {
-                const explBox = document.getElementById(`expl-${idx}`);
-                if(explBox) explBox.classList.remove('hidden');
-
-                if (idx === q.correctIndex) {
-                    node.classList.add('correct');
-                    if(explBox) explBox.classList.add('expl-correct');
-                } else if (idx === selectedIndex) {
-                    node.classList.add('incorrect');
-                    if(explBox) explBox.classList.add('expl-incorrect');
-                }
-            });
-        }
-
-        if (this.btnNextQ) this.btnNextQ.classList.remove('hidden');
+        this.optionsContainer.querySelectorAll('.option-node').forEach((node, idx) => {
+            const expl = document.getElementById(`expl-${idx}`);
+            if (expl) expl.classList.remove('hidden');
+            if (idx === q.correctIndex)  { node.classList.add('correct');   if(expl) expl.classList.add('expl-correct'); }
+            else if (idx === selectedIndex) { node.classList.add('incorrect'); if(expl) expl.classList.add('expl-incorrect'); }
+        });
+        this.btnNextQ.classList.remove('hidden');
     }
 
     advanceQuestion() {
         appState.quiz.currentIndex++;
-        if (appState.quiz.currentIndex < appState.quiz.questions.length) {
-            this.renderCurrentQuestion();
-        } else {
-            this.finalizeAssessmentExecution();
-        }
+        if (appState.quiz.currentIndex < appState.quiz.questions.length) this.renderCurrentQuestion();
+        else this.finalizeAssessmentExecution();
     }
 
     async routeFailedWordToVault(qObj) {
-        if(!supabaseClient || !appState.currentUser.id) return;
-        const correctOpt = qObj.options && qObj.options[qObj.correctIndex] ? qObj.options[qObj.correctIndex] : 'Unknown';
-        const wordKey = correctOpt.split(':')[0].trim();
-        const meaningText = (qObj.explanations && qObj.explanations[qObj.correctIndex]) || qObj.text;
-
-        if (!appState.weakWords.find(w => w.word.toLowerCase() === wordKey.toLowerCase())) {
-            const newWeakWord = { word: wordKey, category: 'weak', meaning: meaningText };
-            appState.weakWords.push(newWeakWord);
-            
-            try {
-                await supabaseClient.from('vault').insert({
-                    telegram_id: appState.currentUser.id,
-                    word: newWeakWord.word,
-                    category: newWeakWord.category, 
-                    saved_at: new Date().toISOString()
-                });
-            } catch (err) {
-                console.error("Failed to route weak word to vault:", err);
-            }
+        if (!supabaseClient || !appState.currentUser.id) return;
+        const word = qObj.options[qObj.correctIndex].split(':')[0].trim();
+        const meaning = (qObj.explanations && qObj.explanations[qObj.correctIndex]) || qObj.text;
+        if (!appState.weakWords.find(w => w.word.toLowerCase() === word.toLowerCase())) {
+            appState.weakWords.push({ word, category:'weak', meaning });
+            await supabaseClient.from('vault').insert({ telegram_id: appState.currentUser.id, word, category:'weak', saved_at: new Date().toISOString() });
         }
     }
 
@@ -859,268 +730,157 @@ class SSCMaxVocabEngine {
         clearInterval(appState.quiz.stopwatchInterval);
         appState.quiz.active = false;
         this.triggerHaptic('result');
-
-        const totalQ = appState.quiz.questions.length;
-        const accuracy = ((appState.quiz.correctCount / totalQ) * 100).toFixed(1);
-
-        const minutes = Math.floor(appState.quiz.timeSeconds / 60);
-        const seconds = appState.quiz.timeSeconds % 60;
-
-        this.safeSetText('res-score', `${appState.quiz.correctCount} / ${totalQ}`);
-        this.safeSetText('res-accuracy', `${accuracy}%`);
-        this.safeSetText('res-correct', appState.quiz.correctCount);
-        this.safeSetText('res-wrong', appState.quiz.wrongCount);
-        this.safeSetText('res-time', `${minutes}m ${seconds}s`);
-        this.safeSetText('res-tier-badge', accuracy >= 90 ? "👑 ELITE ACCURACY STANDINGS" : "⚡ STANDARD EVALUATION");
+        const total = appState.quiz.questions.length;
+        const acc   = ((appState.quiz.correctCount / total) * 100).toFixed(1);
+        const m = Math.floor(appState.quiz.timeSeconds / 60), s = appState.quiz.timeSeconds % 60;
+        document.getElementById('res-score').innerText    = `${appState.quiz.correctCount} / ${total}`;
+        document.getElementById('res-accuracy').innerText = `${acc}%`;
+        document.getElementById('res-correct').innerText  = appState.quiz.correctCount;
+        document.getElementById('res-wrong').innerText    = appState.quiz.wrongCount;
+        document.getElementById('res-time').innerText     = `${m}m ${s}s`;
+        document.getElementById('res-tier-badge').innerText = parseFloat(acc) >= 90 ? '👑 ELITE ACCURACY' : '⚡ STANDARD EVALUATION';
 
         if (appState.quiz.type === 'daily_premium' && appState.currentUser.id && supabaseClient) {
             try {
-                await supabaseClient.from('leaderboard').insert({
-                    telegram_id: appState.currentUser.id,
-                    name: appState.currentUser.name,
-                    score: appState.quiz.correctCount,
-                    time_seconds: appState.quiz.timeSeconds,
-                    date: new Date().toISOString().split('T')[0]
-                });
-                appState.cache.leaderboard = null; 
-                this.triggerToast("Successfully synchronized performance to Global Rankings!");
-            } catch(e) {
-                console.error("Failed to post score", e);
-            }
+                await supabaseClient.from('leaderboard').insert({ telegram_id: appState.currentUser.id, name: appState.currentUser.name, score: appState.quiz.correctCount, time_seconds: appState.quiz.timeSeconds, date: new Date().toISOString().split('T')[0] });
+                appState.cache.leaderboard = null;
+                this.triggerToast('Score synced to Global Rankings!');
+            } catch(e) { console.error('Score post failed:', e); }
         }
-
         this.switchView('result');
     }
 
-    confirmAbandonQuiz() {
-        if (confirm("Abandoning the assessment will discard live progress. Exit immediately?")) {
-            this.forceTerminateQuiz();
-        }
-    }
+    confirmAbandonQuiz() { if (confirm('Abandon assessment? Progress will be lost.')) this.forceTerminateQuiz(); }
+    forceTerminateQuiz() { clearInterval(appState.quiz.stopwatchInterval); appState.quiz.active = false; this.switchView('dashboard'); }
 
-    forceTerminateQuiz() {
-        clearInterval(appState.quiz.stopwatchInterval);
-        appState.quiz.active = false;
-        this.switchView('dashboard');
-    }
-
-    // --- VAULT RENDERER ---
+    // ── VAULT ──────────────────────────────────────────────────
     async fetchVaultData() {
-        if(!supabaseClient || !appState.currentUser.id) return;
-        const { data, error } = await supabaseClient
-            .from('vault')
-            .select('id, telegram_id, word, category, saved_at')
-            .eq('telegram_id', appState.currentUser.id);
-
-        if(!error && data) {
-            appState.weakWords = data.filter(v => v.category === 'weak').map(v => ({ word: v.word, category: v.category, meaning: 'Review required vocabulary module context.' }));
-            appState.bookmarkedWords = data.filter(v => v.category === 'bookmarked').map(v => ({ word: v.word, category: v.category, meaning: 'Saved vocabulary item references.' }));
+        if (!supabaseClient || !appState.currentUser.id) return;
+        const { data, error } = await supabaseClient.from('vault').select('word, category, saved_at').eq('telegram_id', appState.currentUser.id);
+        if (!error && data) {
+            appState.weakWords      = data.filter(v => v.category === 'weak').map(v => ({ word: v.word, category:'weak', meaning:'Review required in context of quiz question.' }));
+            appState.bookmarkedWords = data.filter(v => v.category === 'bookmarked').map(v => ({ word: v.word, category:'bookmarked', meaning:'Bookmarked vocabulary item.' }));
         }
     }
 
+    // Fix: use data-tab attribute instead of window.event
     switchVaultTab(tabKey) {
         appState.activeVaultTab = tabKey;
-        document.querySelectorAll('.vault-tab-btn').forEach(btn => btn.classList.remove('active'));
-        if (window.event && window.event.currentTarget) {
-            window.event.currentTarget.classList.add('active');
-        }
+        document.querySelectorAll('.vault-tab-btn').forEach(b => b.classList.toggle('active', b.getAttribute('data-tab') === tabKey));
         this.triggerHaptic('select');
         this.renderVault();
     }
 
-    filterVaultContent() {
-        const searchInput = document.getElementById('vault-search-input');
-        appState.searchQuery = searchInput ? searchInput.value.toLowerCase().trim() : '';
-        this.renderVault();
-    }
+    filterVaultContent() { appState.searchQuery = document.getElementById('vault-search-input').value.toLowerCase().trim(); this.renderVault(); }
 
     renderVault() {
         if (!this.vaultItemsContainer) return;
-        let activeArray = appState.activeVaultTab === 'bookmarked' ? appState.bookmarkedWords : appState.weakWords;
+        let arr = appState.activeVaultTab === 'bookmarked' ? appState.bookmarkedWords : appState.weakWords;
+        if (appState.searchQuery) arr = arr.filter(i => i.word.toLowerCase().includes(appState.searchQuery));
+        document.getElementById('count-weak').innerText        = appState.weakWords.length;
+        document.getElementById('count-bookmarked').innerText  = appState.bookmarkedWords.length;
 
-        if (appState.searchQuery) {
-            activeArray = activeArray.filter(item => 
-                item.word.toLowerCase().includes(appState.searchQuery)
-            );
-        }
-
-        this.safeSetText('count-weak', appState.weakWords.length);
-        this.safeSetText('count-bookmarked', appState.bookmarkedWords.length);
-
-        if (activeArray.length === 0) {
-            this.vaultItemsContainer.innerHTML = `
-                <div class="glass-card text-center p-4">
-                    <p class="text-muted">No vocabulary items currently stored in this repository.</p>
-                    <p class="text-muted font-size-sm mt-1">Errors during quizzes or clicked bookmarks will instantly route here.</p>
-                </div>
-            `;
+        if (!arr.length) {
+            this.vaultItemsContainer.innerHTML = `<div class="glass-card text-center p-4"><p class="text-muted">No items in this repository.</p><p class="text-muted" style="font-size:0.78rem;margin-top:6px;">Incorrect answers and bookmarks appear here.</p></div>`;
             return;
         }
-
-        this.vaultItemsContainer.innerHTML = activeArray.map(item => `
+        this.vaultItemsContainer.innerHTML = arr.map(item => `
             <div class="glass-card vault-word-card card-animation-swap">
                 <div class="v-header-row">
                     <h4>${item.word}</h4>
-                    <button class="btn-delete-word" onclick="app.deleteVaultWord('${item.word}')">
-                        <i class="fa-solid fa-trash-can"></i> Delete
-                    </button>
+                    <button class="btn-delete-word" onclick="app.deleteVaultWord('${item.word.replace(/'/g,"\\'")}')"><i class="fa-solid fa-trash-can"></i> Remove</button>
                 </div>
                 <p class="v-meaning">${item.meaning}</p>
-            </div>
-        `).join('');
+            </div>`).join('');
     }
 
-    async deleteVaultWord(wordStr) {
-        const categoryKey = appState.activeVaultTab;
-        
-        if (categoryKey === 'bookmarked') {
-            appState.bookmarkedWords = appState.bookmarkedWords.filter(w => w.word !== wordStr);
-        } else {
-            appState.weakWords = appState.weakWords.filter(w => w.word !== wordStr);
-        }
-        this.triggerHaptic('select');
-        this.renderVault();
-        this.triggerToast(`Removed "${wordStr}" from storage repository.`);
-
-        if(supabaseClient && appState.currentUser.id) {
-            try {
-                await supabaseClient.from('vault').delete()
-                    .eq('telegram_id', appState.currentUser.id)
-                    .eq('word', wordStr)
-                    .eq('category', categoryKey);
-            } catch (err) {
-                console.error("Vault delete error:", err);
-            }
-        }
+    async deleteVaultWord(word) {
+        const cat = appState.activeVaultTab;
+        if (cat === 'bookmarked') appState.bookmarkedWords = appState.bookmarkedWords.filter(w => w.word !== word);
+        else appState.weakWords = appState.weakWords.filter(w => w.word !== word);
+        this.triggerHaptic('select'); this.renderVault(); this.triggerToast(`Removed "${word}" from vault.`);
+        if (supabaseClient && appState.currentUser.id) await supabaseClient.from('vault').delete().eq('telegram_id', appState.currentUser.id).eq('word', word).eq('category', cat);
     }
 
-    // --- LEADERBOARD RENDERER ---
+    // ── LEADERBOARD ────────────────────────────────────────────
     async renderLeaderboard() {
         if (!this.leaderboardContainer) return;
-        const dateStr = new Date().toLocaleDateString('en-IN', { month: 'long', day: 'numeric', year: 'numeric' });
-        this.safeSetText('leaderboard-date-subtitle', `Standings for ${dateStr}`);
+        const dateStr = new Date().toLocaleDateString('en-IN', { month:'long', day:'numeric', year:'numeric' });
+        document.getElementById('leaderboard-date-subtitle').innerText = `Standings for ${dateStr}`;
 
         if (!appState.isPremium) {
             this.leaderboardContainer.innerHTML = `
                 <div class="blurred-leaderboard-box">
                     <div class="leaderboard-list blur-mask">
-                        <div class="leader-row glass-card"><div class="leader-meta"><span class="leader-num top-3">#1</span><span class="leader-name">Hidden Rank</span></div><div class="leader-scores"><div class="leader-score-pts">100 Qs</div></div></div>
-                        <div class="leader-row glass-card"><div class="leader-meta"><span class="leader-num top-3">#2</span><span class="leader-name">Hidden Rank</span></div><div class="leader-scores"><div class="leader-score-pts">98 Qs</div></div></div>
-                        <div class="leader-row glass-card"><div class="leader-meta"><span class="leader-num top-3">#3</span><span class="leader-name">Hidden Rank</span></div><div class="leader-scores"><div class="leader-score-pts">96 Qs</div></div></div>
+                        ${[1,2,3].map(n => `<div class="leader-row glass-card"><div class="leader-meta"><span class="leader-num top-3">#${n}</span><span class="leader-name">Elite Ranker</span></div><div class="leader-scores"><div class="leader-score-pts">●●/100</div></div></div>`).join('')}
                     </div>
                     <div class="premium-unlock-overlay">
                         <i class="fa-solid fa-lock"></i>
                         <h3>Elite Rankings Locked</h3>
-                        <p>Only Daily Premium Mix scores affect ranks. Unlock Premium Membership to compete globally.</p>
-                        <button class="btn-primary-gradient mt-3" onclick="app.triggerPremiumPaywallGate()">
-                            Unlock Premium Membership
-                        </button>
+                        <p>Complete Daily Premium Mix to appear on the global leaderboard.</p>
+                        <button class="btn-primary-gradient mt-3" onclick="app.triggerPremiumPaywallGate()"><i class="fa-solid fa-crown"></i> Unlock Premium</button>
                     </div>
-                </div>
-            `;
+                </div>`;
             return;
         }
 
-        if (!supabaseClient) {
-            this.leaderboardContainer.innerHTML = `<div class="text-center text-muted p-3">Database connection unavailable.</div>`;
-            return;
-        }
+        if (!supabaseClient) { this.leaderboardContainer.innerHTML = `<div class="text-center text-muted p-3">Database unavailable.</div>`; return; }
+
+        // Show skeletons while loading
+        this.leaderboardContainer.innerHTML = `<div class="skeleton-list">${[...Array(5)].map(()=>'<div class="skeleton-row"></div>').join('')}</div>`;
 
         try {
-            const todayISO = new Date().toISOString().split('T')[0];
-            if(!appState.cache.leaderboard) {
-                const { data } = await supabaseClient
-                    .from('leaderboard')
-                    .select('*')
-                    .eq('date', todayISO)
-                    .order('score', { ascending: false })
-                    .order('time_seconds', { ascending: true }) 
-                    .limit(10);
-                
+            const today = new Date().toISOString().split('T')[0];
+            if (!appState.cache.leaderboard) {
+                const { data } = await supabaseClient.from('leaderboard').select('*').eq('date', today).order('score', { ascending: false }).order('time_seconds', { ascending: true }).limit(10);
                 appState.cache.leaderboard = data || [];
             }
+            const lb = appState.cache.leaderboard;
+            if (!lb.length) { this.leaderboardContainer.innerHTML = `<div class="text-center text-muted p-4">No scores today yet. Be the first! 🏆</div>`; return; }
 
-            const lbData = appState.cache.leaderboard;
+            const myId    = String(appState.currentUser.id);
+            const myIndex = lb.findIndex(r => String(r.telegram_id) === myId);
 
-            if(lbData.length === 0) {
-                this.leaderboardContainer.innerHTML = `<div class="text-center text-muted p-3">No scores logged today yet. Be the first!</div>`;
-                return;
-            }
-
+            // If user not in top 10, show their pinned card below
             let myRankHTML = '';
-            const myIndex = lbData.findIndex(row => row.telegram_id === appState.currentUser.id);
-            
-            if(myIndex !== -1) {
-                const me = lbData[myIndex];
-                myRankHTML = `
-                    <div class="leader-row glass-card user-pinned-rank">
-                        <div class="leader-meta">
-                            <span class="leader-num">#${myIndex + 1}</span>
-                            <span class="leader-name">You (Pinned)</span>
-                        </div>
-                        <div class="leader-scores">
-                            <div class="leader-score-pts">${me.score} Correct</div>
-                            <div class="leader-score-time">${Math.floor(me.time_seconds / 60)}m ${me.time_seconds % 60}s</div>
-                        </div>
-                    </div>
-                `;
+            if (myIndex === -1 && appState.currentUser.id) {
+                myRankHTML = `<div class="leader-row glass-card user-pinned-rank" style="margin-top:16px;">
+                    <div class="leader-meta"><span class="leader-num">#—</span><span class="leader-name">You</span></div>
+                    <div class="leader-scores"><div class="leader-score-pts" style="font-size:0.78rem;">Not in Top 10 yet</div></div>
+                </div>`;
             }
 
             this.leaderboardContainer.innerHTML = `
                 <div class="leaderboard-list">
-                    ${lbData.map((user, idx) => {
-                        const isTop3 = idx < 3;
-                        return `
-                        <div class="leader-row glass-card">
+                    ${lb.map((u, i) => {
+                        const isMe   = String(u.telegram_id) === myId;
+                        const medal  = i === 0 ? '🥇' : i === 1 ? '🥈' : i === 2 ? '🥉' : `#${i+1}`;
+                        return `<div class="leader-row glass-card ${isMe ? 'user-pinned-rank' : ''}">
                             <div class="leader-meta">
-                                <span class="leader-num ${isTop3 ? 'top-3' : ''}">#${idx + 1}</span>
-                                <span class="leader-name">${user.name}</span>
+                                <span class="leader-num ${i < 3 ? 'top-3' : ''}">${medal}</span>
+                                <span class="leader-name">${u.name || 'Aspirant'}${isMe ? ' (You)' : ''}</span>
                             </div>
                             <div class="leader-scores">
-                                <div class="leader-score-pts">${user.score} Qs</div>
-                                <div class="leader-score-time">${Math.floor(user.time_seconds / 60)}m ${user.time_seconds % 60}s</div>
+                                <div class="leader-score-pts">${u.score} Correct</div>
+                                <div class="leader-score-time">${Math.floor(u.time_seconds/60)}m ${u.time_seconds%60}s</div>
                             </div>
-                        </div>
-                        `;
+                        </div>`;
                     }).join('')}
                 </div>
-                ${myRankHTML}
-            `;
-        } catch(e) {
-            console.error("Leaderboard fetch error:", e);
-            this.leaderboardContainer.innerHTML = `<div class="text-center text-muted p-3">Failed to load leaderboard.</div>`;
-        }
+                ${myRankHTML}`;
+        } catch(e) { console.error('Leaderboard error:', e); this.leaderboardContainer.innerHTML = `<div class="text-center text-muted p-3">Failed to load rankings.</div>`; }
     }
 
-    // --- UTILITIES ---
+    // ── TOAST ──────────────────────────────────────────────────
     triggerToast(msg) {
-        const existing = document.getElementById('app-toast-alert');
-        if (existing) existing.remove();
-
-        const toast = document.createElement('div');
-        toast.id = 'app-toast-alert';
-        toast.style.position = 'fixed';
-        toast.style.bottom = '95px';
-        toast.style.left = '50%';
-        toast.style.transform = 'translateX(-50%)';
-        toast.style.background = 'rgba(18, 22, 39, 0.95)';
-        toast.style.border = '1px solid var(--neon-cyan)';
-        toast.style.color = '#fff';
-        toast.style.padding = '12px 24px';
-        toast.style.borderRadius = '30px';
-        toast.style.fontSize = '0.8rem';
-        toast.style.fontWeight = '700';
-        toast.style.zIndex = '9999';
-        toast.style.boxShadow = '0 0 15px var(--neon-cyan-glow)';
-        toast.innerText = msg;
-
-        document.body.appendChild(toast);
-        setTimeout(() => {
-            if (toast.parentNode) toast.remove();
-        }, 2500);
+        const old = document.getElementById('app-toast-alert'); if (old) old.remove();
+        const t = document.createElement('div');
+        t.id = 'app-toast-alert';
+        Object.assign(t.style, { position:'fixed', bottom:'95px', left:'50%', transform:'translateX(-50%)', background:'rgba(18,22,39,0.97)', border:'1px solid var(--neon-cyan)', color:'#fff', padding:'12px 24px', borderRadius:'30px', fontSize:'0.8rem', fontWeight:'700', zIndex:'9999', boxShadow:'0 0 18px var(--neon-cyan-glow)', whiteSpace:'nowrap' });
+        t.innerText = msg;
+        document.body.appendChild(t);
+        setTimeout(() => t.remove(), 2600);
     }
 }
 
-window.addEventListener('DOMContentLoaded', () => {
-    window.app = new SSCMaxVocabEngine();
-});
+window.addEventListener('DOMContentLoaded', () => { window.app = new SSCMaxVocabEngine(); });

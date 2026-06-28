@@ -467,7 +467,7 @@ body.premium-enhanced .bg-glow {
     background: rgba(10, 11, 18, 0.85);
     backdrop-filter: blur(24px); -webkit-backdrop-filter: blur(24px);
     border-top: 1px solid var(--border-glass);
-    display: grid; grid-template-columns: repeat(4, 1fr); z-index: 90;
+    display: grid; grid-template-columns: repeat(3, 1fr); z-index: 90;
 }
 .nav-tab {
     background: transparent; border: none; color: var(--text-muted);
@@ -478,66 +478,218 @@ body.premium-enhanced .bg-glow {
 .nav-tab span { font-size: 0.65rem; font-weight: 600; }
 .nav-tab.active { color: var(--neon-cyan); }
 
-/* Admin Panel Styles */
-#admin-premium-users-container { 
-    display: flex; 
-    flex-direction: column; 
-    gap: 12px; 
-}
-.admin-user-row {
-    display: flex; 
-    align-items: center; 
-    justify-content: space-between;
-    padding: 14px 16px; 
-    border-radius: 14px;
-    background: rgba(255, 255, 255, 0.02); 
-    border: 1px solid var(--border-glass);
-    transition: background 0.2s ease;
-}
-.admin-user-row:hover { 
-    background: rgba(255, 255, 255, 0.05); 
-}
-.admin-user-info { 
-    display: flex; 
-    flex-direction: column; 
-    gap: 4px; 
-}
-.admin-user-name { 
-    font-size: 0.95rem; 
-    font-weight: 700; 
-    color: var(--text-primary); 
-}
-.admin-user-username { 
-    font-size: 0.8rem; 
-    font-weight: 600; 
-    color: var(--neon-cyan); 
-}
-.admin-user-tgid { 
-    font-size: 0.75rem; 
-    color: var(--text-muted); 
-    font-family: monospace; 
-}
-.btn-admin-remove {
-    background: rgba(239, 68, 68, 0.1); 
-    border: 1px solid rgba(239, 68, 68, 0.25);
-    color: var(--danger-red); 
-    width: 36px; 
-    height: 36px; 
-    border-radius: 10px;
-    display: flex; 
-    align-items: center; 
-    justify-content: center; 
-    cursor: pointer;
-    transition: all 0.2s ease; 
-    flex-shrink: 0;
-}
-.btn-admin-remove:hover { 
-    background: var(--danger-red); 
-    color: #fff; 
-}
-
 .card-animation-swap { animation: slideCardIn 0.3s cubic-bezier(0.16, 1, 0.3, 1) forwards; }
 @keyframes slideCardIn { from { opacity: 0; transform: translateX(16px); } to { opacity: 1; transform: translateX(0); } }
 @keyframes fadeIn { from { opacity: 0; transform: translateY(-4px); } to { opacity: 1; transform: translateY(0); } }
 .animate-bounce { animation: miniBounce 3s ease infinite; }
 @keyframes miniBounce { 0%, 100% { transform: translateY(0); } 50% { transform: translateY(-6px); } }
+
+/* ════════════════════════════════════════════════════════════
+   v2 UPDATE — New components, overrides & fixes
+   All existing styles preserved above. These rules extend them.
+   ════════════════════════════════════════════════════════════ */
+
+/* ── Utility overrides ─────────────────────────────────────── */
+.text-muted  { color: var(--text-muted); }
+.p-2 { padding: 8px; }
+.p-3 { padding: 16px; }
+.p-4 { padding: 24px; }
+
+.section-title { display: flex; align-items: center; justify-content: space-between; }
+.section-note { font-size: 0.7rem; font-weight: 600; color: var(--text-muted); }
+
+/* ── 4-column bottom nav for admin ─────────────────────────── */
+.bottom-nav-bar.admin-nav { grid-template-columns: repeat(4, 1fr); }
+.bottom-nav-bar.admin-nav .nav-tab i    { font-size: 1rem; }
+.bottom-nav-bar.admin-nav .nav-tab span { font-size: 0.58rem; }
+
+/* ── Skeleton loader ───────────────────────────────────────── */
+@keyframes shimmer {
+    0%   { background-position: 200% 0; }
+    100% { background-position: -200% 0; }
+}
+.skeleton-card {
+    height: 68px; border-radius: 16px; border: 1px solid var(--border-glass);
+    background: linear-gradient(90deg, rgba(255,255,255,0.03) 0%, rgba(255,255,255,0.07) 50%, rgba(255,255,255,0.03) 100%);
+    background-size: 200% 100%; animation: shimmer 1.6s infinite;
+}
+.skeleton-list { display: flex; flex-direction: column; gap: 10px; }
+.skeleton-row {
+    height: 60px; border-radius: 14px;
+    background: linear-gradient(90deg, rgba(255,255,255,0.03) 0%, rgba(255,255,255,0.06) 50%, rgba(255,255,255,0.03) 100%);
+    background-size: 200% 100%; animation: shimmer 1.6s infinite;
+}
+
+/* ── Option letter + text spans (new JS renders these) ──────── */
+.opt-letter { font-size: 0.78rem; font-weight: 800; color: var(--text-muted); min-width: 22px; flex-shrink: 0; }
+.opt-text   { font-size: 0.9rem; font-weight: 500; flex: 1; line-height: 1.4; }
+.options-stack { gap: 16px; }
+
+/* ── Explanation box override — richer styling ─────────────── */
+.option-explanation-box {
+    font-size: 0.82rem; line-height: 1.5; padding: 12px 16px; border-radius: 12px;
+    background: rgba(12, 18, 35, 0.95); border: 1px solid rgba(255,255,255,0.05);
+    border-left: 3px solid rgba(255,255,255,0.1); color: #c8d0e0;
+    margin-top: 2px; animation: fadeIn 0.25s ease forwards;
+}
+.option-explanation-box.expl-correct {
+    border-left-color: var(--success-green);
+    background: rgba(16, 185, 129, 0.07); color: #a7f3d0;
+}
+.option-explanation-box.expl-incorrect {
+    border-left-color: var(--danger-red);
+    background: rgba(239, 68, 68, 0.06); color: #fca5a5;
+}
+
+/* ── Unlock Premium button ──────────────────────────────────── */
+.btn-unlock-premium {
+    width: 100%; background: linear-gradient(135deg, var(--gold-premium), #ff7a00);
+    color: #000; border: none; padding: 16px 24px; border-radius: 14px;
+    font-size: 0.95rem; font-weight: 800;
+    display: flex; align-items: center; justify-content: center; gap: 10px;
+    cursor: pointer; font-family: var(--font-stack);
+    box-shadow: 0 4px 20px rgba(255,184,0,0.25);
+    transition: transform 0.2s ease;
+}
+.btn-unlock-premium:active { transform: scale(0.97); }
+
+/* ── Topic-sets view header + back button ───────────────────── */
+.topic-sets-header { display: flex; align-items: center; gap: 14px; margin-bottom: 20px; }
+.topic-sets-header-text h2 { font-size: 1.35rem; font-weight: 800; }
+.topic-sets-header-text p  { font-size: 0.82rem; color: var(--text-muted); margin-top: 2px; }
+.btn-back-nav {
+    width: 40px; height: 40px; background: rgba(255,255,255,0.05);
+    border: 1px solid var(--border-glass); border-radius: 50%;
+    color: var(--text-primary); display: flex; align-items: center; justify-content: center;
+    cursor: pointer; flex-shrink: 0; font-size: 1rem; transition: background 0.2s ease;
+}
+.btn-back-nav:active { background: rgba(255,255,255,0.1); }
+
+/* ── Topic set cards ────────────────────────────────────────── */
+.topic-sets-container { display: flex; flex-direction: column; gap: 12px; }
+.topic-set-card {
+    padding: 18px 20px; border-radius: 16px; cursor: pointer;
+    position: relative; overflow: hidden; transition: transform 0.2s ease, border-color 0.2s ease;
+}
+.topic-set-card:not(.locked-set):active { transform: scale(0.98); }
+.topic-set-card.locked-set { opacity: 0.75; cursor: default; }
+.set-info { display: flex; align-items: center; gap: 10px; margin-bottom: 10px; }
+.set-label { font-size: 0.95rem; font-weight: 800; color: var(--text-primary); }
+.set-range-tag {
+    font-size: 0.68rem; font-weight: 700; padding: 3px 10px; border-radius: 10px;
+    background: rgba(0,242,254,0.08); color: var(--neon-cyan); border: 1px solid rgba(0,242,254,0.18);
+}
+.set-meta { display: flex; gap: 16px; font-size: 0.78rem; font-weight: 600; color: var(--text-muted); }
+.set-meta span { display: flex; align-items: center; gap: 5px; }
+.set-lock-bar {
+    margin-top: 12px; padding: 10px 14px;
+    background: linear-gradient(135deg, rgba(255,184,0,0.12), rgba(255,106,0,0.08));
+    border: 1px solid rgba(255,184,0,0.25); border-radius: 10px;
+    font-size: 0.8rem; font-weight: 700; color: var(--gold-premium);
+    display: flex; align-items: center; justify-content: center; gap: 6px;
+    cursor: pointer; transition: background 0.2s ease;
+}
+.set-lock-bar:active { background: rgba(255,184,0,0.22); }
+.locked-tag {
+    font-size: 0.7rem; font-weight: 700; padding: 3px 8px; border-radius: 8px;
+    background: rgba(255,184,0,0.1); color: var(--gold-premium);
+    border: 1px solid rgba(255,184,0,0.2); display: flex; align-items: center; gap: 4px;
+}
+
+/* ── Archive month accordion ────────────────────────────────── */
+.archive-month-group { margin-bottom: 10px; }
+.archive-month-header {
+    display: flex; align-items: center; justify-content: space-between;
+    padding: 16px 18px; cursor: pointer; border-radius: 14px;
+    font-weight: 700; font-size: 0.9rem; transition: background 0.2s ease;
+}
+.archive-month-header:active { background: rgba(255,255,255,0.04); }
+.arc-chevron { font-size: 0.8rem; color: var(--text-muted); transition: transform 0.3s ease; flex-shrink: 0; }
+.archive-month-group.open .arc-chevron { transform: rotate(180deg); }
+.archive-month-dates { display: none; flex-direction: column; gap: 8px; margin-top: 6px; padding-left: 8px; }
+.archive-month-group.open .archive-month-dates { display: flex; }
+.archive-date-entry {
+    display: flex; align-items: center; justify-content: space-between;
+    padding: 13px 18px; border-radius: 12px;
+    background: rgba(255,255,255,0.02); border: 1px solid var(--border-glass);
+    cursor: pointer; font-size: 0.88rem; font-weight: 600; transition: background 0.2s ease;
+}
+.archive-date-entry:active { background: rgba(255,255,255,0.05); }
+
+/* ── Admin Panel form elements ──────────────────────────────── */
+.adm-label {
+    display: block; font-size: 0.72rem; font-weight: 700; color: var(--text-muted);
+    margin-bottom: 6px; margin-top: 14px; text-transform: uppercase; letter-spacing: 0.6px;
+}
+.adm-input {
+    width: 100%; background: rgba(5,6,12,0.85); color: var(--text-primary);
+    border: 1px solid rgba(255,255,255,0.1); padding: 12px 14px;
+    border-radius: 10px; font-size: 0.88rem; font-family: var(--font-stack);
+    outline: none; transition: border-color 0.2s ease; -webkit-appearance: none;
+}
+.adm-input:focus { border-color: var(--border-glass-focus); }
+.adm-textarea {
+    width: 100%; background: rgba(5,6,12,0.85); color: var(--text-primary);
+    border: 1px solid rgba(255,255,255,0.1); padding: 12px 14px;
+    border-radius: 10px; font-size: 0.82rem; font-family: 'Courier New', monospace;
+    resize: vertical; outline: none; line-height: 1.5; min-height: 160px;
+    transition: border-color 0.2s ease;
+}
+.adm-textarea:focus { border-color: var(--border-glass-focus); }
+.adm-pill {
+    padding: 9px 16px; border-radius: 20px; font-size: 0.78rem; font-weight: 700;
+    cursor: pointer; background: rgba(255,255,255,0.05); color: var(--text-muted);
+    border: 1px solid rgba(255,255,255,0.08); white-space: nowrap;
+    font-family: var(--font-stack); transition: all 0.2s ease; flex-shrink: 0;
+}
+.adm-pill.active {
+    background: var(--neon-cyan); color: #000; border-color: transparent;
+    box-shadow: 0 0 12px rgba(0,242,254,0.3);
+}
+.adm-btn-cyan {
+    background: linear-gradient(135deg, var(--neon-cyan), #0064fe); color: #000;
+    font-weight: 800; font-size: 0.85rem; padding: 12px 16px; border: none;
+    border-radius: 10px; cursor: pointer; font-family: var(--font-stack);
+    display: inline-flex; align-items: center; justify-content: center;
+    transition: opacity 0.2s ease;
+}
+.adm-btn-cyan:active { opacity: 0.8; }
+.adm-btn-gold {
+    background: linear-gradient(135deg, var(--gold-premium), #ff6a00); color: #000;
+    font-weight: 800; font-size: 0.85rem; padding: 12px 16px; border: none;
+    border-radius: 10px; cursor: pointer; font-family: var(--font-stack);
+    display: inline-flex; align-items: center; justify-content: center;
+    transition: opacity 0.2s ease;
+}
+.adm-btn-gold:active { opacity: 0.8; }
+.adm-btn-red {
+    background: rgba(239,68,68,0.12); color: var(--danger-red);
+    border: 1px solid rgba(239,68,68,0.25); font-weight: 700; font-size: 0.8rem;
+    padding: 8px 14px; border-radius: 8px; cursor: pointer; font-family: var(--font-stack);
+    display: inline-flex; align-items: center; gap: 5px; transition: all 0.2s ease;
+}
+.adm-btn-red:hover  { background: var(--danger-red); color: #fff; }
+.adm-btn-red:active { opacity: 0.85; }
+
+/* ── Rank page — fix card cut + scroll clearance ────────────── */
+#view-ranks { padding-bottom: 12px; }
+#leaderboard-master-container { padding-bottom: 20px; }
+#adm-premium-users-list {
+    max-height: 340px; overflow-y: auto;
+    overscroll-behavior: contain; padding-right: 4px;
+}
+
+/* ── Performance — reduce repaint surface ───────────────────── */
+.portal-card, .glass-card, .topic-card-item,
+.topic-set-card, .archive-date-entry { contain: layout style; }
+.bg-glow { position: fixed; }
+
+/* ── Thin scrollbars (webkit) ───────────────────────────────── */
+#view-container::-webkit-scrollbar,
+.full-overlay-view::-webkit-scrollbar,
+#adm-premium-users-list::-webkit-scrollbar { width: 3px; }
+#view-container::-webkit-scrollbar-thumb,
+.full-overlay-view::-webkit-scrollbar-thumb,
+#adm-premium-users-list::-webkit-scrollbar-thumb {
+    background: rgba(255,255,255,0.1); border-radius: 2px;
+}

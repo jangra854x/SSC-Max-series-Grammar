@@ -15,26 +15,29 @@
     <div class="bg-glow purple-glow-bg" id="ambient-purple"></div>
 
     <div id="app">
-        
+
         <header class="app-header">
             <div class="brand">
                 <span class="text-cyan">SSC</span> <span class="text-primary">MAX</span> <span class="text-gold">VOCAB</span>
             </div>
             <div class="header-actions">
                 <div class="tier-indicator-badge" id="header-tier-indicator">
-                    <i class="fa-solid fa-spinner fa-spin"></i> Checking...
+                    <i class="fa-solid fa-spinner fa-spin"></i> Loading...
                 </div>
             </div>
         </header>
 
         <main id="view-container">
-            
+
+            <!-- ═══════════════════════════════════════ -->
+            <!-- DASHBOARD                              -->
+            <!-- ═══════════════════════════════════════ -->
             <section id="view-dashboard" class="app-view active">
-                
+
                 <div class="exam-target-banner">
                     SSC CGL • CHSL • MTS • GD • CPO • Steno • Selection Post
                 </div>
-                
+
                 <div class="pyq-focus-banner mt-2">
                     Complete SSC Vocabulary Preparation • PYQ Based
                 </div>
@@ -49,7 +52,7 @@
                 </div>
 
                 <div class="portal-cards-stack mt-4">
-                    
+
                     <div class="portal-card cyan-gradient-card" onclick="app.showQuizBlueprint('free', 'Daily Free Quiz')">
                         <div class="portal-card-content">
                             <span class="portal-tag cyan-tag">DAILY DIAGNOSTIC</span>
@@ -63,11 +66,12 @@
                         <div class="portal-arrow"><i class="fa-solid fa-arrow-right"></i></div>
                     </div>
 
+                    <!-- Free users can now VIEW premium, onclick always navigates -->
                     <div class="portal-card gold-gradient-card mt-3" onclick="app.navigateToPremiumView()">
                         <div class="portal-card-content">
                             <span class="portal-tag gold-tag"><i class="fa-solid fa-crown"></i> ELITE PREMIUM</span>
                             <h3>Topic Wise Vocabulary Quiz</h3>
-                            <p>OWS • Idioms & Phrases • Synonyms • Spelling • Error Detection • Mixed PYQ</p>
+                            <p>OWS • Idioms & Phrases • Synonyms • Spelling • Antonyms • Homophones</p>
                             <div class="portal-meta">
                                 <span><i class="fa-solid fa-circle-question"></i> 100 Questions</span>
                                 <span class="text-gold"><i class="fa-solid fa-ranking-star"></i> Affects Daily Ranks</span>
@@ -79,69 +83,141 @@
                 </div>
             </section>
 
+            <!-- ═══════════════════════════════════════ -->
+            <!-- QUIZ DETAILS (blueprint screen)        -->
+            <!-- ═══════════════════════════════════════ -->
             <section id="view-quiz-details" class="app-view">
                 <div class="screen-header">
                     <h2>Assessment Overview</h2>
-                    <p id="qd-subtitle">Review configuration parameters before starting</p>
+                    <p id="qd-subtitle">Review configuration before starting</p>
                 </div>
 
                 <div class="glass-card quiz-rules-card">
-                    <div class="rule-row"><span>📅 Schedule Date:</span> <strong id="qd-date">Today</strong></div>
-                    <div class="rule-row"><span>❓ Payload Count:</span> <strong id="qd-count">30 Questions</strong></div>
-                    <div class="rule-row"><span>⏱️ Execution Timer:</span> <strong>Elapsed Stopwatch (No Countdown)</strong></div>
-                    <div class="rule-row"><span>🏆 Standings Impact:</span> <strong id="qd-rank-status" class="text-cyan">Unranked Practice</strong></div>
-                    
+                    <div class="rule-row">
+                        <span>📅 Date:</span>
+                        <strong id="qd-date">Today</strong>
+                    </div>
+                    <div class="rule-row">
+                        <span>❓ Total Questions:</span>
+                        <strong id="qd-count">30 Questions</strong>
+                    </div>
+                    <div class="rule-row">
+                        <span>⏱️ Quiz Duration:</span>
+                        <strong>Elapsed Stopwatch (No Countdown)</strong>
+                    </div>
+                    <div class="rule-row">
+                        <span>🏆 Rankings:</span>
+                        <strong id="qd-rank-status" class="text-cyan">Unranked Practice</strong>
+                    </div>
+
                     <hr class="glass-divider">
-                    
-                    <h4>Operational Guidelines:</h4>
+
+                    <h4>Guidelines:</h4>
                     <ul class="rules-list">
                         <li><strong>Mandatory Selection:</strong> Skipping is disabled. You must commit to an answer to proceed.</li>
-                        <li><strong>Instant Isolation:</strong> Locking an option instantly reveals comprehensive color-coded breakdowns below every single choice.</li>
-                        <li><strong>Vault Syncing:</strong> Errors and bookmarked items sync automatically to your personal Vocabulary Vault.</li>
+                        <li><strong>Instant Feedback:</strong> Selecting an option instantly reveals color-coded explanations for every choice.</li>
+                        <li><strong>Vault Syncing:</strong> Errors and bookmarks sync automatically to your Vocabulary Vault.</li>
                     </ul>
                 </div>
 
+                <!-- JS will change this button to "Unlock Premium" for free users on premium content -->
                 <div class="action-stack mt-4">
                     <button class="btn-primary-gradient w-100" id="btn-confirm-start-quiz">
-                        <i class="fa-solid fa-flag-checkered"></i> EXECUTE QUIZ NOW
+                        <i class="fa-solid fa-flag-checkered"></i> START QUIZ
                     </button>
                     <button class="btn-secondary w-100 mt-2" onclick="app.switchView('dashboard')">Cancel & Return</button>
                 </div>
             </section>
 
+            <!-- ═══════════════════════════════════════ -->
+            <!-- PREMIUM VIEW                           -->
+            <!-- Free users can browse but start locked -->
+            <!-- ═══════════════════════════════════════ -->
             <section id="view-premium" class="app-view">
                 <div class="screen-header">
                     <h2>Elite Access Portal</h2>
-                    <p>Advanced PYQ syntax modules & live competitive ranking mixes</p>
+                    <p>Advanced PYQ modules & live competitive ranking</p>
                 </div>
 
-                <div class="portal-card gold-gradient-card mb-4" onclick="app.showQuizBlueprint('daily_premium', 'Daily Premium Mix')">
+                <!-- Active Daily Premium Quiz - id used by JS to update date label -->
+                <div class="portal-card gold-gradient-card mb-4" id="active-premium-quiz-card" onclick="app.handleActivePremiumClick()">
                     <div class="portal-card-content">
                         <span class="portal-tag gold-tag"><i class="fa-solid fa-trophy"></i> LEADERBOARD ACTIVE</span>
                         <h3>Daily Premium Mix</h3>
-                        <p>100 Questions: OWS • Idioms & Phrases • Synonyms • Spelling • Error Detection • Mixed PYQ</p>
+                        <p>100 Questions: OWS • Idioms • Synonyms • Spelling • Error Detection • Mixed PYQ</p>
                         <div class="portal-meta mt-2">
                             <span><i class="fa-solid fa-circle-question"></i> 100 Questions</span>
-                            <span class="text-gold"><i class="fa-solid fa-chart-line"></i> Logs To Global Ranks</span>
+                            <!-- JS updates this span with quiz date -->
+                            <span class="text-gold prem-quiz-date">
+                                <i class="fa-solid fa-calendar-day"></i>
+                                <span id="active-prem-date-label">Loading date...</span>
+                            </span>
                         </div>
                     </div>
                     <div class="portal-arrow"><i class="fa-solid fa-play"></i></div>
                 </div>
 
-                <h3 class="section-title">Premium Topic Modules (20 Questions Each)</h3>
+                <!-- Topic Modules — JS renders 6 fixed topics with set counts -->
+                <h3 class="section-title">
+                    Topic Modules
+                    <span class="section-note">20 Questions / Set</span>
+                </h3>
                 <div class="topic-grid" id="premium-topics-list">
-                    <div class="text-center text-muted p-3"><i class="fa-solid fa-spinner fa-spin"></i> Loading topics...</div>
+                    <!-- JS populates with 6 topics; skeleton shown while loading -->
+                    <div class="skeleton-card"></div>
+                    <div class="skeleton-card"></div>
+                    <div class="skeleton-card"></div>
+                    <div class="skeleton-card"></div>
+                    <div class="skeleton-card"></div>
+                    <div class="skeleton-card"></div>
                 </div>
 
-                <h3 class="section-title mt-4">Previous Premium Tests</h3>
+                <!-- Past Premium Tests — JS renders Month > Date accordion -->
+                <h3 class="section-title mt-4">Past Premium Tests</h3>
                 <div class="archive-list-group" id="premium-archives-container">
-                    <div class="text-center text-muted p-3"><i class="fa-solid fa-spinner fa-spin"></i> Loading archives...</div>
+                    <div class="text-center text-muted p-3">
+                        <i class="fa-solid fa-spinner fa-spin"></i> Loading archives...
+                    </div>
                 </div>
             </section>
 
+            <!-- ═══════════════════════════════════════ -->
+            <!-- TOPIC SETS VIEW (new section)          -->
+            <!-- Shows available question sets for      -->
+            <!-- each topic (Set 1, Set 2, etc.)        -->
+            <!-- ═══════════════════════════════════════ -->
+            <section id="view-topic-sets" class="app-view">
+
+                <!-- Custom header with back button -->
+                <div class="topic-sets-header">
+                    <button class="btn-back-nav" onclick="app.switchView('premium')">
+                        <i class="fa-solid fa-arrow-left"></i>
+                    </button>
+                    <div class="topic-sets-header-text">
+                        <h2 id="topic-sets-title">Topic Sets</h2>
+                        <p>Select a set to begin</p>
+                    </div>
+                </div>
+
+                <!-- JS populates with set cards (Set 1: Q 1-20, Set 2: Q 21-40...) -->
+                <!-- Each card shows: set number, question range, count, date -->
+                <!-- Locked card shows "Unlock Premium" button for free users -->
+                <div class="topic-sets-container" id="topic-sets-list">
+                    <div class="text-center text-muted p-3">
+                        <i class="fa-solid fa-spinner fa-spin"></i> Loading sets...
+                    </div>
+                </div>
+
+            </section>
+
+            <!-- ═══════════════════════════════════════ -->
+            <!-- QUIZ VIEW (active quiz screen)         -->
+            <!-- ═══════════════════════════════════════ -->
             <section id="view-quiz" class="app-view full-overlay-view">
                 <div class="quiz-header">
-                    <button class="btn-close" onclick="app.confirmAbandonQuiz()"><i class="fa-solid fa-xmark"></i></button>
+                    <button class="btn-close" onclick="app.confirmAbandonQuiz()">
+                        <i class="fa-solid fa-xmark"></i>
+                    </button>
                     <div class="quiz-title-context">
                         <h4 id="quiz-title-display">Vocabulary Assessment</h4>
                     </div>
@@ -153,7 +229,7 @@
                 </div>
 
                 <div class="quiz-meta-indices mb-2">
-                    <span id="quiz-question-counter">Initializing...</span>
+                    <span id="quiz-question-counter">Loading...</span>
                     <div class="meta-right-actions">
                         <button class="btn-bookmark-q" id="btn-bookmark-current" onclick="app.toggleBookmarkCurrentQuestion()">
                             <i class="fa-regular fa-bookmark"></i> Bookmark
@@ -163,27 +239,29 @@
 
                 <div class="question-wrapper card-animation-swap" id="question-card-frame">
                     <div class="question-tags">
-                        <span class="q-tag" id="question-category-tag">Database</span>
+                        <span class="q-tag" id="question-category-tag">Vocabulary</span>
                     </div>
-                    <p class="question-text" id="question-text-body">Fetching latest database payload...</p>
-                    
-                    <div class="options-stack" id="question-options-container">
-                        </div>
+                    <p class="question-text" id="question-text-body">Loading question...</p>
+                    <!-- JS renders option-wrapper > option-node + option-explanation-box per option -->
+                    <div class="options-stack" id="question-options-container"></div>
                 </div>
 
                 <div class="quiz-footer-centered mt-4">
                     <button class="btn-primary-gradient w-100 hidden" id="btn-next-q">
-                        Advance To Next <i class="fa-solid fa-arrow-right"></i>
+                        Next Question <i class="fa-solid fa-arrow-right"></i>
                     </button>
                 </div>
             </section>
 
+            <!-- ═══════════════════════════════════════ -->
+            <!-- RESULT VIEW                            -->
+            <!-- ═══════════════════════════════════════ -->
             <section id="view-result" class="app-view full-overlay-view">
                 <div class="result-container">
                     <div class="crown-badge-wrapper animate-bounce">
                         <i class="fa-solid fa-trophy text-gold"></i>
                     </div>
-                    <h2 class="result-heading">Assessment Finalized</h2>
+                    <h2 class="result-heading">Assessment Complete</h2>
                     <div class="rank-badge-dynamic" id="res-tier-badge">PERFORMANCE EVALUATION</div>
 
                     <div class="result-stats-grid mt-4">
@@ -197,21 +275,21 @@
                         </div>
                         <div class="res-card glass-card correct-card">
                             <span class="res-val text-success" id="res-correct">0</span>
-                            <span class="res-lbl">Correct Answers</span>
+                            <span class="res-lbl">Correct</span>
                         </div>
                         <div class="res-card glass-card wrong-card">
                             <span class="res-val text-danger" id="res-wrong">0</span>
-                            <span class="res-lbl">Incorrect Answers</span>
+                            <span class="res-lbl">Incorrect</span>
                         </div>
                         <div class="res-card glass-card col-span-2">
                             <span class="res-val" id="res-time">00:00</span>
-                            <span class="res-lbl">Total Time Spent</span>
+                            <span class="res-lbl">Time Spent</span>
                         </div>
                     </div>
 
                     <div class="feedback-card glass-card mt-4">
                         <p class="feedback-text" id="res-feedback">
-                            All incorrect selections and bookmarked items have been securely routed to your Vault. Review them daily to guarantee long-term retention.
+                            Incorrect answers and bookmarked items have been saved to your Vocabulary Vault. Review them daily for long-term retention.
                         </p>
                     </div>
 
@@ -221,57 +299,61 @@
                 </div>
             </section>
 
+            <!-- ═══════════════════════════════════════ -->
+            <!-- VAULT                                  -->
+            <!-- ═══════════════════════════════════════ -->
             <section id="view-vault" class="app-view">
                 <div class="screen-header">
                     <h2>Vocabulary Vault</h2>
-                    <p>Targeted storage repository for weak and bookmarked syntax</p>
+                    <p>Weak and bookmarked vocabulary repository</p>
                 </div>
 
                 <div class="vault-search-wrapper mb-3">
                     <i class="fa-solid fa-magnifying-glass search-icon"></i>
-                    <input type="search" id="vault-search-input" placeholder="Filter stored words or semantic meanings..." oninput="app.filterVaultContent()">
+                    <input type="search" id="vault-search-input"
+                        placeholder="Search stored words or meanings..."
+                        oninput="app.filterVaultContent()">
                 </div>
 
+                <!-- data-tab attributes used by JS switchVaultTab() for active class -->
                 <div class="vault-dual-tabs mb-3">
-                    <button class="vault-tab-btn active" onclick="app.switchVaultTab('weak')">
+                    <button class="vault-tab-btn active" data-tab="weak" onclick="app.switchVaultTab('weak')">
                         Weak Words (<span id="count-weak">0</span>)
                     </button>
-                    <button class="vault-tab-btn" onclick="app.switchVaultTab('bookmarked')">
+                    <button class="vault-tab-btn" data-tab="bookmarked" onclick="app.switchVaultTab('bookmarked')">
                         Bookmarked (<span id="count-bookmarked">0</span>)
                     </button>
                 </div>
 
                 <div class="vault-stack-list" id="vault-items-container">
-                    <div class="text-center text-muted p-3"><i class="fa-solid fa-spinner fa-spin"></i> Syncing vault...</div>
+                    <div class="text-center text-muted p-3">
+                        <i class="fa-solid fa-spinner fa-spin"></i> Syncing vault...
+                    </div>
                 </div>
             </section>
 
+            <!-- ═══════════════════════════════════════ -->
+            <!-- RANKS                                  -->
+            <!-- JS renders: premium lock OR top-10    -->
+            <!-- + user's own rank if outside top 10   -->
+            <!-- ═══════════════════════════════════════ -->
             <section id="view-ranks" class="app-view">
                 <div class="screen-header">
                     <h2>Daily Elite Ranks</h2>
                     <p id="leaderboard-date-subtitle">Live Standings</p>
                 </div>
-
-                <div id="leaderboard-master-container">
-                    <div class="text-center text-muted p-3"><i class="fa-solid fa-spinner fa-spin"></i> Fetching global standings...</div>
-                </div>
-            </section>
-
-            <section id="view-admin" class="app-view">
-                <div class="screen-header">
-                    <h2>Admin Panel</h2>
-                    <p>System Administration</p>
-                </div>
-
-                <div class="glass-card mt-3">
-                    <h3 class="section-title mb-3">Premium Users</h3>
-                    <div id="admin-premium-users-container">
-                        </div>
-                </div>
+                <!-- JS fills this; extra bottom padding via CSS prevents card cutoff -->
+                <div id="leaderboard-master-container"></div>
             </section>
 
         </main>
 
+        <!-- ═══════════════════════════════════════════ -->
+        <!-- BOTTOM NAV                                 -->
+        <!-- Admin 4th tab injected by JS on admin     -->
+        <!-- login — JS adds .admin-nav class to this  -->
+        <!-- element and CSS switches to 4 columns     -->
+        <!-- ═══════════════════════════════════════════ -->
         <nav class="bottom-nav-bar">
             <button class="nav-tab active" data-target="dashboard">
                 <i class="fa-solid fa-house"></i>
@@ -285,11 +367,9 @@
                 <i class="fa-solid fa-trophy"></i>
                 <span>Ranks</span>
             </button>
-            <button class="nav-tab" data-target="admin">
-                <i class="fa-solid fa-user-shield"></i>
-                <span>Admin Panel</span>
-            </button>
+            <!-- Admin tab injected here by JS if user ID matches admin -->
         </nav>
+
     </div>
 
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
