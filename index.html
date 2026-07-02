@@ -39,14 +39,25 @@
                 <div class="pyq-focus-banner mt-2">
                     Complete SSC Vocabulary Preparation • PYQ Based
                 </div>
+
                 <div class="profile-header glass-card mt-3">
                     <img src="https://placehold.co/120x120/121627/00f2fe?text=TG" alt="Avatar" class="tg-avatar" id="tg-user-avatar">
                     <div class="profile-info">
-                        <h3 id="tg-user-name">Loading...</h3>
+                        <div class="profile-name-row">
+                            <h3 id="tg-user-name">Loading...</h3>
+                            <!-- Streak badge — JS shows/hides based on streak count -->
+                            <span class="streak-badge-inline hidden" id="streak-badge-mini">
+                                <i class="fa-solid fa-fire"></i> <span id="streak-count-mini">0</span>
+                            </span>
+                        </div>
                         <p id="tg-user-handle">Connecting to Telegram</p>
-                        <span class="purple-glow-badge mt-2">SSC Aspirant</span>
+                        <!-- User's selected title shown here instead of static "SSC Aspirant" -->
+                        <span class="user-title-badge blue-title mt-2" id="user-active-title" onclick="app.switchView('titles')">
+                            <i class="fa-solid fa-tag"></i> <span id="user-title-text">SSC Aspirant</span>
+                        </span>
                     </div>
                 </div>
+
                 <div class="portal-cards-stack mt-4">
                     <div class="portal-card cyan-gradient-card" onclick="app.showQuizBlueprint('free','Daily Free Quiz')">
                         <div class="portal-card-content">
@@ -73,6 +84,17 @@
                         <div class="portal-arrow"><i class="fa-solid fa-crown"></i></div>
                     </div>
                 </div>
+
+                <!-- Streak strip — full card version, shown when streak > 0 -->
+                <div class="streak-strip-card glass-card mt-3 hidden" id="streak-strip-full">
+                    <div class="streak-strip-left">
+                        <i class="fa-solid fa-fire streak-flame-icon"></i>
+                        <div>
+                            <div class="streak-strip-num"><span id="streak-count-full">0</span> Day Streak</div>
+                            <div class="streak-strip-sub">Keep it going! Complete today's quiz.</div>
+                        </div>
+                    </div>
+                </div>
             </section>
 
             <!-- ══════════════════════════════════ -->
@@ -92,7 +114,6 @@
                         <span>❓ Total Questions:</span>
                         <strong id="qd-count">30 Questions</strong>
                     </div>
-                    <!-- Shown only for topic sets by JS -->
                     <div class="rule-row" id="qd-range-row" style="display:none;">
                         <span>📋 Question Range:</span>
                         <strong id="qd-range" class="text-cyan">Q 1–20</strong>
@@ -113,7 +134,6 @@
                         <li><strong>Vault Syncing:</strong> Errors and bookmarks sync automatically to your Vocabulary Vault.</li>
                     </ul>
                 </div>
-                <!-- JS changes this to "Unlock Premium" for locked content -->
                 <div class="action-stack mt-4">
                     <button class="btn-primary-gradient w-100" id="btn-confirm-start-quiz">
                         <i class="fa-solid fa-flag-checkered"></i> START QUIZ
@@ -133,7 +153,6 @@
                     <p>Advanced PYQ modules & live competitive ranking</p>
                 </div>
 
-                <!-- Active daily premium card — JS updates date label -->
                 <div class="portal-card gold-gradient-card mb-4" id="active-premium-quiz-card" onclick="app.handleActivePremiumClick()">
                     <div class="portal-card-content">
                         <span class="portal-tag gold-tag"><i class="fa-solid fa-trophy"></i> LEADERBOARD ACTIVE</span>
@@ -150,7 +169,6 @@
                     <div class="portal-arrow"><i class="fa-solid fa-play"></i></div>
                 </div>
 
-                <!-- 6 fixed topics — JS renders, Antonyms/Homophones locked -->
                 <h3 class="section-title">
                     Topic Modules
                     <span class="section-note">20 Questions / Set</span>
@@ -164,7 +182,6 @@
                     <div class="skeleton-card"></div>
                 </div>
 
-                <!-- Past quizzes — JS renders Month → Dates accordion -->
                 <h3 class="section-title mt-4">Past Premium Tests</h3>
                 <div class="archive-list-group" id="premium-archives-container">
                     <div class="text-center text-muted p-3">
@@ -186,8 +203,6 @@
                         <p>Select a set to begin</p>
                     </div>
                 </div>
-                <!-- JS renders set cards; latest set gets .latest-set glow class -->
-                <!-- Antonyms & Homophones get .coming-soon-topic class via JS   -->
                 <div class="topic-sets-container" id="topic-sets-list">
                     <div class="text-center text-muted p-3">
                         <i class="fa-solid fa-spinner fa-spin"></i> Loading sets...
@@ -235,8 +250,6 @@
 
             <!-- ══════════════════════════════════ -->
             <!-- RESULT VIEW                       -->
-            <!-- Leaderboard shown directly below  -->
-            <!-- for all quiz types                -->
             <!-- ══════════════════════════════════ -->
             <section id="view-result" class="app-view full-overlay-view">
                 <div class="result-container">
@@ -279,16 +292,12 @@
                         Return To Dashboard
                     </button>
 
-                    <!-- Leaderboard shown directly below result for all quiz types -->
-                    <!-- JS populates this: premium quiz shows live standings,      -->
-                    <!-- free/topic shows today's premium leaderboard as reference  -->
                     <div class="result-lb-wrap" id="result-lb-section" style="display:none;">
                         <div class="result-lb-divider">
                             <span>Today's Elite Rankings</span>
                         </div>
                         <div id="result-lb-container"></div>
                     </div>
-
                 </div>
             </section>
 
@@ -304,7 +313,6 @@
                     <i class="fa-solid fa-magnifying-glass search-icon"></i>
                     <input type="search" id="vault-search-input" placeholder="Search stored words..." oninput="app.filterVaultContent()">
                 </div>
-                <!-- data-tab used by JS switchVaultTab() for active class toggle -->
                 <div class="vault-dual-tabs mb-3">
                     <button class="vault-tab-btn active" data-tab="weak" onclick="app.switchVaultTab('weak')">
                         Weak Words (<span id="count-weak">0</span>)
@@ -321,14 +329,45 @@
             </section>
 
             <!-- ══════════════════════════════════ -->
-            <!-- RANKS                             -->
+            <!-- RANKS — Daily / Weekly / Monthly  -->
             <!-- ══════════════════════════════════ -->
             <section id="view-ranks" class="app-view">
                 <div class="screen-header">
                     <h2>Daily Elite Ranks</h2>
                     <p id="leaderboard-date-subtitle">Live Standings</p>
                 </div>
+
+                <!-- Period tabs -->
+                <div class="rank-period-tabs mb-3">
+                    <button class="rank-period-btn active" data-period="daily" onclick="app.switchRankPeriod('daily')">Daily</button>
+                    <button class="rank-period-btn" data-period="weekly" onclick="app.switchRankPeriod('weekly')">Weekly</button>
+                    <button class="rank-period-btn" data-period="monthly" onclick="app.switchRankPeriod('monthly')">Monthly</button>
+                </div>
+
+                <!-- JS fills this with either locked-overlay or actual list -->
                 <div id="leaderboard-master-container"></div>
+            </section>
+
+            <!-- ══════════════════════════════════ -->
+            <!-- TITLES VIEW — select profile title -->
+            <!-- ══════════════════════════════════ -->
+            <section id="view-titles" class="app-view">
+                <div class="topic-sets-header">
+                    <button class="btn-back-nav" onclick="app.switchView('dashboard')">
+                        <i class="fa-solid fa-arrow-left"></i>
+                    </button>
+                    <div class="topic-sets-header-text">
+                        <h2>Profile Titles</h2>
+                        <p>Unlock titles by achieving milestones</p>
+                    </div>
+                </div>
+                <!-- JS renders title cards: unlocked (selectable) vs locked (grayed) -->
+                <!-- Hard titles get .title-hard (red smoke), easy get .title-easy (blue glow) -->
+                <div class="titles-grid" id="titles-list">
+                    <div class="text-center text-muted p-3">
+                        <i class="fa-solid fa-spinner fa-spin"></i> Loading titles...
+                    </div>
+                </div>
             </section>
 
         </main>
