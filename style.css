@@ -1360,3 +1360,299 @@ html { scroll-behavior: smooth; }
     animation: confettiFall 3s ease-in forwards;
     pointer-events: none;
 }
+
+
+
+/* ═══════════════════════════════════════════════════════════
+   v4 UPDATE — Working Live Themes, Admin User Modal,
+   View Rank Button, Theme Apply System
+   ═══════════════════════════════════════════════════════════ */
+
+/* ── Live theme background layer (base) ─────────────────────── */
+#live-theme-layer {
+    position: fixed;
+    inset: 0;
+    z-index: -1;
+    overflow: hidden;
+    pointer-events: none;
+    transition: opacity 0.6s ease;
+}
+#live-theme-layer .theme-orb {
+    position: absolute;
+    border-radius: 50%;
+    filter: blur(60px);
+    opacity: 0.55;
+}
+#live-theme-layer .theme-star {
+    position: absolute;
+    border-radius: 50%;
+    background: #fff;
+}
+#live-theme-layer .theme-line {
+    position: absolute;
+    background: linear-gradient(180deg, transparent, currentColor, transparent);
+}
+
+/* ═══ THEME: AURORA NEBULA (default) ═══════════════════════════ */
+body[data-theme="aurora"] {
+    --neon-cyan: #00f2fe;
+    --gold-premium: #a855f7;
+}
+body[data-theme="aurora"] #live-theme-layer .theme-orb:nth-child(1) {
+    width: 380px; height: 380px; top: -10%; left: -15%;
+    background: radial-gradient(circle, rgba(168,85,247,0.5), transparent 70%);
+    animation: auroraDrift1 14s ease-in-out infinite;
+}
+body[data-theme="aurora"] #live-theme-layer .theme-orb:nth-child(2) {
+    width: 320px; height: 320px; bottom: -10%; right: -10%;
+    background: radial-gradient(circle, rgba(0,242,254,0.4), transparent 70%);
+    animation: auroraDrift2 18s ease-in-out infinite;
+}
+body[data-theme="aurora"] #live-theme-layer .theme-orb:nth-child(3) {
+    width: 260px; height: 260px; top: 40%; left: 60%;
+    background: radial-gradient(circle, rgba(236,72,153,0.3), transparent 70%);
+    animation: auroraDrift1 20s ease-in-out infinite reverse;
+}
+@keyframes auroraDrift1 { 0%,100%{transform:translate(0,0) scale(1);} 50%{transform:translate(40px,60px) scale(1.2);} }
+@keyframes auroraDrift2 { 0%,100%{transform:translate(0,0) scale(1);} 50%{transform:translate(-50px,-30px) scale(1.15);} }
+
+/* ═══ THEME: MOLTEN GOLD ═══════════════════════════════════════ */
+body[data-theme="molten"] {
+    --neon-cyan: #ffb800;
+    --gold-premium: #ff6a00;
+    --danger-red: #ff3d3d;
+}
+body[data-theme="molten"] .cyan-glow { background: radial-gradient(circle, rgba(255,184,0,0.25), transparent 70%) !important; }
+body[data-theme="molten"] .text-cyan { color: #ffb800 !important; }
+body[data-theme="molten"] #live-theme-layer .theme-orb:nth-child(1) {
+    width: 400px; height: 400px; bottom: -15%; left: -10%;
+    background: radial-gradient(circle, rgba(255,106,0,0.55), transparent 70%);
+    animation: moltenRise 10s ease-in-out infinite;
+}
+body[data-theme="molten"] #live-theme-layer .theme-orb:nth-child(2) {
+    width: 300px; height: 300px; top: -10%; right: -5%;
+    background: radial-gradient(circle, rgba(255,184,0,0.4), transparent 70%);
+    animation: moltenRise 13s ease-in-out infinite reverse;
+}
+body[data-theme="molten"] #live-theme-layer::after {
+    content: '';
+    position: absolute; inset: 0;
+    background-image:
+        radial-gradient(2px 2px at 20% 90%, rgba(255,140,0,0.6), transparent),
+        radial-gradient(2px 2px at 60% 85%, rgba(255,184,0,0.5), transparent),
+        radial-gradient(1px 1px at 80% 95%, rgba(255,80,0,0.5), transparent);
+    animation: emberFloat 6s linear infinite;
+}
+@keyframes moltenRise { 0%,100%{transform:translateY(0) scale(1);} 50%{transform:translateY(-40px) scale(1.15);} }
+@keyframes emberFloat { 0%{background-position:0 0,0 0,0 0;} 100%{background-position:0 -200px,0 -250px,0 -180px;} }
+
+/* ═══ THEME: CYBER MATRIX ═══════════════════════════════════════ */
+body[data-theme="matrix"] {
+    --neon-cyan: #00ff8c;
+    --gold-premium: #00c6ff;
+}
+body[data-theme="matrix"] .cyan-glow { background: radial-gradient(circle, rgba(0,255,140,0.2), transparent 70%) !important; }
+body[data-theme="matrix"] .text-cyan { color: #00ff8c !important; }
+body[data-theme="matrix"] #view-container, body[data-theme="matrix"] .glass-card { border-color: rgba(0,255,140,0.12) !important; }
+body[data-theme="matrix"] #live-theme-layer {
+    background: repeating-linear-gradient(90deg, rgba(0,255,140,0.035) 0px, rgba(0,255,140,0.035) 1px, transparent 1px, transparent 26px);
+    animation: matrixDriftBg 12s linear infinite;
+}
+@keyframes matrixDriftBg { 0%{background-position:0 0;} 100%{background-position:260px 0;} }
+body[data-theme="matrix"] #live-theme-layer .theme-orb:nth-child(1) {
+    width: 340px; height: 340px; top: 20%; left: -15%;
+    background: radial-gradient(circle, rgba(0,255,140,0.3), transparent 70%);
+    animation: auroraDrift1 16s ease-in-out infinite;
+}
+body[data-theme="matrix"] #live-theme-layer .theme-orb:nth-child(2) {
+    width: 280px; height: 280px; bottom: 10%; right: -10%;
+    background: radial-gradient(circle, rgba(0,198,255,0.25), transparent 70%);
+    animation: auroraDrift2 15s ease-in-out infinite;
+}
+
+/* ═══ THEME: ROYAL VELVET ═══════════════════════════════════════ */
+body[data-theme="velvet"] {
+    --neon-cyan: #ff2fa8;
+    --gold-premium: #ffb800;
+}
+body[data-theme="velvet"] .cyan-glow { background: radial-gradient(circle, rgba(255,47,168,0.22), transparent 70%) !important; }
+body[data-theme="velvet"] .text-cyan { color: #ff6fc7 !important; }
+body[data-theme="velvet"] #live-theme-layer .theme-orb:nth-child(1) {
+    width: 360px; height: 360px; top: -5%; right: -15%;
+    background: radial-gradient(circle, rgba(255,47,168,0.4), transparent 70%);
+    animation: velvetSwirl 16s ease-in-out infinite;
+}
+body[data-theme="velvet"] #live-theme-layer .theme-orb:nth-child(2) {
+    width: 300px; height: 300px; bottom: -10%; left: -10%;
+    background: radial-gradient(circle, rgba(168,85,247,0.35), transparent 70%);
+    animation: velvetSwirl 20s ease-in-out infinite reverse;
+}
+body[data-theme="velvet"] #live-theme-layer .theme-orb:nth-child(3) {
+    width: 220px; height: 220px; top: 55%; left: 40%;
+    background: radial-gradient(circle, rgba(255,184,0,0.2), transparent 70%);
+    animation: velvetSwirl 12s ease-in-out infinite;
+}
+@keyframes velvetSwirl { 0%,100%{transform:translate(0,0) rotate(0deg) scale(1);} 50%{transform:translate(30px,-40px) rotate(15deg) scale(1.2);} }
+
+/* ── Twinkling stars (shared by all themes for depth) ─────────── */
+#live-theme-layer .theme-star {
+    animation: starTwinkle 3s ease-in-out infinite;
+}
+@keyframes starTwinkle { 0%,100%{opacity:0.2;} 50%{opacity:0.9;} }
+
+/* ── Admin theme cards — WORKING apply system ────────────────── */
+.theme-preview-card { display: flex; flex-direction: column; }
+.theme-card-actions {
+    display: flex; gap: 8px; margin-top: 14px; position: relative; z-index: 2;
+}
+.theme-btn-preview, .theme-btn-apply-all {
+    flex: 1;
+    padding: 10px 12px;
+    border-radius: 10px;
+    font-size: 0.72rem;
+    font-weight: 800;
+    border: none;
+    cursor: pointer;
+    font-family: var(--font-stack);
+    display: flex; align-items: center; justify-content: center; gap: 6px;
+    transition: opacity 0.2s ease, transform 0.15s ease;
+}
+.theme-btn-preview {
+    background: rgba(255,255,255,0.15);
+    color: #fff;
+    backdrop-filter: blur(4px);
+}
+.theme-btn-preview.is-active {
+    background: #fff;
+    color: #000;
+}
+.theme-btn-apply-all {
+    background: rgba(0,0,0,0.35);
+    color: #fff;
+    border: 1px solid rgba(255,255,255,0.2);
+}
+.theme-btn-preview:active, .theme-btn-apply-all:active { transform: scale(0.95); opacity: 0.85; }
+.theme-live-tag {
+    display: inline-flex;
+    align-items: center;
+    gap: 4px;
+    font-size: 0.6rem;
+    font-weight: 800;
+    padding: 2px 8px;
+    border-radius: 8px;
+    background: rgba(16,185,129,0.2);
+    color: #6ee7b7;
+    border: 1px solid rgba(16,185,129,0.35);
+    margin-left: 8px;
+}
+.theme-live-tag i { animation: livePulse 1.5s ease-in-out infinite; }
+@keyframes livePulse { 0%,100%{opacity:0.5;} 50%{opacity:1;} }
+
+/* ── Admin: currently active theme (global) banner ────────────── */
+.admin-active-theme-banner {
+    display: flex; align-items: center; justify-content: space-between;
+    padding: 14px 16px; border-radius: 14px; margin-bottom: 16px;
+    background: rgba(0,242,254,0.06); border: 1px solid rgba(0,242,254,0.2);
+}
+.admin-active-theme-banner .label { font-size: 0.72rem; color: var(--text-muted); font-weight: 700; }
+.admin-active-theme-banner .value { font-size: 0.95rem; font-weight: 800; color: var(--neon-cyan); margin-top: 2px; }
+
+/* ── Admin: clickable user stat card + user list modal ─────────── */
+.stat-clickable { cursor: pointer; transition: transform 0.2s ease; position: relative; }
+.stat-clickable:active { transform: scale(0.96); }
+.stat-clickable::after {
+    content: '\f105';
+    font-family: "Font Awesome 6 Free";
+    font-weight: 900;
+    position: absolute;
+    top: 8px; right: 10px;
+    font-size: 0.7rem;
+    color: var(--text-muted);
+}
+
+.admin-modal-overlay {
+    position: fixed; inset: 0;
+    background: rgba(0,0,0,0.7);
+    backdrop-filter: blur(4px);
+    z-index: 10000;
+    display: flex;
+    align-items: flex-end;
+    justify-content: center;
+    animation: fadeIn 0.2s ease;
+}
+.admin-modal-sheet {
+    width: 100%;
+    max-width: 480px;
+    max-height: 78vh;
+    background: var(--bg-primary, #0b0d17);
+    border-radius: 24px 24px 0 0;
+    border: 1px solid var(--border-glass);
+    border-bottom: none;
+    padding: 20px;
+    overflow-y: auto;
+    animation: sheetSlideUp 0.3s cubic-bezier(0.16,1,0.3,1);
+}
+@keyframes sheetSlideUp { from{transform:translateY(100%);} to{transform:translateY(0);} }
+.admin-modal-header {
+    display: flex; align-items: center; justify-content: space-between;
+    margin-bottom: 16px; padding-bottom: 12px;
+    border-bottom: 1px solid var(--border-glass);
+}
+.admin-modal-header h3 { font-size: 1.1rem; font-weight: 800; }
+.admin-modal-close {
+    width: 32px; height: 32px; border-radius: 50%;
+    background: rgba(255,255,255,0.08); border: none; color: var(--text-primary);
+    display: flex; align-items: center; justify-content: center; cursor: pointer;
+}
+.admin-user-row {
+    display: flex; align-items: center; justify-content: space-between;
+    padding: 12px 0; border-bottom: 1px solid rgba(255,255,255,0.04);
+}
+.admin-user-row-left { display: flex; align-items: center; gap: 10px; }
+.admin-user-avatar-mini {
+    width: 36px; height: 36px; border-radius: 50%;
+    background: rgba(0,242,254,0.1); color: var(--neon-cyan);
+    display: flex; align-items: center; justify-content: center;
+    font-size: 0.85rem; font-weight: 800; flex-shrink: 0;
+}
+.admin-user-name-mini { font-size: 0.85rem; font-weight: 700; }
+.admin-user-id-mini { font-size: 0.68rem; color: var(--text-muted); }
+.admin-user-row-actions { display: flex; gap: 6px; }
+.icon-btn-mini {
+    width: 32px; height: 32px; border-radius: 8px;
+    display: flex; align-items: center; justify-content: center;
+    border: none; cursor: pointer; font-size: 0.78rem;
+    transition: transform 0.15s ease;
+}
+.icon-btn-mini:active { transform: scale(0.9); }
+.icon-btn-grant { background: rgba(255,184,0,0.15); color: var(--gold-premium); }
+.icon-btn-ban   { background: rgba(239,68,68,0.15); color: var(--danger-red); }
+.admin-user-premium-tag {
+    font-size: 0.6rem; font-weight: 800; padding: 2px 7px; border-radius: 6px;
+    background: rgba(255,184,0,0.15); color: var(--gold-premium);
+    margin-left: 6px;
+}
+
+/* ── View Your Rank button (result screen) ──────────────────── */
+.btn-view-rank-toggle {
+    background: rgba(255,255,255,0.05);
+    border: 1px solid var(--border-glass);
+    color: var(--text-primary);
+    padding: 14px 20px;
+    border-radius: 14px;
+    font-size: 0.88rem;
+    font-weight: 700;
+    font-family: var(--font-stack);
+    display: flex; align-items: center; justify-content: center; gap: 8px;
+    cursor: pointer;
+    transition: background 0.2s ease, transform 0.15s ease;
+}
+.btn-view-rank-toggle:active { transform: scale(0.98); background: rgba(255,255,255,0.09); }
+.btn-view-rank-toggle i { color: var(--gold-premium); }
+.btn-view-rank-toggle.expanded { background: rgba(0,242,254,0.08); border-color: rgba(0,242,254,0.3); }
+
+/* ── Streak badge fix — ensure visible & animated properly ─────── */
+.streak-badge-inline.hidden,
+.streak-strip-card.hidden { display: none !important; }
+.streak-badge-inline { display: inline-flex; }
+.streak-strip-card { display: flex; }

@@ -11,6 +11,9 @@
 </head>
 <body>
 
+    <!-- Live theme background layer — JS injects animated elements here per active theme -->
+    <div id="live-theme-layer"></div>
+
     <div class="bg-glow cyan-glow" id="ambient-cyan"></div>
     <div class="bg-glow purple-glow-bg" id="ambient-purple"></div>
 
@@ -51,10 +54,7 @@
                             </span>
                         </div>
                         <p id="tg-user-handle">Connecting to Telegram</p>
-                        <!-- User's selected title shown here instead of static "SSC Aspirant" -->
-                        <span class="user-title-badge blue-title mt-2" id="user-active-title" onclick="app.switchView('titles')">
-                            <i class="fa-solid fa-tag"></i> <span id="user-title-text">SSC Aspirant</span>
-                        </span>
+                        <span class="purple-glow-badge mt-2">SSC Aspirant</span>
                     </div>
                 </div>
 
@@ -85,7 +85,7 @@
                     </div>
                 </div>
 
-                <!-- Streak strip — full card version, shown when streak > 0 -->
+                <!-- Streak strip full card — shown when streak > 0 -->
                 <div class="streak-strip-card glass-card mt-3 hidden" id="streak-strip-full">
                     <div class="streak-strip-left">
                         <i class="fa-solid fa-fire streak-flame-icon"></i>
@@ -250,6 +250,9 @@
 
             <!-- ══════════════════════════════════ -->
             <!-- RESULT VIEW                       -->
+            <!-- "View Your Rank" button — shows    -->
+            <!-- rank section right on this screen  -->
+            <!-- without needing to scroll far       -->
             <!-- ══════════════════════════════════ -->
             <section id="view-result" class="app-view full-overlay-view">
                 <div class="result-container">
@@ -292,7 +295,12 @@
                         Return To Dashboard
                     </button>
 
-                    <div class="result-lb-wrap" id="result-lb-section" style="display:none;">
+                    <!-- Direct "View Your Rank" button — no scrolling needed, toggles section below -->
+                    <button class="btn-view-rank-toggle w-100 mt-2" id="btn-view-rank-toggle" onclick="app.toggleResultRankView()">
+                        <i class="fa-solid fa-ranking-star"></i> View Your Rank
+                    </button>
+
+                    <div class="result-lb-wrap hidden" id="result-lb-section">
                         <div class="result-lb-divider">
                             <span>Today's Elite Rankings</span>
                         </div>
@@ -336,38 +344,12 @@
                     <h2>Daily Elite Ranks</h2>
                     <p id="leaderboard-date-subtitle">Live Standings</p>
                 </div>
-
-                <!-- Period tabs -->
                 <div class="rank-period-tabs mb-3">
                     <button class="rank-period-btn active" data-period="daily" onclick="app.switchRankPeriod('daily')">Daily</button>
                     <button class="rank-period-btn" data-period="weekly" onclick="app.switchRankPeriod('weekly')">Weekly</button>
                     <button class="rank-period-btn" data-period="monthly" onclick="app.switchRankPeriod('monthly')">Monthly</button>
                 </div>
-
-                <!-- JS fills this with either locked-overlay or actual list -->
                 <div id="leaderboard-master-container"></div>
-            </section>
-
-            <!-- ══════════════════════════════════ -->
-            <!-- TITLES VIEW — select profile title -->
-            <!-- ══════════════════════════════════ -->
-            <section id="view-titles" class="app-view">
-                <div class="topic-sets-header">
-                    <button class="btn-back-nav" onclick="app.switchView('dashboard')">
-                        <i class="fa-solid fa-arrow-left"></i>
-                    </button>
-                    <div class="topic-sets-header-text">
-                        <h2>Profile Titles</h2>
-                        <p>Unlock titles by achieving milestones</p>
-                    </div>
-                </div>
-                <!-- JS renders title cards: unlocked (selectable) vs locked (grayed) -->
-                <!-- Hard titles get .title-hard (red smoke), easy get .title-easy (blue glow) -->
-                <div class="titles-grid" id="titles-list">
-                    <div class="text-center text-muted p-3">
-                        <i class="fa-solid fa-spinner fa-spin"></i> Loading titles...
-                    </div>
-                </div>
             </section>
 
         </main>

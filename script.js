@@ -1,7 +1,15 @@
 /**
- * SSC MAX VOCAB — Client Engine v3
+ * SSC MAX VOCAB — Client Engine v4
  * Schema: quiz_type, topic, question, option_a/b/c/d, correct_option, explanation_a/b/c/d
- * v3: Titles, Streaks, Rank Periods, Admin Themes, No-shuffle, Parser fix
+ * v4: Working Live Themes, Admin User Modal, View Rank Toggle, Streak Fix,
+ *     Free Quiz Auto-Cleanup, Titles Removed
+ *
+ * REQUIRED SUPABASE SETUP (run once in SQL Editor):
+ * ALTER TABLE users ADD COLUMN IF NOT EXISTS streak integer DEFAULT 0;
+ * ALTER TABLE users ADD COLUMN IF NOT EXISTS last_active_date date;
+ * ALTER TABLE users ADD COLUMN IF NOT EXISTS banned boolean DEFAULT false;
+ * CREATE TABLE IF NOT EXISTS app_settings (id integer primary key, active_theme text default 'aurora');
+ * INSERT INTO app_settings (id, active_theme) VALUES (1,'aurora') ON CONFLICT (id) DO NOTHING;
  */
 
 const SUPABASE_URL = 'https://tbiktjhwdlwzrhwursxk.supabase.co';
@@ -12,43 +20,25 @@ try { if (window.supabase?.createClient) supabaseClient = window.supabase.create
 const TOPICS = ['One Word Substitution','Idioms & Phrases','Synonyms','Spelling','Antonyms','Homophones'];
 const LOCKED_TOPICS = ['Antonyms','Homophones'];
 
-// ── TITLES SYSTEM (10-15 titles) ────────────────────────────────
-const TITLES = [
-    { id:'aspirant',    name:'SSC Aspirant',      desc:'Default starter title',              tier:'easy', icon:'fa-seedling',    condition:()=>true },
-    { id:'diligent',    name:'Diligent Learner',  desc:'Complete 5 quizzes',                 tier:'easy', icon:'fa-book',        condition:s=>s.totalQuizzes>=5 },
-    { id:'consistent',  name:'Consistent Grinder',desc:'3 day streak',                       tier:'easy', icon:'fa-calendar-check',condition:s=>s.streak>=3 },
-    { id:'sharp',       name:'Sharp Shooter',     desc:'Score 80%+ in any quiz',              tier:'easy', icon:'fa-bullseye',    condition:s=>s.bestAccuracy>=80 },
-    { id:'vocab_hunter',name:'Vocab Hunter',      desc:'Complete 15 quizzes',                 tier:'easy', icon:'fa-crosshairs',  condition:s=>s.totalQuizzes>=15 },
-    { id:'speedster',   name:'Speed Reader',      desc:'Finish a 30Q quiz under 8 minutes',   tier:'easy', icon:'fa-bolt',        condition:s=>s.fastestFree>0 && s.fastestFree<=480 },
-    { id:'week_warrior',name:'Week Warrior',      desc:'7 day streak',                        tier:'hard', icon:'fa-fire',        condition:s=>s.streak>=7 },
-    { id:'perfectionist',name:'Perfectionist',    desc:'Score 100% in Premium Mix',           tier:'hard', icon:'fa-gem',         condition:s=>s.perfectPremium>=1 },
-    { id:'topper',      name:'Rank #1 Topper',    desc:'Reach Rank 1 on Daily Leaderboard',   tier:'hard', icon:'fa-crown',       condition:s=>s.bestRank===1 },
-    { id:'elite_master',name:'Elite Master',      desc:'Complete 50 quizzes',                 tier:'hard', icon:'fa-chess-king',  condition:s=>s.totalQuizzes>=50 },
-    { id:'unstoppable', name:'Unstoppable',       desc:'30 day streak',                       tier:'hard', icon:'fa-meteor',      condition:s=>s.streak>=30 },
-    { id:'vocab_god',   name:'Vocabulary God',    desc:'Score 95%+ average across 20 quizzes',tier:'hard', icon:'fa-skull',       condition:s=>s.totalQuizzes>=20 && s.avgAccuracy>=95 },
-    { id:'legend',      name:'SSC Legend',        desc:'Top 3 rank for 5 consecutive days',   tier:'hard', icon:'fa-shield-halved',condition:s=>s.top3Streak>=5 },
-];
-
 const ADMIN_THEMES = [
-    { id:'aurora', name:'Aurora Nebula', desc:'Purple-cyan cosmic glow', tag:'DEFAULT' },
-    { id:'molten', name:'Molten Gold',   desc:'Fiery orange luxury',     tag:'INTENSE' },
-    { id:'matrix', name:'Cyber Matrix',  desc:'Green digital rain',      tag:'TECH' },
-    { id:'velvet', name:'Royal Velvet',  desc:'Pink-purple elegance',    tag:'LUXURY' }
+    { id:'aurora', name:'Aurora Nebula', desc:'Purple-cyan cosmic glow with drifting orbs', tag:'DEFAULT' },
+    { id:'molten', name:'Molten Gold',   desc:'Fiery orange embers rising through the dark',tag:'INTENSE' },
+    { id:'matrix', name:'Cyber Matrix',  desc:'Green digital rain, tech-noir energy',        tag:'TECH' },
+    { id:'velvet', name:'Royal Velvet',  desc:'Pink-purple luxury with swirling light',      tag:'LUXURY' }
 ];
 
 let appState = {
-    isPremium:false, isAdmin:false,
+    isPremium:false, isAdmin:false, isBanned:false,
     currentUser:{ id:null, name:'SSC Aspirant', username:'', photo_url:'' },
     currentView:'dashboard', activeVaultTab:'weak', activeRankPeriod:'daily',
     searchQuery:'', weakWords:[], bookmarkedWords:[],
-    userStats:{ totalQuizzes:0, streak:0, bestAccuracy:0, fastestFree:0, perfectPremium:0, bestRank:null, avgAccuracy:0, top3Streak:0, lastQuizDate:null },
-    selectedTitle:'aspirant', unlockedTitles:['aspirant'],
+    streak:0, activeTheme:'aurora',
     quiz:{ active:false, type:'free', title:'', quizCategory:null, isPremiumLocked:false, questions:[], currentIndex:0, selectedOption:null, correctCount:0, wrongCount:0, timeSeconds:0, stopwatchInterval:null },
-    cache:{ activePremiumDate:null, activeFreeDate:null, archives:null, topicSets:{}, leaderboard:null, leaderboardPeriod:'daily' }
+    cache:{ activePremiumDate:null, activeFreeDate:null, archives:null, topicSets:{}, leaderboard:null, resultRankLoaded:false }
 };
 
 class SSCMaxVocabEngine {
-    constructor() { this.initDOMNodes(); this.bindNavigationEvents(); this.initTelegramContext(); this.spawnAmbientParticles(); }
+    constructor() { this.initDOMNodes(); this.bindNavigationEvents(); this.injectLiveThemeLayer(); this.initTelegramContext(); }
 
     initDOMNodes() {
         this.premiumTopicsList = document.getElementById('premium-topics-list');
@@ -60,23 +50,70 @@ class SSCMaxVocabEngine {
         this.btnNextQ          = document.getElementById('btn-next-q');
         this.btnBookmark       = document.getElementById('btn-bookmark-current');
         this.btnStartQuiz      = document.getElementById('btn-confirm-start-quiz');
-        this.titlesListEl      = document.getElementById('titles-list');
         this.btnNextQ.addEventListener('click', () => this.advanceQuestion());
         this.btnStartQuiz.addEventListener('click', () => this.handleStartQuizClick());
     }
 
-    spawnAmbientParticles() {
-        setInterval(() => {
-            if(document.querySelectorAll('.premium-particle').length > 12) return;
-            const p = document.createElement('div');
-            p.className = 'premium-particle';
-            p.style.left = Math.random()*100+'vw';
-            p.style.animationDuration = (6+Math.random()*5)+'s';
-            document.body.appendChild(p);
-            setTimeout(()=>p.remove(), 11000);
-        }, 1800);
+    // ── LIVE THEME LAYER ─────────────────────────────────────────
+    injectLiveThemeLayer() {
+        const layer = document.getElementById('live-theme-layer');
+        if(!layer) return;
+        // 3 floating orbs + several twinkling stars, CSS handles per-theme colors/animation
+        let html = '<div class="theme-orb"></div><div class="theme-orb"></div><div class="theme-orb"></div>';
+        for(let i=0;i<18;i++) {
+            const top = Math.random()*100, left = Math.random()*100, size = 1+Math.random()*2;
+            html += `<div class="theme-star" style="top:${top}%;left:${left}%;width:${size}px;height:${size}px;animation-delay:${(Math.random()*3).toFixed(1)}s;"></div>`;
+        }
+        layer.innerHTML = html;
+
+        const saved = this.safeLocalGet('ssc_local_theme');
+        if(saved) this.applyThemeLocally(saved, false);
+
+        this.loadGlobalTheme();
     }
 
+    safeLocalGet(key) { try { return localStorage.getItem(key); } catch(e) { return null; } }
+    safeLocalSet(key,val) { try { localStorage.setItem(key,val); } catch(e){} }
+
+    async loadGlobalTheme() {
+        if(!supabaseClient) return;
+        try {
+            const { data } = await supabaseClient.from('app_settings').select('active_theme').eq('id',1).maybeSingle();
+            if(data?.active_theme && !this.safeLocalGet('ssc_local_theme')) {
+                this.applyThemeLocally(data.active_theme, false);
+            }
+            appState.activeTheme = data?.active_theme || 'aurora';
+        } catch(e) { /* app_settings table may not exist yet — silently ignore */ }
+    }
+
+    applyThemeLocally(themeId, showToast=true) {
+        document.body.setAttribute('data-theme', themeId);
+        this.safeLocalSet('ssc_local_theme', themeId);
+        if(showToast) this.triggerToast(`Theme applied: ${ADMIN_THEMES.find(t=>t.id===themeId)?.name||themeId}`);
+    }
+
+    resetToGlobalTheme() {
+        try { localStorage.removeItem('ssc_local_theme'); } catch(e){}
+        document.body.setAttribute('data-theme', appState.activeTheme);
+        this.triggerToast('Reverted to global theme');
+        this.renderAdminThemes();
+    }
+
+    async applyThemeToAllUsers(themeId) {
+        if(!supabaseClient) return;
+        if(!confirm(`Apply "${ADMIN_THEMES.find(t=>t.id===themeId)?.name}" theme to ALL users? This changes the app look for everyone.`)) return;
+        try {
+            const { error } = await supabaseClient.from('app_settings').upsert({ id:1, active_theme:themeId }, { onConflict:'id' });
+            if(error) throw error;
+            appState.activeTheme = themeId;
+            this.triggerToast(`✅ Applied "${ADMIN_THEMES.find(t=>t.id===themeId)?.name}" to all users!`);
+            this.renderAdminThemes();
+        } catch(e) {
+            alert('Could not apply globally. Make sure the "app_settings" table exists in Supabase (see setup instructions). Error: '+e.message);
+        }
+    }
+
+    // ── TELEGRAM ───────────────────────────────────────────────
     initTelegramContext() {
         const tg = window.Telegram?.WebApp;
         let userId=null, name='SSC Aspirant', handle='Offline Mode', avatar='';
@@ -97,7 +134,7 @@ class SSCMaxVocabEngine {
         this.syncSupabaseUser();
     }
 
-    // ── ADMIN PANEL ──────────────────────────────────────────────
+    // ── ADMIN PANEL ────────────────────────────────────────────
     buildAdminPanel() {
         const nav=document.querySelector('.bottom-nav-bar');
         if(nav) {
@@ -124,7 +161,7 @@ class SSCMaxVocabEngine {
         <div id="adm-sec-free" class="adm-sec">
             <div class="glass-card mb-3">
                 <h4 style="color:var(--neon-cyan);margin-bottom:14px;">Deploy Free Quiz</h4>
-                <p style="font-size:0.75rem;color:var(--text-muted);margin-bottom:12px;">Future dates auto-activate. Same date = overwrite.</p>
+                <p style="font-size:0.75rem;color:var(--text-muted);margin-bottom:12px;">Future dates auto-activate. Same date = overwrite. Old dates auto-cleanup on publish.</p>
                 <label class="adm-label">Quiz Date</label>
                 <input type="date" id="adm-free-date" class="adm-input" value="${today}">
                 <label class="adm-label">Questions (30 Qs)</label>
@@ -201,46 +238,65 @@ class SSCMaxVocabEngine {
                     <h4 style="color:var(--neon-cyan);">App Statistics</h4>
                     <button class="adm-btn-cyan" style="padding:6px 12px;font-size:0.72rem;" onclick="app.loadAdminStats()">↻ Refresh</button>
                 </div>
-                <div id="adm-stats-container">
-                    <div class="text-center text-muted p-3"><i class="fa-solid fa-spinner fa-spin"></i></div>
-                </div>
+                <div id="adm-stats-container"><div class="text-center text-muted p-3"><i class="fa-solid fa-spinner fa-spin"></i></div></div>
+            </div>
+            <div class="glass-card">
+                <h4 style="color:var(--danger-red);margin-bottom:10px;">Database Cleanup</h4>
+                <p style="font-size:0.75rem;color:var(--text-muted);margin-bottom:12px;">Free quiz keeps no archive — old dated questions auto-delete on every publish. Use this to force-clean manually anytime.</p>
+                <button class="adm-btn-red w-100" onclick="app.cleanupPastFreeQuestions(true)"><i class="fa-solid fa-broom"></i> Clean Old Free Quiz Questions</button>
             </div>
         </div>
 
         <div id="adm-sec-themes" class="adm-sec" style="display:none;">
+            <div class="admin-active-theme-banner">
+                <div><div class="label">GLOBAL ACTIVE THEME</div><div class="value" id="adm-active-theme-label">Loading...</div></div>
+                <i class="fa-solid fa-palette" style="color:var(--neon-cyan);font-size:1.3rem;"></i>
+            </div>
             <div class="glass-card mb-3">
-                <h4 style="color:var(--gold-premium);margin-bottom:6px;">Preview App Themes</h4>
-                <p style="font-size:0.75rem;color:var(--text-muted);margin-bottom:16px;">Tap to preview a theme on your device (visual only).</p>
+                <h4 style="color:var(--gold-premium);margin-bottom:6px;">App Themes</h4>
+                <p style="font-size:0.75rem;color:var(--text-muted);margin-bottom:16px;">
+                    <b>Preview</b> = see it on your device only. <b>Apply to All</b> = changes the look for every user in the app.
+                </p>
                 <div id="adm-themes-container"></div>
+                <button class="adm-btn-cyan w-100 mt-3" onclick="app.resetToGlobalTheme()"><i class="fa-solid fa-rotate-left"></i> Reset My Preview to Global Theme</button>
             </div>
         </div>`;
         document.getElementById('view-container').appendChild(av);
 
-        // Live question counter on paste
         ['adm-free-txt','adm-prem-txt','adm-topic-txt'].forEach(id => {
             document.getElementById(id)?.addEventListener('input', e => {
                 const n = this.parseAdminQuestions(e.target.value,'x','x').length;
-                const countId = id.replace('-txt','-count');
-                const el = document.getElementById(countId);
-                if(el) el.innerText = `${n} question(s) detected`;
+                const countEl = document.getElementById(id.replace('-txt','-count'));
+                if(countEl) countEl.innerText = `${n} question(s) detected`;
             });
         });
         this.renderAdminThemes();
+        this.cleanupPastFreeQuestions(false);
     }
 
     renderAdminThemes() {
         const c = document.getElementById('adm-themes-container'); if(!c) return;
-        c.innerHTML = ADMIN_THEMES.map(t => `
-            <div class="theme-preview-card theme-preview-${t.id}" onclick="app.previewTheme('${t.id}')">
-                <span class="theme-apply-tag">${t.tag}</span>
-                <div class="theme-preview-name">${t.name}</div>
+        const localTheme = this.safeLocalGet('ssc_local_theme');
+        const activeLbl = document.getElementById('adm-active-theme-label');
+        if(activeLbl) activeLbl.innerText = ADMIN_THEMES.find(t=>t.id===appState.activeTheme)?.name || 'Aurora Nebula';
+        c.innerHTML = ADMIN_THEMES.map(t => {
+            const isPreviewing = localTheme === t.id;
+            const isGlobal = appState.activeTheme === t.id;
+            return `
+            <div class="theme-preview-card theme-preview-${t.id} ${isPreviewing?'theme-selected':''}">
+                <span class="theme-apply-tag">${t.tag}${isGlobal?' <i class="fa-solid fa-check" style="margin-left:4px;"></i>':''}</span>
+                <div class="theme-preview-name">${t.name} ${isGlobal?'<span class="theme-live-tag"><i class="fa-solid fa-circle"></i> LIVE</span>':''}</div>
                 <div class="theme-preview-desc">${t.desc}</div>
-            </div>`).join('');
-    }
-
-    previewTheme(themeId) {
-        this.triggerHaptic('select');
-        this.triggerToast(`Previewing: ${ADMIN_THEMES.find(t=>t.id===themeId)?.name} (visual demo only)`);
+                <div class="theme-card-actions">
+                    <button class="theme-btn-preview ${isPreviewing?'is-active':''}" onclick="app.applyThemeLocally('${t.id}')">
+                        <i class="fa-solid fa-eye"></i> ${isPreviewing?'Previewing':'Preview'}
+                    </button>
+                    <button class="theme-btn-apply-all" onclick="app.applyThemeToAllUsers('${t.id}')">
+                        <i class="fa-solid fa-globe"></i> Apply to All
+                    </button>
+                </div>
+            </div>`;
+        }).join('');
     }
 
     switchAdminTab(secId, btn) {
@@ -251,6 +307,18 @@ class SSCMaxVocabEngine {
         this.triggerHaptic('select');
         if(secId==='users') this.loadPremiumUsersList();
         if(secId==='stats') this.loadAdminStats();
+        if(secId==='themes') this.renderAdminThemes();
+    }
+
+    // ── FREE QUIZ AUTO-CLEANUP ───────────────────────────────────
+    async cleanupPastFreeQuestions(showAlert) {
+        if(!supabaseClient) return;
+        const today = new Date().toISOString().split('T')[0];
+        try {
+            const { error, count } = await supabaseClient.from('questions').delete({count:'exact'}).eq('quiz_type','free').lt('topic',today);
+            if(error) throw error;
+            if(showAlert) this.triggerToast(`Cleaned up old free quiz questions.`);
+        } catch(e) { if(showAlert) alert('Cleanup error: '+e.message); }
     }
 
     async loadAdminStats() {
@@ -261,20 +329,83 @@ class SSCMaxVocabEngine {
             const { count: totalUsers }   = await supabaseClient.from('users').select('*',{count:'exact',head:true});
             const { count: premiumCount } = await supabaseClient.from('premium_users').select('*',{count:'exact',head:true});
             const today = new Date().toISOString().split('T')[0];
-            const { count: todayFreeAttempts } = await supabaseClient.from('leaderboard').select('*',{count:'exact',head:true}).eq('date',today);
+            const { count: todayAttempts } = await supabaseClient.from('leaderboard').select('*',{count:'exact',head:true}).eq('date',today);
             const { count: totalFreeQ }  = await supabaseClient.from('questions').select('*',{count:'exact',head:true}).eq('quiz_type','free');
             const { count: totalPremQ }  = await supabaseClient.from('questions').select('*',{count:'exact',head:true}).eq('quiz_type','daily_premium');
             const { count: totalTopicQ } = await supabaseClient.from('questions').select('*',{count:'exact',head:true}).eq('quiz_type','topic');
             el.innerHTML = `
                 <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;">
-                    <div class="res-card glass-card"><span class="res-val text-cyan">${totalUsers??0}</span><span class="res-lbl">Total Users</span></div>
+                    <div class="res-card glass-card stat-clickable" onclick="app.openUsersModal()"><span class="res-val text-cyan">${totalUsers??0}</span><span class="res-lbl">Total Users</span></div>
                     <div class="res-card glass-card"><span class="res-val text-gold">${premiumCount??0}</span><span class="res-lbl">Premium Users</span></div>
-                    <div class="res-card glass-card"><span class="res-val text-success">${todayFreeAttempts??0}</span><span class="res-lbl">Premium Attempts Today</span></div>
+                    <div class="res-card glass-card"><span class="res-val text-success">${todayAttempts??0}</span><span class="res-lbl">Premium Attempts Today</span></div>
                     <div class="res-card glass-card"><span class="res-val">${totalFreeQ??0}</span><span class="res-lbl">Free Questions in DB</span></div>
                     <div class="res-card glass-card"><span class="res-val">${totalPremQ??0}</span><span class="res-lbl">Premium Questions in DB</span></div>
                     <div class="res-card glass-card"><span class="res-val">${totalTopicQ??0}</span><span class="res-lbl">Topic Questions in DB</span></div>
                 </div>`;
         } catch(e) { el.innerHTML = `<p style="color:var(--danger-red);text-align:center;">Error: ${e.message}</p>`; }
+    }
+
+    // ── ADMIN USER MODAL (grant/ban) ─────────────────────────────
+    async openUsersModal() {
+        if(!supabaseClient) return;
+        const overlay = document.createElement('div');
+        overlay.className = 'admin-modal-overlay';
+        overlay.id = 'admin-users-modal';
+        overlay.onclick = (e) => { if(e.target===overlay) overlay.remove(); };
+        overlay.innerHTML = `
+            <div class="admin-modal-sheet">
+                <div class="admin-modal-header">
+                    <h3>All Users</h3>
+                    <button class="admin-modal-close" onclick="document.getElementById('admin-users-modal').remove()"><i class="fa-solid fa-xmark"></i></button>
+                </div>
+                <div id="admin-users-modal-list"><div class="text-center text-muted p-3"><i class="fa-solid fa-spinner fa-spin"></i></div></div>
+            </div>`;
+        document.body.appendChild(overlay);
+
+        try {
+            const { data: users } = await supabaseClient.from('users').select('telegram_id,first_name,username,premium,banned').order('joined_at',{ascending:false}).limit(100);
+            const list = document.getElementById('admin-users-modal-list');
+            if(!users?.length) { list.innerHTML = `<p class="text-muted text-center p-3">No users found.</p>`; return; }
+            list.innerHTML = users.map(u => {
+                const nm = u.first_name || u.username || 'Unknown';
+                const initial = nm.charAt(0).toUpperCase();
+                return `<div class="admin-user-row">
+                    <div class="admin-user-row-left">
+                        <div class="admin-user-avatar-mini">${initial}</div>
+                        <div>
+                            <div class="admin-user-name-mini">${nm}${u.premium?'<span class="admin-user-premium-tag">PRO</span>':''}${u.banned?'<span class="admin-user-premium-tag" style="background:rgba(239,68,68,0.15);color:var(--danger-red);">BANNED</span>':''}</div>
+                            <div class="admin-user-id-mini">ID: ${u.telegram_id}</div>
+                        </div>
+                    </div>
+                    <div class="admin-user-row-actions">
+                        <button class="icon-btn-mini icon-btn-grant" title="Toggle Premium" onclick="app.modalTogglePremium(${u.telegram_id}, ${!u.premium})"><i class="fa-solid fa-crown"></i></button>
+                        <button class="icon-btn-mini icon-btn-ban" title="Toggle Ban" onclick="app.modalToggleBan(${u.telegram_id}, ${!u.banned})"><i class="fa-solid fa-ban"></i></button>
+                    </div>
+                </div>`;
+            }).join('');
+        } catch(e) {
+            document.getElementById('admin-users-modal-list').innerHTML = `<p style="color:var(--danger-red);text-align:center;">Error: ${e.message}</p>`;
+        }
+    }
+
+    async modalTogglePremium(targetId, makesPremium) {
+        try {
+            if(makesPremium) await supabaseClient.from('premium_users').upsert({telegram_id:targetId,added_at:new Date().toISOString()},{onConflict:'telegram_id'});
+            else await supabaseClient.from('premium_users').delete().eq('telegram_id',targetId);
+            await supabaseClient.from('users').update({premium:makesPremium}).eq('telegram_id',targetId);
+            this.triggerToast(makesPremium?`✅ Premium granted`:`Premium removed`);
+            document.getElementById('admin-users-modal')?.remove();
+            this.openUsersModal();
+        } catch(e) { alert('Error: '+e.message); }
+    }
+
+    async modalToggleBan(targetId, makesBanned) {
+        try {
+            await supabaseClient.from('users').update({banned:makesBanned}).eq('telegram_id',targetId);
+            this.triggerToast(makesBanned?`🚫 User banned`:`User unbanned`);
+            document.getElementById('admin-users-modal')?.remove();
+            this.openUsersModal();
+        } catch(e) { alert('Ban error (check "banned" column exists): '+e.message); }
     }
 
     async loadPremiumUsersList() {
@@ -330,10 +461,9 @@ class SSCMaxVocabEngine {
         this.loadScheduledQuizzes(uiType);
     }
 
-    // ── PARSER — FIXED for robust 30/100 Q detection ────────────
+    // ── PARSER ────────────────────────────────────────────────────
     parseAdminQuestions(rawText, quizType, topicName) {
         if(!rawText || !rawText.trim()) return [];
-        // Normalize line endings, split strictly on lines starting with number+dot/paren
         const normalized = rawText.replace(/\r\n/g,'\n').trim();
         const blocks = normalized.split(/\n(?=\s*\d{1,3}[\.\)]\s)/);
         const results = [];
@@ -378,8 +508,9 @@ class SSCMaxVocabEngine {
             await supabaseClient.from('questions').delete().eq('quiz_type','free').eq('topic',dateVal);
             const { error } = await supabaseClient.from('questions').insert(parsed);
             if(error) throw error;
+            await this.cleanupPastFreeQuestions(false);
             appState.cache.activeFreeDate=null;
-            alert(`✅ Free Quiz for ${dateVal} published! ${parsed.length} questions uploaded.`);
+            alert(`✅ Free Quiz for ${dateVal} published! ${parsed.length} questions uploaded. Old dated questions auto-cleaned.`);
             document.getElementById('adm-free-txt').value=''; document.getElementById('adm-free-count').innerText='';
         } catch(e) { alert('Error: '+e.message); }
     }
@@ -446,68 +577,71 @@ class SSCMaxVocabEngine {
         } catch(e) { alert('Error: '+e.message); }
     }
 
-    // ── USER SYNC ────────────────────────────────────────────────
+    // ── USER SYNC + STREAK ─────────────────────────────────────────
     async syncSupabaseUser() {
         if(!supabaseClient||!appState.currentUser.id) { this.updateHeaderBadge(false); return; }
         try {
             await supabaseClient.from('users').upsert({
                 telegram_id:appState.currentUser.id, username:appState.currentUser.username,
                 first_name:appState.currentUser.name, photo_url:appState.currentUser.photo_url,
-                premium:false, joined_at:new Date().toISOString()
-            },{onConflict:'telegram_id'});
-            const { data:pc } = await supabaseClient.from('premium_users').select('telegram_id').eq('telegram_id',appState.currentUser.id).maybeSingle();
-            appState.isPremium=!!pc;
+                joined_at:new Date().toISOString()
+            },{onConflict:'telegram_id', ignoreDuplicates:false});
+
+            const { data:userRow } = await supabaseClient.from('users').select('premium,banned,streak,last_active_date').eq('telegram_id',appState.currentUser.id).maybeSingle();
+
+            if(userRow?.banned) {
+                appState.isBanned = true;
+                document.getElementById('app').innerHTML = `<div style="display:flex;flex-direction:column;align-items:center;justify-content:center;height:100vh;text-align:center;padding:24px;">
+                    <i class="fa-solid fa-ban" style="font-size:3rem;color:var(--danger-red);margin-bottom:16px;"></i>
+                    <h2 style="margin-bottom:8px;">Access Restricted</h2>
+                    <p style="color:var(--text-muted);">Your access to this app has been suspended. Contact support if you believe this is a mistake.</p>
+                </div>`;
+                return;
+            }
+
+            appState.isPremium = !!userRow?.premium;
             this.updateHeaderBadge(appState.isPremium);
+            appState.streak = userRow?.streak || 0;
+            this.updateStreakActivity(userRow?.last_active_date, userRow?.streak||0);
+            this.renderStreakUI();
+
             await this.fetchVaultData();
-            await this.loadUserStats();
-            this.renderProfileExtras();
         } catch(e) { console.error('Sync:',e); this.updateHeaderBadge(false); }
     }
 
-    async loadUserStats() {
+    // Called once per session on load — bumps streak if user is active today
+    async updateStreakActivity(lastActiveDate, currentStreak) {
         if(!supabaseClient||!appState.currentUser.id) return;
-        try {
-            const { data:lbRows } = await supabaseClient.from('leaderboard').select('score,time_seconds,date').eq('telegram_id',appState.currentUser.id).order('date',{ascending:false});
-            const rows = lbRows||[];
-            appState.userStats.totalQuizzes = rows.length;
-            if(rows.length) {
-                appState.userStats.bestAccuracy = Math.max(...rows.map(r=>(r.score/100)*100));
-                appState.userStats.avgAccuracy  = rows.reduce((a,r)=>a+(r.score/100)*100,0)/rows.length;
-                appState.userStats.perfectPremium = rows.filter(r=>r.score>=100).length;
-            }
-            // Streak calc: consecutive days with any leaderboard row
-            const dates = [...new Set(rows.map(r=>r.date))].sort().reverse();
-            let streak=0; let cursor=new Date();
-            for(let d of dates) {
-                const diff = Math.round((cursor - new Date(d))/86400000);
-                if(diff<=1) { streak++; cursor=new Date(d); } else break;
-            }
-            appState.userStats.streak = streak;
+        const today = new Date().toISOString().split('T')[0];
+        if(lastActiveDate === today) { appState.streak = currentStreak; this.renderStreakUI(); return; } // already counted today
 
-            // Compute unlocked titles
-            appState.unlockedTitles = TITLES.filter(t=>t.condition(appState.userStats)).map(t=>t.id);
-            const saved = localStorage?.getItem?.('ssc_selected_title');
-            appState.selectedTitle = (saved && appState.unlockedTitles.includes(saved)) ? saved : 'aspirant';
-        } catch(e) { console.error('Stats load:',e); }
+        let newStreak = 1;
+        if(lastActiveDate) {
+            const diff = Math.round((new Date(today) - new Date(lastActiveDate)) / 86400000);
+            newStreak = diff === 1 ? currentStreak + 1 : 1;
+        }
+        try {
+            await supabaseClient.from('users').update({ streak:newStreak, last_active_date:today }).eq('telegram_id', appState.currentUser.id);
+            appState.streak = newStreak;
+            this.renderStreakUI();
+        } catch(e) { /* streak/last_active_date columns may not exist yet */ console.error('Streak update failed (check columns exist):', e); }
     }
 
-    renderProfileExtras() {
-        const streak = appState.userStats.streak;
+    renderStreakUI() {
+        const streak = appState.streak;
         const miniB = document.getElementById('streak-badge-mini');
         const miniC = document.getElementById('streak-count-mini');
         const fullS = document.getElementById('streak-strip-full');
         const fullC = document.getElementById('streak-count-full');
-        if(streak>0) {
-            if(miniB) { miniB.classList.remove('hidden'); }
+        if(streak > 0) {
+            if(miniB) miniB.classList.remove('hidden');
             if(miniC) miniC.innerText = streak;
             if(fullS) fullS.classList.remove('hidden');
             if(fullC) fullC.innerText = streak;
+        } else {
+            if(miniB) miniB.classList.add('hidden');
+            if(fullS) fullS.classList.add('hidden');
         }
-        const titleObj = TITLES.find(t=>t.id===appState.selectedTitle) || TITLES[0];
-        const badge = document.getElementById('user-active-title');
-        const txt   = document.getElementById('user-title-text');
-        if(txt) txt.innerText = titleObj.name;
-        if(badge) { badge.classList.remove('blue-title','red-title'); badge.classList.add(titleObj.tier==='hard'?'red-title':'blue-title'); }
     }
 
     updateHeaderBadge(isPremium) {
@@ -532,6 +666,7 @@ class SSCMaxVocabEngine {
     }
 
     switchView(viewId) {
+        if(appState.isBanned) return;
         if(appState.quiz.active && viewId!=='quiz' && viewId!=='result') {
             if(!confirm('Assessment running. Discard and exit?')) return;
             this.forceTerminateQuiz();
@@ -543,7 +678,6 @@ class SSCMaxVocabEngine {
         if(viewId==='vault')   this.renderVault();
         if(viewId==='ranks')   this.renderLeaderboard();
         if(viewId==='premium') this.fetchAndRenderPremiumView();
-        if(viewId==='titles')  this.renderTitlesView();
         if(v) v.scrollTop=0;
     }
 
@@ -559,42 +693,6 @@ class SSCMaxVocabEngine {
         const link=`https://t.me/jangra854x?text=${msg}`;
         if(window.Telegram?.WebApp?.openTelegramLink) window.Telegram.WebApp.openTelegramLink(link);
         else window.open(link,'_blank');
-    }
-
-    // ── TITLES VIEW ──────────────────────────────────────────────
-    renderTitlesView() {
-        if(!this.titlesListEl) return;
-        this.titlesListEl.innerHTML = TITLES.map(t => {
-            const unlocked = appState.unlockedTitles.includes(t.id);
-            const selected = appState.selectedTitle===t.id;
-            const tierClass = t.tier==='hard'?'title-hard':'title-easy';
-            if(!unlocked) {
-                return `<div class="title-card-item glass-card title-locked">
-                    <div class="title-card-left">
-                        <div class="title-icon-wrap"><i class="fa-solid fa-lock"></i></div>
-                        <div><div class="title-name">${t.name}</div><div class="title-desc">${t.desc}</div></div>
-                    </div>
-                    <span class="title-lock-tag"><i class="fa-solid fa-lock"></i> Locked</span>
-                </div>`;
-            }
-            return `<div class="title-card-item glass-card ${tierClass}" onclick="app.selectTitle('${t.id}')">
-                <div class="title-card-left">
-                    <div class="title-icon-wrap"><i class="fa-solid ${t.icon}"></i></div>
-                    <div><div class="title-name">${t.name}</div><div class="title-desc">${t.desc}</div></div>
-                </div>
-                ${selected?`<div class="title-selected-check"><i class="fa-solid fa-check"></i></div>`:''}
-            </div>`;
-        }).join('');
-    }
-
-    selectTitle(titleId) {
-        if(!appState.unlockedTitles.includes(titleId)) return;
-        appState.selectedTitle = titleId;
-        try { localStorage?.setItem?.('ssc_selected_title', titleId); } catch(e){}
-        this.triggerHaptic('select');
-        this.renderTitlesView();
-        this.renderProfileExtras();
-        this.triggerToast('Title updated!');
     }
 
     // ── PREMIUM VIEW ─────────────────────────────────────────────
@@ -767,7 +865,6 @@ class SSCMaxVocabEngine {
         finally { this.btnStartQuiz.disabled=false; this.btnStartQuiz.innerHTML=`<i class="fa-solid fa-flag-checkered"></i> START QUIZ`; }
     }
 
-    // Fetch in insertion order (created_at, id) — no random shuffle
     async fetchQuestionsFromDB(quizType, topicKey, limit) {
         if(!supabaseClient) return [];
         let q = supabaseClient.from('questions').select('*').eq('quiz_type',quizType);
@@ -886,12 +983,17 @@ class SSCMaxVocabEngine {
                 await supabaseClient.from('leaderboard').insert({ telegram_id:appState.currentUser.id, name:appState.currentUser.name, score:appState.quiz.correctCount, time_seconds:appState.quiz.timeSeconds, date:new Date().toISOString().split('T')[0] });
                 appState.cache.leaderboard=null;
                 this.triggerToast('Score synced to Global Rankings!');
-                await this.loadUserStats();
             } catch(e) { console.error('Score post:',e); }
         }
-        const lbSec=document.getElementById('result-lb-section'); if(lbSec) lbSec.style.display='none';
+
+        // Reset result rank toggle state for fresh view
+        appState.cache.resultRankLoaded=false;
+        const lbSec=document.getElementById('result-lb-section');
+        const toggleBtn=document.getElementById('btn-view-rank-toggle');
+        if(lbSec) lbSec.classList.add('hidden');
+        if(toggleBtn) { toggleBtn.classList.remove('expanded'); toggleBtn.innerHTML=`<i class="fa-solid fa-ranking-star"></i> View Your Rank`; }
+
         this.switchView('result');
-        setTimeout(() => this.showResultLeaderboard(), 600);
     }
 
     launchConfetti() {
@@ -907,21 +1009,38 @@ class SSCMaxVocabEngine {
         }
     }
 
-    async showResultLeaderboard() {
-        const sec=document.getElementById('result-lb-section'), con=document.getElementById('result-lb-container');
-        if(!sec||!con||!supabaseClient) return;
-        sec.style.display='block';
+    // ── VIEW YOUR RANK (result screen toggle — fixed) ─────────────
+    async toggleResultRankView() {
+        const sec = document.getElementById('result-lb-section');
+        const con = document.getElementById('result-lb-container');
+        const btn = document.getElementById('btn-view-rank-toggle');
+        if(!sec||!con||!btn) return;
+        this.triggerHaptic('select');
+
+        const isHidden = sec.classList.contains('hidden');
+        if(!isHidden) {
+            sec.classList.add('hidden');
+            btn.classList.remove('expanded');
+            btn.innerHTML=`<i class="fa-solid fa-ranking-star"></i> View Your Rank`;
+            return;
+        }
+
+        sec.classList.remove('hidden');
+        btn.classList.add('expanded');
+        btn.innerHTML=`<i class="fa-solid fa-chevron-up"></i> Hide Rank`;
+
+        if(appState.cache.resultRankLoaded) return; // already fetched this session
+
         con.innerHTML=`<div class="skeleton-list">${[...Array(3)].map(()=>'<div class="skeleton-row"></div>').join('')}</div>`;
+        if(!supabaseClient) { con.innerHTML=`<div class="text-center text-muted p-3">Database unavailable.</div>`; return; }
         try {
             const today=new Date().toISOString().split('T')[0];
-            if(!appState.cache.leaderboard) {
-                const { data } = await supabaseClient.from('leaderboard').select('*').eq('date',today).order('score',{ascending:false}).order('time_seconds',{ascending:true}).limit(10);
-                appState.cache.leaderboard=data||[];
-            }
-            const lb=appState.cache.leaderboard;
+            const { data } = await supabaseClient.from('leaderboard').select('*').eq('date',today).order('score',{ascending:false}).order('time_seconds',{ascending:true}).limit(10);
+            const lb = data||[];
+            appState.cache.resultRankLoaded = true;
             if(!lb.length) { con.innerHTML=`<div class="text-center text-muted p-3">No scores yet today. Be the first! 🏆</div>`; return; }
-            con.innerHTML=this.renderLeaderboardRows(lb);
-        } catch(e) { sec.style.display='none'; }
+            con.innerHTML = this.renderLeaderboardRows(lb);
+        } catch(e) { con.innerHTML=`<div class="text-center text-muted p-3">Failed to load rankings.</div>`; }
     }
 
     renderLeaderboardRows(lb) {
@@ -1020,7 +1139,6 @@ class SSCMaxVocabEngine {
                 let q = supabaseClient.from('leaderboard').select('*');
                 q = period==='daily' ? q.eq('date',from) : q.gte('date',from).lte('date',to);
                 const { data } = await q;
-                // Aggregate by user for weekly/monthly (sum scores, sum time)
                 let rows = data||[];
                 if(period!=='daily') {
                     const agg={};
