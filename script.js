@@ -1,15 +1,22 @@
 /**
- * SSC MAX VOCAB — Client Engine v4
- * Schema: quiz_type, topic, question, option_a/b/c/d, correct_option, explanation_a/b/c/d
- * v4: Working Live Themes, Admin User Modal, View Rank Toggle, Streak Fix,
- *     Free Quiz Auto-Cleanup, Titles Removed
+ * SSC MAX VOCAB — Client Engine v5
+ * NEW SYSTEM: Topic Groups -> Alphabets (or direct) -> Sets -> Confirm -> Quiz
+ * Admin: Set Registry (create empty, then fill/edit questions)
  *
  * REQUIRED SUPABASE SETUP (run once in SQL Editor):
  * ALTER TABLE users ADD COLUMN IF NOT EXISTS streak integer DEFAULT 0;
  * ALTER TABLE users ADD COLUMN IF NOT EXISTS last_active_date date;
+ * ALTER TABLE users ADD COLUMN IF NOT EXISTS last_grace_date date;
  * ALTER TABLE users ADD COLUMN IF NOT EXISTS banned boolean DEFAULT false;
- * CREATE TABLE IF NOT EXISTS app_settings (id integer primary key, active_theme text default 'aurora');
- * INSERT INTO app_settings (id, active_theme) VALUES (1,'aurora') ON CONFLICT (id) DO NOTHING;
+ * CREATE TABLE IF NOT EXISTS topic_sets (
+ *   id bigserial primary key,
+ *   group_name text not null,
+ *   letter text,
+ *   set_number integer not null,
+ *   full_key text unique not null,
+ *   question_count integer default 0,
+ *   created_at timestamptz default now()
+ * );
  */
 
 const SUPABASE_URL = 'https://tbiktjhwdlwzrhwursxk.supabase.co';
@@ -17,24 +24,28 @@ const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBh
 let supabaseClient = null;
 try { if (window.supabase?.createClient) supabaseClient = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY); } catch(e) { console.error('Supabase init:', e); }
 
-const TOPICS = ['One Word Substitution','Idioms & Phrases','Synonyms','Spelling','Antonyms','Homophones'];
-const LOCKED_TOPICS = ['Antonyms','Homophones'];
-
-const ADMIN_THEMES = [
-    { id:'aurora', name:'Aurora Nebula', desc:'Purple-cyan cosmic glow with drifting orbs', tag:'DEFAULT' },
-    { id:'molten', name:'Molten Gold',   desc:'Fiery orange embers rising through the dark',tag:'INTENSE' },
-    { id:'matrix', name:'Cyber Matrix',  desc:'Green digital rain, tech-noir energy',        tag:'TECH' },
-    { id:'velvet', name:'Royal Velvet',  desc:'Pink-purple luxury with swirling light',      tag:'LUXURY' }
+const ALPHABET_TOPICS = ['One Word Substitution','Idioms & Phrases','Synonyms'];
+const DIRECT_TOPICS = ['Spellings'];
+const LOCKED_TOPICS = ['Homonyms & Homophones','Fixed Prepositions','Sentence Error Detection'];
+const ALL_TOPICS = [
+    { name:'One Word Substitution', icon:'fa-book-open', kind:'alphabet' },
+    { name:'Idioms & Phrases',      icon:'fa-comments',  kind:'alphabet' },
+    { name:'Synonyms',              icon:'fa-arrows-left-right', kind:'alphabet' },
+    { name:'Spellings',             icon:'fa-spell-check', kind:'direct' },
+    { name:'Homonyms & Homophones', icon:'fa-clone',     kind:'locked' },
+    { name:'Fixed Prepositions',    icon:'fa-thumbtack', kind:'locked' },
+    { name:'Sentence Error Detection', icon:'fa-bug',    kind:'locked' }
 ];
+const LETTERS = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ'.split('');
 
 let appState = {
     isPremium:false, isAdmin:false, isBanned:false,
-    currentUser:{ id:null, name:'SSC Aspirant', username:'', photo_url:'' },
+    currentUser:{ id:null, name:'', username:'', photo_url:'' },
     currentView:'dashboard', activeVaultTab:'weak', activeRankPeriod:'daily',
-    searchQuery:'', weakWords:[], bookmarkedWords:[],
-    streak:0, activeTheme:'aurora',
+    searchQuery:'', weakWords:[], bookmarkedWords:[], streak:0,
+    activeTopicGroup:null, activeTopicLetter:null,
     quiz:{ active:false, type:'free', title:'', quizCategory:null, isPremiumLocked:false, questions:[], currentIndex:0, selectedOption:null, correctCount:0, wrongCount:0, timeSeconds:0, stopwatchInterval:null },
-    cache:{ activePremiumDate:null, activeFreeDate:null, archives:null, topicSets:{}, leaderboard:null, resultRankLoaded:false }
+    cache:{ activeFreeDate:null, leaderboard:null, resultRankLoaded:false, topicSetsRegistry:null }
 };
 
 class SSCMaxVocabEngine {
@@ -42,7 +53,6 @@ class SSCMaxVocabEngine {
 
     initDOMNodes() {
         this.premiumTopicsList = document.getElementById('premium-topics-list');
-        this.premiumArchivesEl = document.getElementById('premium-archives-container');
         this.vaultItemsEl      = document.getElementById('vault-items-container');
         this.leaderboardEl     = document.getElementById('leaderboard-master-container');
         this.quizFrame         = document.getElementById('question-card-frame');
@@ -54,66 +64,21 @@ class SSCMaxVocabEngine {
         this.btnStartQuiz.addEventListener('click', () => this.handleStartQuizClick());
     }
 
-    // ── LIVE THEME LAYER ─────────────────────────────────────────
     injectLiveThemeLayer() {
-        const layer = document.getElementById('live-theme-layer');
-        if(!layer) return;
-        // 3 floating orbs + several twinkling stars, CSS handles per-theme colors/animation
+        const layer = document.getElementById('live-theme-layer'); if(!layer) return;
+        document.body.setAttribute('data-theme','aurora');
         let html = '<div class="theme-orb"></div><div class="theme-orb"></div><div class="theme-orb"></div>';
         for(let i=0;i<18;i++) {
-            const top = Math.random()*100, left = Math.random()*100, size = 1+Math.random()*2;
+            const top=Math.random()*100, left=Math.random()*100, size=1+Math.random()*2;
             html += `<div class="theme-star" style="top:${top}%;left:${left}%;width:${size}px;height:${size}px;animation-delay:${(Math.random()*3).toFixed(1)}s;"></div>`;
         }
         layer.innerHTML = html;
-
-        const saved = this.safeLocalGet('ssc_local_theme');
-        if(saved) this.applyThemeLocally(saved, false);
-
-        this.loadGlobalTheme();
     }
 
-    safeLocalGet(key) { try { return localStorage.getItem(key); } catch(e) { return null; } }
-    safeLocalSet(key,val) { try { localStorage.setItem(key,val); } catch(e){} }
+    safeLocalGet(key){ try{ return localStorage.getItem(key);}catch(e){return null;} }
+    safeLocalSet(key,val){ try{ localStorage.setItem(key,val);}catch(e){} }
 
-    async loadGlobalTheme() {
-        if(!supabaseClient) return;
-        try {
-            const { data } = await supabaseClient.from('app_settings').select('active_theme').eq('id',1).maybeSingle();
-            if(data?.active_theme && !this.safeLocalGet('ssc_local_theme')) {
-                this.applyThemeLocally(data.active_theme, false);
-            }
-            appState.activeTheme = data?.active_theme || 'aurora';
-        } catch(e) { /* app_settings table may not exist yet — silently ignore */ }
-    }
-
-    applyThemeLocally(themeId, showToast=true) {
-        document.body.setAttribute('data-theme', themeId);
-        this.safeLocalSet('ssc_local_theme', themeId);
-        if(showToast) this.triggerToast(`Theme applied: ${ADMIN_THEMES.find(t=>t.id===themeId)?.name||themeId}`);
-    }
-
-    resetToGlobalTheme() {
-        try { localStorage.removeItem('ssc_local_theme'); } catch(e){}
-        document.body.setAttribute('data-theme', appState.activeTheme);
-        this.triggerToast('Reverted to global theme');
-        this.renderAdminThemes();
-    }
-
-    async applyThemeToAllUsers(themeId) {
-        if(!supabaseClient) return;
-        if(!confirm(`Apply "${ADMIN_THEMES.find(t=>t.id===themeId)?.name}" theme to ALL users? This changes the app look for everyone.`)) return;
-        try {
-            const { error } = await supabaseClient.from('app_settings').upsert({ id:1, active_theme:themeId }, { onConflict:'id' });
-            if(error) throw error;
-            appState.activeTheme = themeId;
-            this.triggerToast(`✅ Applied "${ADMIN_THEMES.find(t=>t.id===themeId)?.name}" to all users!`);
-            this.renderAdminThemes();
-        } catch(e) {
-            alert('Could not apply globally. Make sure the "app_settings" table exists in Supabase (see setup instructions). Error: '+e.message);
-        }
-    }
-
-    // ── TELEGRAM ───────────────────────────────────────────────
+    // ── TELEGRAM ─────────────────────────────────────────────────
     initTelegramContext() {
         const tg = window.Telegram?.WebApp;
         let userId=null, name='SSC Aspirant', handle='Offline Mode', avatar='';
@@ -128,13 +93,15 @@ class SSCMaxVocabEngine {
             }
         }
         appState.currentUser = { id:userId, name, username:handle, photo_url:avatar };
-        const n=document.getElementById('tg-user-name'), h=document.getElementById('tg-user-handle');
-        if(n) n.innerText=name; if(h) h.innerText=handle;
+        const n=document.getElementById('tg-user-name');
+        if(n) n.innerText=name;
         if(userId===7990149560||userId==='7990149560') { appState.isAdmin=true; this.buildAdminPanel(); }
         this.syncSupabaseUser();
     }
 
-    // ── ADMIN PANEL ────────────────────────────────────────────
+    // ══════════════════════════════════════════════════════════════
+    // ADMIN PANEL
+    // ══════════════════════════════════════════════════════════════
     buildAdminPanel() {
         const nav=document.querySelector('.bottom-nav-bar');
         if(nav) {
@@ -148,14 +115,12 @@ class SSCMaxVocabEngine {
         const av=document.createElement('div');
         av.id='view-admin'; av.className='app-view';
         av.innerHTML = `
-        <div class="screen-header"><h2>Admin Panel</h2><p>Secure Command Interface</p></div>
+        <div class="screen-header"><h2>Admin Panel</h2><p>Full Control Center</p></div>
         <div style="display:flex;gap:8px;overflow-x:auto;padding-bottom:10px;margin-bottom:16px;scrollbar-width:none;">
             <button class="adm-pill active" onclick="app.switchAdminTab('free',this)">Free Quiz</button>
-            <button class="adm-pill" onclick="app.switchAdminTab('prem',this)">Premium Mix</button>
-            <button class="adm-pill" onclick="app.switchAdminTab('topic',this)">Topics</button>
+            <button class="adm-pill" onclick="app.switchAdminTab('bank',this)">Topic Bank</button>
             <button class="adm-pill" onclick="app.switchAdminTab('users',this)">Users</button>
             <button class="adm-pill" onclick="app.switchAdminTab('stats',this)">Stats</button>
-            <button class="adm-pill" onclick="app.switchAdminTab('themes',this)">Themes</button>
         </div>
 
         <div id="adm-sec-free" class="adm-sec">
@@ -172,44 +137,40 @@ class SSCMaxVocabEngine {
             <div class="glass-card">
                 <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:12px;">
                     <span style="font-size:0.78rem;font-weight:700;color:var(--text-muted);">SCHEDULED QUIZZES</span>
-                    <button class="adm-btn-cyan" style="padding:5px 12px;font-size:0.72rem;" onclick="app.loadScheduledQuizzes('free')">↻ Load</button>
+                    <button class="adm-btn-cyan" style="padding:5px 12px;font-size:0.72rem;" onclick="app.loadScheduledQuizzes()">↻ Load</button>
                 </div>
                 <div id="adm-free-scheduled-list"><p style="font-size:0.8rem;color:var(--text-muted);text-align:center;">Click Load to view</p></div>
             </div>
         </div>
 
-        <div id="adm-sec-prem" class="adm-sec" style="display:none;">
+        <!-- ══════ TOPIC BANK — the big new admin feature ══════ -->
+        <div id="adm-sec-bank" class="adm-sec" style="display:none;">
             <div class="glass-card mb-3">
-                <h4 style="color:var(--gold-premium);margin-bottom:14px;">Deploy Premium Mix</h4>
-                <p style="font-size:0.75rem;color:var(--text-muted);margin-bottom:12px;">Future dates auto-activate. Previous dates become archives.</p>
-                <label class="adm-label">Quiz Date</label>
-                <input type="date" id="adm-prem-date" class="adm-input" value="${today}">
-                <label class="adm-label">Questions (100 Qs)</label>
-                <textarea id="adm-prem-txt" class="adm-textarea" rows="8" placeholder="1. Question text&#10;A. Option..."></textarea>
-                <div id="adm-prem-count" style="font-size:0.72rem;color:var(--text-muted);margin-top:6px;"></div>
-                <button class="adm-btn-gold w-100 mt-3" onclick="app.publishAdminPremiumQuiz()">👑 PUBLISH PREMIUM MIX</button>
+                <h4 style="color:var(--gold-premium);margin-bottom:14px;"><i class="fa-solid fa-plus"></i> Create New Set</h4>
+                <label class="adm-label">Topic Group</label>
+                <select id="adm-bank-group" class="adm-input" onchange="app.onBankGroupChange()">
+                    ${ALPHABET_TOPICS.concat(DIRECT_TOPICS).map(t=>`<option value="${t}">${t}</option>`).join('')}
+                </select>
+                <div id="adm-bank-letter-wrap">
+                    <label class="adm-label">Letter</label>
+                    <select id="adm-bank-letter" class="adm-input">
+                        ${LETTERS.map(l=>`<option value="${l}">${l}</option>`).join('')}
+                    </select>
+                </div>
+                <p style="font-size:0.72rem;color:var(--text-muted);margin-top:10px;">Set number is auto-assigned (next available for this group/letter).</p>
+                <button class="adm-btn-gold w-100 mt-3" onclick="app.createTopicSet()"><i class="fa-solid fa-folder-plus"></i> CREATE EMPTY SET</button>
             </div>
+
             <div class="glass-card">
                 <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:12px;">
-                    <span style="font-size:0.78rem;font-weight:700;color:var(--text-muted);">SCHEDULED QUIZZES</span>
-                    <button class="adm-btn-gold" style="padding:5px 12px;font-size:0.72rem;" onclick="app.loadScheduledQuizzes('prem')">↻ Load</button>
+                    <h4 style="color:var(--neon-cyan);">All Sets</h4>
+                    <button class="adm-btn-cyan" style="padding:6px 12px;font-size:0.72rem;" onclick="app.loadAllTopicSets()">↻ Refresh</button>
                 </div>
-                <div id="adm-prem-scheduled-list"><p style="font-size:0.8rem;color:var(--text-muted);text-align:center;">Click Load to view</p></div>
-            </div>
-        </div>
-
-        <div id="adm-sec-topic" class="adm-sec" style="display:none;">
-            <div class="glass-card mb-3">
-                <h4 style="color:var(--neon-cyan);margin-bottom:14px;">Deploy Topic Set</h4>
-                <p style="font-size:0.75rem;color:var(--text-muted);margin-bottom:12px;">Each upload = new Set (Set 1, Set 2...). 20 Qs per set.</p>
-                <label class="adm-label">Topic</label>
-                <select id="adm-topic-sel" class="adm-input">
-                    ${TOPICS.map(t=>`<option value="${t}">${t}</option>`).join('')}
+                <select id="adm-bank-filter" class="adm-input mb-3" onchange="app.loadAllTopicSets()">
+                    <option value="all">All Topics</option>
+                    ${ALPHABET_TOPICS.concat(DIRECT_TOPICS).map(t=>`<option value="${t}">${t}</option>`).join('')}
                 </select>
-                <label class="adm-label">Questions (20 Qs)</label>
-                <textarea id="adm-topic-txt" class="adm-textarea" rows="8" placeholder="1. Question text&#10;A. Option..."></textarea>
-                <div id="adm-topic-count" style="font-size:0.72rem;color:var(--text-muted);margin-top:6px;"></div>
-                <button class="adm-btn-cyan w-100 mt-3" onclick="app.publishAdminTopicDeck()">📚 PUBLISH TOPIC SET</button>
+                <div id="adm-bank-sets-list"><div class="text-center text-muted p-3"><i class="fa-solid fa-spinner fa-spin"></i></div></div>
             </div>
         </div>
 
@@ -242,61 +203,24 @@ class SSCMaxVocabEngine {
             </div>
             <div class="glass-card">
                 <h4 style="color:var(--danger-red);margin-bottom:10px;">Database Cleanup</h4>
-                <p style="font-size:0.75rem;color:var(--text-muted);margin-bottom:12px;">Free quiz keeps no archive — old dated questions auto-delete on every publish. Use this to force-clean manually anytime.</p>
+                <p style="font-size:0.75rem;color:var(--text-muted);margin-bottom:12px;">Free quiz keeps no archive — old dated questions auto-delete on every publish.</p>
                 <button class="adm-btn-red w-100" onclick="app.cleanupPastFreeQuestions(true)"><i class="fa-solid fa-broom"></i> Clean Old Free Quiz Questions</button>
-            </div>
-        </div>
-
-        <div id="adm-sec-themes" class="adm-sec" style="display:none;">
-            <div class="admin-active-theme-banner">
-                <div><div class="label">GLOBAL ACTIVE THEME</div><div class="value" id="adm-active-theme-label">Loading...</div></div>
-                <i class="fa-solid fa-palette" style="color:var(--neon-cyan);font-size:1.3rem;"></i>
-            </div>
-            <div class="glass-card mb-3">
-                <h4 style="color:var(--gold-premium);margin-bottom:6px;">App Themes</h4>
-                <p style="font-size:0.75rem;color:var(--text-muted);margin-bottom:16px;">
-                    <b>Preview</b> = see it on your device only. <b>Apply to All</b> = changes the look for every user in the app.
-                </p>
-                <div id="adm-themes-container"></div>
-                <button class="adm-btn-cyan w-100 mt-3" onclick="app.resetToGlobalTheme()"><i class="fa-solid fa-rotate-left"></i> Reset My Preview to Global Theme</button>
             </div>
         </div>`;
         document.getElementById('view-container').appendChild(av);
 
-        ['adm-free-txt','adm-prem-txt','adm-topic-txt'].forEach(id => {
-            document.getElementById(id)?.addEventListener('input', e => {
-                const n = this.parseAdminQuestions(e.target.value,'x','x').length;
-                const countEl = document.getElementById(id.replace('-txt','-count'));
-                if(countEl) countEl.innerText = `${n} question(s) detected`;
-            });
+        document.getElementById('adm-free-txt')?.addEventListener('input', e => {
+            const n = this.parseAdminQuestions(e.target.value).length;
+            document.getElementById('adm-free-count').innerText = `${n} question(s) detected`;
         });
-        this.renderAdminThemes();
-        this.cleanupPastFreeQuestions(false);
+        this.onBankGroupChange();
     }
 
-    renderAdminThemes() {
-        const c = document.getElementById('adm-themes-container'); if(!c) return;
-        const localTheme = this.safeLocalGet('ssc_local_theme');
-        const activeLbl = document.getElementById('adm-active-theme-label');
-        if(activeLbl) activeLbl.innerText = ADMIN_THEMES.find(t=>t.id===appState.activeTheme)?.name || 'Aurora Nebula';
-        c.innerHTML = ADMIN_THEMES.map(t => {
-            const isPreviewing = localTheme === t.id;
-            const isGlobal = appState.activeTheme === t.id;
-            return `
-            <div class="theme-preview-card theme-preview-${t.id} ${isPreviewing?'theme-selected':''}">
-                <span class="theme-apply-tag">${t.tag}${isGlobal?' <i class="fa-solid fa-check" style="margin-left:4px;"></i>':''}</span>
-                <div class="theme-preview-name">${t.name} ${isGlobal?'<span class="theme-live-tag"><i class="fa-solid fa-circle"></i> LIVE</span>':''}</div>
-                <div class="theme-preview-desc">${t.desc}</div>
-                <div class="theme-card-actions">
-                    <button class="theme-btn-preview ${isPreviewing?'is-active':''}" onclick="app.applyThemeLocally('${t.id}')">
-                        <i class="fa-solid fa-eye"></i> ${isPreviewing?'Previewing':'Preview'}
-                    </button>
-                    <button class="theme-btn-apply-all" onclick="app.applyThemeToAllUsers('${t.id}')">
-                        <i class="fa-solid fa-globe"></i> Apply to All
-                    </button>
-                </div>
-            </div>`;
-        }).join('');
+    onBankGroupChange() {
+        const group = document.getElementById('adm-bank-group')?.value;
+        const wrap = document.getElementById('adm-bank-letter-wrap');
+        if(!wrap) return;
+        wrap.style.display = ALPHABET_TOPICS.includes(group) ? 'block' : 'none';
     }
 
     switchAdminTab(secId, btn) {
@@ -307,16 +231,158 @@ class SSCMaxVocabEngine {
         this.triggerHaptic('select');
         if(secId==='users') this.loadPremiumUsersList();
         if(secId==='stats') this.loadAdminStats();
-        if(secId==='themes') this.renderAdminThemes();
+        if(secId==='bank')  this.loadAllTopicSets();
     }
 
-    // ── FREE QUIZ AUTO-CLEANUP ───────────────────────────────────
+    // ── TOPIC BANK: Create / List / Manage Sets ─────────────────
+    async createTopicSet() {
+        if(!supabaseClient) return;
+        const group = document.getElementById('adm-bank-group').value;
+        const isAlpha = ALPHABET_TOPICS.includes(group);
+        const letter = isAlpha ? document.getElementById('adm-bank-letter').value : null;
+        try {
+            let q = supabaseClient.from('topic_sets').select('set_number').eq('group_name',group);
+            q = isAlpha ? q.eq('letter',letter) : q.is('letter',null);
+            const { data:existing } = await q;
+            const setNumber = (existing?.length||0) + 1;
+            const fullKey = isAlpha ? `${group} - ${letter} - Set ${setNumber}` : `${group} - Set ${setNumber}`;
+            const { error } = await supabaseClient.from('topic_sets').insert({ group_name:group, letter, set_number:setNumber, full_key:fullKey, question_count:0 });
+            if(error) throw error;
+            this.triggerToast(`✅ Created: ${fullKey}`);
+            this.loadAllTopicSets();
+        } catch(e) { alert('Error creating set (check "topic_sets" table exists): '+e.message); }
+    }
+
+    async loadAllTopicSets() {
+        const el = document.getElementById('adm-bank-sets-list');
+        if(!el||!supabaseClient) return;
+        el.innerHTML = `<div class="text-center text-muted p-3"><i class="fa-solid fa-spinner fa-spin"></i></div>`;
+        const filter = document.getElementById('adm-bank-filter')?.value || 'all';
+        try {
+            let q = supabaseClient.from('topic_sets').select('*').order('group_name').order('letter').order('set_number');
+            if(filter!=='all') q = q.eq('group_name', filter);
+            const { data, error } = await q;
+            if(error) throw error;
+            if(!data?.length) { el.innerHTML = `<p class="text-muted text-center p-3">No sets created yet.</p>`; return; }
+            el.innerHTML = data.map(s => `
+                <div class="admin-scheduled-row" style="cursor:pointer;" onclick="app.openManageSetModal('${s.full_key}')">
+                    <div>
+                        <div class="admin-scheduled-date">${s.full_key}</div>
+                        <div class="admin-scheduled-count">${s.question_count} question(s)</div>
+                    </div>
+                    <i class="fa-solid fa-chevron-right text-muted"></i>
+                </div>`).join('');
+        } catch(e) { el.innerHTML = `<p style="color:var(--danger-red);text-align:center;">Error: ${e.message}</p>`; }
+    }
+
+    async openManageSetModal(fullKey) {
+        const overlay = document.createElement('div');
+        overlay.className = 'admin-modal-overlay';
+        overlay.id = 'manage-set-modal';
+        overlay.onclick = (e) => { if(e.target===overlay) overlay.remove(); };
+        overlay.innerHTML = `
+            <div class="admin-modal-sheet">
+                <div class="admin-modal-header">
+                    <h3 style="font-size:0.95rem;">${fullKey}</h3>
+                    <button class="admin-modal-close" onclick="document.getElementById('manage-set-modal').remove()"><i class="fa-solid fa-xmark"></i></button>
+                </div>
+                <div class="glass-card mb-3">
+                    <label class="adm-label" style="margin-top:0;">Add More Questions</label>
+                    <textarea id="manage-set-add-txt" class="adm-textarea" rows="6" placeholder="1. Question text&#10;A. Option&#10;B. Option&#10;C. Option&#10;D. Option&#10;Answer: A&#10;Explanation: Meaning"></textarea>
+                    <button class="adm-btn-cyan w-100 mt-2" onclick="app.addMoreQuestionsToSet('${fullKey}')"><i class="fa-solid fa-plus"></i> Add to Set</button>
+                </div>
+                <div id="manage-set-questions-list"><div class="text-center text-muted p-3"><i class="fa-solid fa-spinner fa-spin"></i></div></div>
+            </div>`;
+        document.body.appendChild(overlay);
+        this.loadSetQuestions(fullKey);
+    }
+
+    async loadSetQuestions(fullKey) {
+        const el = document.getElementById('manage-set-questions-list');
+        if(!el||!supabaseClient) return;
+        try {
+            const { data, error } = await supabaseClient.from('questions').select('*').eq('topic',fullKey).order('id',{ascending:true});
+            if(error) throw error;
+            if(!data?.length) { el.innerHTML = `<p class="text-muted text-center p-3">No questions yet. Add some above.</p>`; return; }
+            el.innerHTML = data.map(q => `
+                <div class="glass-card mb-2" id="qrow-${q.id}" style="padding:14px;">
+                    <textarea class="adm-input" style="min-height:44px;margin-bottom:8px;" id="qedit-text-${q.id}">${q.question}</textarea>
+                    <div style="display:grid;grid-template-columns:1fr 1fr;gap:6px;margin-bottom:8px;">
+                        <input class="adm-input" style="padding:8px 10px;font-size:0.8rem;" id="qedit-a-${q.id}" value="${(q.option_a||'').replace(/"/g,'&quot;')}">
+                        <input class="adm-input" style="padding:8px 10px;font-size:0.8rem;" id="qedit-b-${q.id}" value="${(q.option_b||'').replace(/"/g,'&quot;')}">
+                        <input class="adm-input" style="padding:8px 10px;font-size:0.8rem;" id="qedit-c-${q.id}" value="${(q.option_c||'').replace(/"/g,'&quot;')}">
+                        <input class="adm-input" style="padding:8px 10px;font-size:0.8rem;" id="qedit-d-${q.id}" value="${(q.option_d||'').replace(/"/g,'&quot;')}">
+                    </div>
+                    <div style="display:flex;gap:8px;align-items:center;margin-bottom:8px;">
+                        <label style="font-size:0.72rem;color:var(--text-muted);">Correct:</label>
+                        <select class="adm-input" style="padding:6px 10px;width:auto;" id="qedit-correct-${q.id}">
+                            ${['A','B','C','D'].map(l=>`<option value="${l}" ${q.correct_option===l?'selected':''}>${l}</option>`).join('')}
+                        </select>
+                    </div>
+                    <input class="adm-input" style="padding:8px 10px;font-size:0.78rem;margin-bottom:10px;" id="qedit-expl-${q.id}" placeholder="Explanation" value="${(q.explanation_a||q.explanation_b||q.explanation_c||q.explanation_d||'').replace(/"/g,'&quot;')}">
+                    <div style="display:flex;gap:8px;">
+                        <button class="adm-btn-cyan" style="flex:1;padding:8px;font-size:0.75rem;" onclick="app.saveQuestionEdit(${q.id})"><i class="fa-solid fa-check"></i> Save</button>
+                        <button class="adm-btn-red" style="flex:1;padding:8px;font-size:0.75rem;" onclick="app.deleteQuestionRow(${q.id},'${fullKey}')"><i class="fa-solid fa-trash"></i> Delete</button>
+                    </div>
+                </div>`).join('');
+        } catch(e) { el.innerHTML = `<p style="color:var(--danger-red);text-align:center;">Error: ${e.message}</p>`; }
+    }
+
+    async saveQuestionEdit(id) {
+        const text = document.getElementById(`qedit-text-${id}`).value.trim();
+        const a=document.getElementById(`qedit-a-${id}`).value.trim();
+        const b=document.getElementById(`qedit-b-${id}`).value.trim();
+        const c=document.getElementById(`qedit-c-${id}`).value.trim();
+        const d=document.getElementById(`qedit-d-${id}`).value.trim();
+        const correct=document.getElementById(`qedit-correct-${id}`).value;
+        const expl=document.getElementById(`qedit-expl-${id}`).value.trim();
+        try {
+            await supabaseClient.from('questions').update({
+                question:text, option_a:a, option_b:b, option_c:c, option_d:d, correct_option:correct,
+                explanation_a: correct==='A'?expl:'', explanation_b: correct==='B'?expl:'',
+                explanation_c: correct==='C'?expl:'', explanation_d: correct==='D'?expl:''
+            }).eq('id', id);
+            this.triggerToast('Question updated!');
+        } catch(e) { alert('Save error: '+e.message); }
+    }
+
+    async deleteQuestionRow(id, fullKey) {
+        if(!confirm('Delete this question permanently?')) return;
+        try {
+            await supabaseClient.from('questions').delete().eq('id', id);
+            await this.syncSetQuestionCount(fullKey);
+            document.getElementById(`qrow-${id}`)?.remove();
+            this.triggerToast('Question deleted');
+        } catch(e) { alert('Delete error: '+e.message); }
+    }
+
+    async addMoreQuestionsToSet(fullKey) {
+        const txt = document.getElementById('manage-set-add-txt').value;
+        const parsed = this.parseAdminQuestions(txt).map(p => ({ ...p, quiz_type:'topic', topic:fullKey }));
+        if(!parsed.length) return alert('Could not parse questions. Check format.');
+        try {
+            const { error } = await supabaseClient.from('questions').insert(parsed);
+            if(error) throw error;
+            await this.syncSetQuestionCount(fullKey);
+            document.getElementById('manage-set-add-txt').value='';
+            this.triggerToast(`✅ Added ${parsed.length} question(s)`);
+            this.loadSetQuestions(fullKey);
+        } catch(e) { alert('Error: '+e.message); }
+    }
+
+    async syncSetQuestionCount(fullKey) {
+        try {
+            const { count } = await supabaseClient.from('questions').select('*',{count:'exact',head:true}).eq('topic',fullKey);
+            await supabaseClient.from('topic_sets').update({ question_count: count||0 }).eq('full_key', fullKey);
+        } catch(e) { console.error('Count sync failed:', e); }
+    }
+
+    // ── FREE QUIZ AUTO-CLEANUP + ADMIN STATS ────────────────────
     async cleanupPastFreeQuestions(showAlert) {
         if(!supabaseClient) return;
         const today = new Date().toISOString().split('T')[0];
         try {
-            const { error, count } = await supabaseClient.from('questions').delete({count:'exact'}).eq('quiz_type','free').lt('topic',today);
-            if(error) throw error;
+            await supabaseClient.from('questions').delete().eq('quiz_type','free').lt('topic',today);
             if(showAlert) this.triggerToast(`Cleaned up old free quiz questions.`);
         } catch(e) { if(showAlert) alert('Cleanup error: '+e.message); }
     }
@@ -331,61 +397,50 @@ class SSCMaxVocabEngine {
             const today = new Date().toISOString().split('T')[0];
             const { count: todayAttempts } = await supabaseClient.from('leaderboard').select('*',{count:'exact',head:true}).eq('date',today);
             const { count: totalFreeQ }  = await supabaseClient.from('questions').select('*',{count:'exact',head:true}).eq('quiz_type','free');
-            const { count: totalPremQ }  = await supabaseClient.from('questions').select('*',{count:'exact',head:true}).eq('quiz_type','daily_premium');
             const { count: totalTopicQ } = await supabaseClient.from('questions').select('*',{count:'exact',head:true}).eq('quiz_type','topic');
+            const { count: totalSets }   = await supabaseClient.from('topic_sets').select('*',{count:'exact',head:true});
             el.innerHTML = `
                 <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;">
                     <div class="res-card glass-card stat-clickable" onclick="app.openUsersModal()"><span class="res-val text-cyan">${totalUsers??0}</span><span class="res-lbl">Total Users</span></div>
                     <div class="res-card glass-card"><span class="res-val text-gold">${premiumCount??0}</span><span class="res-lbl">Premium Users</span></div>
-                    <div class="res-card glass-card"><span class="res-val text-success">${todayAttempts??0}</span><span class="res-lbl">Premium Attempts Today</span></div>
+                    <div class="res-card glass-card"><span class="res-val text-success">${todayAttempts??0}</span><span class="res-lbl">Quiz Attempts Today</span></div>
                     <div class="res-card glass-card"><span class="res-val">${totalFreeQ??0}</span><span class="res-lbl">Free Questions in DB</span></div>
-                    <div class="res-card glass-card"><span class="res-val">${totalPremQ??0}</span><span class="res-lbl">Premium Questions in DB</span></div>
                     <div class="res-card glass-card"><span class="res-val">${totalTopicQ??0}</span><span class="res-lbl">Topic Questions in DB</span></div>
+                    <div class="res-card glass-card"><span class="res-val">${totalSets??0}</span><span class="res-lbl">Total Sets Created</span></div>
                 </div>`;
         } catch(e) { el.innerHTML = `<p style="color:var(--danger-red);text-align:center;">Error: ${e.message}</p>`; }
     }
 
-    // ── ADMIN USER MODAL (grant/ban) ─────────────────────────────
     async openUsersModal() {
         if(!supabaseClient) return;
         const overlay = document.createElement('div');
-        overlay.className = 'admin-modal-overlay';
-        overlay.id = 'admin-users-modal';
+        overlay.className = 'admin-modal-overlay'; overlay.id = 'admin-users-modal';
         overlay.onclick = (e) => { if(e.target===overlay) overlay.remove(); };
         overlay.innerHTML = `
             <div class="admin-modal-sheet">
-                <div class="admin-modal-header">
-                    <h3>All Users</h3>
-                    <button class="admin-modal-close" onclick="document.getElementById('admin-users-modal').remove()"><i class="fa-solid fa-xmark"></i></button>
-                </div>
+                <div class="admin-modal-header"><h3>All Users</h3><button class="admin-modal-close" onclick="document.getElementById('admin-users-modal').remove()"><i class="fa-solid fa-xmark"></i></button></div>
                 <div id="admin-users-modal-list"><div class="text-center text-muted p-3"><i class="fa-solid fa-spinner fa-spin"></i></div></div>
             </div>`;
         document.body.appendChild(overlay);
-
         try {
             const { data: users } = await supabaseClient.from('users').select('telegram_id,first_name,username,premium,banned').order('joined_at',{ascending:false}).limit(100);
             const list = document.getElementById('admin-users-modal-list');
             if(!users?.length) { list.innerHTML = `<p class="text-muted text-center p-3">No users found.</p>`; return; }
             list.innerHTML = users.map(u => {
-                const nm = u.first_name || u.username || 'Unknown';
-                const initial = nm.charAt(0).toUpperCase();
+                const nm = u.first_name || u.username || 'Unknown', initial = nm.charAt(0).toUpperCase();
                 return `<div class="admin-user-row">
                     <div class="admin-user-row-left">
                         <div class="admin-user-avatar-mini">${initial}</div>
-                        <div>
-                            <div class="admin-user-name-mini">${nm}${u.premium?'<span class="admin-user-premium-tag">PRO</span>':''}${u.banned?'<span class="admin-user-premium-tag" style="background:rgba(239,68,68,0.15);color:var(--danger-red);">BANNED</span>':''}</div>
-                            <div class="admin-user-id-mini">ID: ${u.telegram_id}</div>
-                        </div>
+                        <div><div class="admin-user-name-mini">${nm}${u.premium?'<span class="admin-user-premium-tag">PRO</span>':''}${u.banned?'<span class="admin-user-premium-tag" style="background:rgba(239,68,68,0.15);color:var(--danger-red);">BANNED</span>':''}</div>
+                        <div class="admin-user-id-mini">ID: ${u.telegram_id}</div></div>
                     </div>
                     <div class="admin-user-row-actions">
-                        <button class="icon-btn-mini icon-btn-grant" title="Toggle Premium" onclick="app.modalTogglePremium(${u.telegram_id}, ${!u.premium})"><i class="fa-solid fa-crown"></i></button>
-                        <button class="icon-btn-mini icon-btn-ban" title="Toggle Ban" onclick="app.modalToggleBan(${u.telegram_id}, ${!u.banned})"><i class="fa-solid fa-ban"></i></button>
+                        <button class="icon-btn-mini icon-btn-grant" onclick="app.modalTogglePremium(${u.telegram_id}, ${!u.premium})"><i class="fa-solid fa-crown"></i></button>
+                        <button class="icon-btn-mini icon-btn-ban" onclick="app.modalToggleBan(${u.telegram_id}, ${!u.banned})"><i class="fa-solid fa-ban"></i></button>
                     </div>
                 </div>`;
             }).join('');
-        } catch(e) {
-            document.getElementById('admin-users-modal-list').innerHTML = `<p style="color:var(--danger-red);text-align:center;">Error: ${e.message}</p>`;
-        }
+        } catch(e) { document.getElementById('admin-users-modal-list').innerHTML = `<p style="color:var(--danger-red);text-align:center;">Error: ${e.message}</p>`; }
     }
 
     async modalTogglePremium(targetId, makesPremium) {
@@ -394,17 +449,14 @@ class SSCMaxVocabEngine {
             else await supabaseClient.from('premium_users').delete().eq('telegram_id',targetId);
             await supabaseClient.from('users').update({premium:makesPremium}).eq('telegram_id',targetId);
             this.triggerToast(makesPremium?`✅ Premium granted`:`Premium removed`);
-            document.getElementById('admin-users-modal')?.remove();
-            this.openUsersModal();
+            document.getElementById('admin-users-modal')?.remove(); this.openUsersModal();
         } catch(e) { alert('Error: '+e.message); }
     }
-
     async modalToggleBan(targetId, makesBanned) {
         try {
             await supabaseClient.from('users').update({banned:makesBanned}).eq('telegram_id',targetId);
             this.triggerToast(makesBanned?`🚫 User banned`:`User unbanned`);
-            document.getElementById('admin-users-modal')?.remove();
-            this.openUsersModal();
+            document.getElementById('admin-users-modal')?.remove(); this.openUsersModal();
         } catch(e) { alert('Ban error (check "banned" column exists): '+e.message); }
     }
 
@@ -430,15 +482,13 @@ class SSCMaxVocabEngine {
         } catch(e) { el.innerHTML=`<p style="color:var(--danger-red);text-align:center;padding:12px;">Error: ${e.message}</p>`; }
     }
 
-    async loadScheduledQuizzes(type) {
-        const listId = type==='free'?'adm-free-scheduled-list':'adm-prem-scheduled-list';
-        const el=document.getElementById(listId);
+    async loadScheduledQuizzes() {
+        const el=document.getElementById('adm-free-scheduled-list');
         if(!el||!supabaseClient) return;
         el.innerHTML=`<div class="text-center text-muted p-2"><i class="fa-solid fa-spinner fa-spin"></i></div>`;
         const today=new Date().toISOString().split('T')[0];
-        const qt = type==='free'?'free':'daily_premium';
         try {
-            const { data } = await supabaseClient.from('questions').select('topic').eq('quiz_type',qt).gt('topic',today).order('topic',{ascending:true});
+            const { data } = await supabaseClient.from('questions').select('topic').eq('quiz_type','free').gt('topic',today).order('topic',{ascending:true});
             const dates=[...new Set((data||[]).map(r=>r.topic))];
             if(!dates.length) { el.innerHTML=`<p style="font-size:0.8rem;color:var(--text-muted);text-align:center;padding:8px;">No scheduled quizzes</p>`; return; }
             el.innerHTML = dates.map(d => {
@@ -447,22 +497,20 @@ class SSCMaxVocabEngine {
                     <div><div class="admin-scheduled-date">${ds}</div></div>
                     <div style="display:flex;align-items:center;gap:8px;">
                         <span class="scheduled-quiz-tag"><i class="fa-solid fa-clock"></i> Scheduled</span>
-                        <button class="adm-btn-red" style="padding:4px 8px;font-size:0.7rem;" onclick="app.deleteScheduledQuiz('${qt}','${d}','${type}')">✕</button>
+                        <button class="adm-btn-red" style="padding:4px 8px;font-size:0.7rem;" onclick="app.deleteScheduledQuiz('${d}')">✕</button>
                     </div>
                 </div>`;
             }).join('');
         } catch(e) { el.innerHTML=`<p style="color:var(--danger-red);text-align:center;">Error</p>`; }
     }
-
-    async deleteScheduledQuiz(quizType, dateVal, uiType) {
+    async deleteScheduledQuiz(dateVal) {
         if(!confirm(`Delete scheduled quiz for ${dateVal}?`)) return;
-        await supabaseClient.from('questions').delete().eq('quiz_type',quizType).eq('topic',dateVal);
-        this.triggerToast(`Deleted ${dateVal} quiz`);
-        this.loadScheduledQuizzes(uiType);
+        await supabaseClient.from('questions').delete().eq('quiz_type','free').eq('topic',dateVal);
+        this.triggerToast(`Deleted ${dateVal} quiz`); this.loadScheduledQuizzes();
     }
 
     // ── PARSER ────────────────────────────────────────────────────
-    parseAdminQuestions(rawText, quizType, topicName) {
+    parseAdminQuestions(rawText) {
         if(!rawText || !rawText.trim()) return [];
         const normalized = rawText.replace(/\r\n/g,'\n').trim();
         const blocks = normalized.split(/\n(?=\s*\d{1,3}[\.\)]\s)/);
@@ -486,8 +534,7 @@ class SSCMaxVocabEngine {
             const optArr = [opts.A, opts.B, opts.C, opts.D];
             if(qText && optArr.every(o => o && o.length > 0)) {
                 results.push({
-                    quiz_type: quizType, topic: topicName, question: qText,
-                    option_a: optArr[0], option_b: optArr[1], option_c: optArr[2], option_d: optArr[3],
+                    question: qText, option_a: optArr[0], option_b: optArr[1], option_c: optArr[2], option_d: optArr[3],
                     correct_option: ans,
                     explanation_a: ans==='A'?expl:'', explanation_b: ans==='B'?expl:'',
                     explanation_c: ans==='C'?expl:'', explanation_d: ans==='D'?expl:''
@@ -497,12 +544,11 @@ class SSCMaxVocabEngine {
         return results;
     }
 
-    // ── ADMIN DEPLOY ─────────────────────────────────────────────
     async publishAdminFreeQuiz() {
         const dateVal=document.getElementById('adm-free-date').value;
         const txt=document.getElementById('adm-free-txt').value;
         if(!txt.trim()) return alert('Paste questions first.');
-        const parsed=this.parseAdminQuestions(txt,'free',dateVal);
+        const parsed=this.parseAdminQuestions(txt).map(p=>({...p, quiz_type:'free', topic:dateVal}));
         if(!parsed.length) return alert('Could not parse. Check format (Answer: A / Explanation: ...)');
         try {
             await supabaseClient.from('questions').delete().eq('quiz_type','free').eq('topic',dateVal);
@@ -510,43 +556,8 @@ class SSCMaxVocabEngine {
             if(error) throw error;
             await this.cleanupPastFreeQuestions(false);
             appState.cache.activeFreeDate=null;
-            alert(`✅ Free Quiz for ${dateVal} published! ${parsed.length} questions uploaded. Old dated questions auto-cleaned.`);
+            alert(`✅ Free Quiz for ${dateVal} published! ${parsed.length} questions uploaded.`);
             document.getElementById('adm-free-txt').value=''; document.getElementById('adm-free-count').innerText='';
-        } catch(e) { alert('Error: '+e.message); }
-    }
-
-    async publishAdminPremiumQuiz() {
-        const dateVal=document.getElementById('adm-prem-date').value;
-        const txt=document.getElementById('adm-prem-txt').value;
-        if(!txt.trim()) return alert('Paste questions first.');
-        const parsed=this.parseAdminQuestions(txt,'daily_premium',dateVal);
-        if(!parsed.length) return alert('Could not parse. Check format.');
-        try {
-            await supabaseClient.from('questions').delete().eq('quiz_type','daily_premium').eq('topic',dateVal);
-            const { error } = await supabaseClient.from('questions').insert(parsed);
-            if(error) throw error;
-            appState.cache.activePremiumDate=null; appState.cache.archives=null;
-            alert(`✅ Premium Mix for ${dateVal} published! ${parsed.length} questions uploaded.`);
-            document.getElementById('adm-prem-txt').value=''; document.getElementById('adm-prem-count').innerText='';
-        } catch(e) { alert('Error: '+e.message); }
-    }
-
-    async publishAdminTopicDeck() {
-        const topicVal=document.getElementById('adm-topic-sel').value;
-        const txt=document.getElementById('adm-topic-txt').value;
-        if(!txt.trim()) return alert('Paste questions first.');
-        try {
-            const { data:ex } = await supabaseClient.from('questions').select('topic').eq('quiz_type','topic').like('topic',`${topicVal} - Set%`);
-            const existing=[...new Set((ex||[]).map(r=>r.topic))];
-            const setNum=existing.length+1;
-            const setTitle=`${topicVal} - Set ${setNum}`;
-            const parsed=this.parseAdminQuestions(txt,'topic',setTitle);
-            if(!parsed.length) return alert('Could not parse questions.');
-            const { error } = await supabaseClient.from('questions').insert(parsed);
-            if(error) throw error;
-            appState.cache.topicSets[topicVal]=null;
-            alert(`✅ ${setTitle} published! ${parsed.length} questions uploaded.`);
-            document.getElementById('adm-topic-txt').value=''; document.getElementById('adm-topic-count').innerText='';
         } catch(e) { alert('Error: '+e.message); }
     }
 
@@ -560,14 +571,12 @@ class SSCMaxVocabEngine {
             document.getElementById('adm-user-tgid').value=''; this.loadPremiumUsersList();
         } catch(e) { alert('Error: '+e.message); }
     }
-
     async adminRevokePremium() {
         const id=document.getElementById('adm-user-tgid').value.trim();
         if(!id) return alert('Enter Telegram ID.');
         await this.adminRevokeById(parseInt(id));
         document.getElementById('adm-user-tgid').value='';
     }
-
     async adminRevokeById(targetId) {
         try {
             await supabaseClient.from('premium_users').delete().eq('telegram_id',targetId);
@@ -577,7 +586,9 @@ class SSCMaxVocabEngine {
         } catch(e) { alert('Error: '+e.message); }
     }
 
-    // ── USER SYNC + STREAK ─────────────────────────────────────────
+    // ══════════════════════════════════════════════════════════════
+    // USER SYNC + STREAK (grace-day logic)
+    // ══════════════════════════════════════════════════════════════
     async syncSupabaseUser() {
         if(!supabaseClient||!appState.currentUser.id) { this.updateHeaderBadge(false); return; }
         try {
@@ -585,69 +596,63 @@ class SSCMaxVocabEngine {
                 telegram_id:appState.currentUser.id, username:appState.currentUser.username,
                 first_name:appState.currentUser.name, photo_url:appState.currentUser.photo_url,
                 joined_at:new Date().toISOString()
-            },{onConflict:'telegram_id', ignoreDuplicates:false});
+            },{onConflict:'telegram_id'});
 
-            const { data:userRow } = await supabaseClient.from('users').select('premium,banned,streak,last_active_date').eq('telegram_id',appState.currentUser.id).maybeSingle();
+            const { data:userRow } = await supabaseClient.from('users').select('premium,banned,streak').eq('telegram_id',appState.currentUser.id).maybeSingle();
 
             if(userRow?.banned) {
                 appState.isBanned = true;
                 document.getElementById('app').innerHTML = `<div style="display:flex;flex-direction:column;align-items:center;justify-content:center;height:100vh;text-align:center;padding:24px;">
                     <i class="fa-solid fa-ban" style="font-size:3rem;color:var(--danger-red);margin-bottom:16px;"></i>
                     <h2 style="margin-bottom:8px;">Access Restricted</h2>
-                    <p style="color:var(--text-muted);">Your access to this app has been suspended. Contact support if you believe this is a mistake.</p>
+                    <p style="color:var(--text-muted);">Your access to this app has been suspended.</p>
                 </div>`;
                 return;
             }
-
             appState.isPremium = !!userRow?.premium;
-            this.updateHeaderBadge(appState.isPremium);
             appState.streak = userRow?.streak || 0;
-            this.updateStreakActivity(userRow?.last_active_date, userRow?.streak||0);
+            this.updateHeaderBadge(appState.isPremium);
             this.renderStreakUI();
-
             await this.fetchVaultData();
         } catch(e) { console.error('Sync:',e); this.updateHeaderBadge(false); }
     }
 
-    // Called once per session on load — bumps streak if user is active today
-    async updateStreakActivity(lastActiveDate, currentStreak) {
+    // Called ONLY when a Free Quiz is completed
+    async markFreeQuizStreak() {
         if(!supabaseClient||!appState.currentUser.id) return;
-        const today = new Date().toISOString().split('T')[0];
-        if(lastActiveDate === today) { appState.streak = currentStreak; this.renderStreakUI(); return; } // already counted today
-
-        let newStreak = 1;
-        if(lastActiveDate) {
-            const diff = Math.round((new Date(today) - new Date(lastActiveDate)) / 86400000);
-            newStreak = diff === 1 ? currentStreak + 1 : 1;
-        }
         try {
-            await supabaseClient.from('users').update({ streak:newStreak, last_active_date:today }).eq('telegram_id', appState.currentUser.id);
+            const { data:row } = await supabaseClient.from('users').select('streak,last_active_date,last_grace_date').eq('telegram_id',appState.currentUser.id).maybeSingle();
+            const today = new Date().toISOString().split('T')[0];
+            if(row?.last_active_date === today) return; // already counted today
+
+            let newStreak = 1, newGraceDate = row?.last_grace_date || null;
+            if(row?.last_active_date) {
+                const diff = Math.round((new Date(today) - new Date(row.last_active_date)) / 86400000);
+                if(diff === 1) {
+                    newStreak = (row.streak||0) + 1;
+                } else if(diff === 2) {
+                    // 1 day missed — allow grace if not used in last 7 days
+                    const graceRecent = newGraceDate && (Math.round((new Date(today)-new Date(newGraceDate))/86400000) <= 7);
+                    if(!graceRecent) { newStreak = (row.streak||0) + 1; newGraceDate = today; }
+                    else { newStreak = 1; }
+                } else { newStreak = 1; }
+            }
+            await supabaseClient.from('users').update({ streak:newStreak, last_active_date:today, last_grace_date:newGraceDate }).eq('telegram_id', appState.currentUser.id);
             appState.streak = newStreak;
             this.renderStreakUI();
-        } catch(e) { /* streak/last_active_date columns may not exist yet */ console.error('Streak update failed (check columns exist):', e); }
+        } catch(e) { console.error('Streak update failed (check columns exist):', e); }
     }
 
     renderStreakUI() {
-        const streak = appState.streak;
-        const miniB = document.getElementById('streak-badge-mini');
-        const miniC = document.getElementById('streak-count-mini');
-        const fullS = document.getElementById('streak-strip-full');
-        const fullC = document.getElementById('streak-count-full');
-        if(streak > 0) {
-            if(miniB) miniB.classList.remove('hidden');
-            if(miniC) miniC.innerText = streak;
-            if(fullS) fullS.classList.remove('hidden');
-            if(fullC) fullC.innerText = streak;
-        } else {
-            if(miniB) miniB.classList.add('hidden');
-            if(fullS) fullS.classList.add('hidden');
-        }
+        const miniB=document.getElementById('streak-badge-mini'), miniC=document.getElementById('streak-count-mini');
+        if(appState.streak > 0) { if(miniB) miniB.classList.remove('hidden'); if(miniC) miniC.innerText=appState.streak; }
+        else if(miniB) miniB.classList.add('hidden');
     }
 
     updateHeaderBadge(isPremium) {
         const b=document.getElementById('header-tier-indicator'); if(!b) return;
-        if(isPremium) { b.innerHTML=`<i class="fa-solid fa-crown text-gold"></i> Elite`; b.classList.add('elite'); document.body.classList.add('premium-enhanced'); }
-        else          { b.innerHTML=`<i class="fa-solid fa-user"></i> Free`;              b.classList.remove('elite'); document.body.classList.remove('premium-enhanced'); }
+        if(isPremium) { b.innerHTML=`<i class="fa-solid fa-crown text-gold"></i> Elite`; b.classList.add('elite'); }
+        else          { b.innerHTML=`<i class="fa-solid fa-user"></i> Free`;              b.classList.remove('elite'); }
     }
 
     triggerHaptic(type) {
@@ -677,17 +682,11 @@ class SSCMaxVocabEngine {
         document.querySelectorAll('.nav-tab').forEach(t=>t.classList.toggle('active',t.getAttribute('data-target')===viewId));
         if(viewId==='vault')   this.renderVault();
         if(viewId==='ranks')   this.renderLeaderboard();
-        if(viewId==='premium') this.fetchAndRenderPremiumView();
+        if(viewId==='premium') this.renderPremiumTopicsGrid();
         if(v) v.scrollTop=0;
     }
 
     navigateToPremiumView() { this.switchView('premium'); }
-    cancelFromBlueprint() {
-        const t=appState.quiz.type;
-        if(t==='topic') this.switchView('topic-sets');
-        else if(t==='daily_premium') this.switchView('premium');
-        else this.switchView('dashboard');
-    }
     triggerPremiumPaywallGate() {
         const msg=encodeURIComponent('Hi! I want to unlock Premium Membership for SSC MAX VOCAB.');
         const link=`https://t.me/jangra854x?text=${msg}`;
@@ -695,157 +694,133 @@ class SSCMaxVocabEngine {
         else window.open(link,'_blank');
     }
 
-    // ── PREMIUM VIEW ─────────────────────────────────────────────
-    async fetchAndRenderPremiumView() {
-        if(!supabaseClient) return;
-        const today=new Date().toISOString().split('T')[0];
-        try {
-            if(!appState.cache.activePremiumDate) {
-                const { data } = await supabaseClient.from('questions').select('topic').eq('quiz_type','daily_premium').lte('topic',today).order('topic',{ascending:false}).limit(1).maybeSingle();
-                appState.cache.activePremiumDate=data?.topic||null;
-            }
-            const lbl=document.getElementById('active-prem-date-label');
-            if(lbl) lbl.innerText = appState.cache.activePremiumDate ? new Date(appState.cache.activePremiumDate).toLocaleDateString('en-IN',{month:'long',day:'numeric',year:'numeric'}) : 'No active quiz';
-            if(!appState.cache.archives) {
-                const { data } = await supabaseClient.from('questions').select('topic').eq('quiz_type','daily_premium').lte('topic',today).order('topic',{ascending:false});
-                const all=[...new Set((data||[]).map(r=>r.topic))];
-                appState.cache.archives = all.filter(d=>d!==appState.cache.activePremiumDate);
-            }
-            this.renderPastPremiumQuizzes(appState.cache.archives);
-            this.renderTopicsSection();
-        } catch(e) { console.error('Premium view:',e); }
-    }
-
-    renderTopicsSection() {
+    // ══════════════════════════════════════════════════════════════
+    // PREMIUM FLOW: Topics -> Letters/Direct -> Sets -> Confirm -> Quiz
+    // ══════════════════════════════════════════════════════════════
+    renderPremiumTopicsGrid() {
         if(!this.premiumTopicsList) return;
-        this.premiumTopicsList.innerHTML = TOPICS.map(t => {
-            const locked=LOCKED_TOPICS.includes(t);
-            if(locked) return `<div class="topic-card-item glass-card coming-soon-topic">
-                <div class="topic-meta-left"><span class="topic-title">${t}</span><span class="topic-timestamp" style="color:#a5b4fc;font-weight:700;">Coming Soon</span></div>
-                <span class="coming-soon-badge">Coming Soon</span></div>`;
-            return `<div class="topic-card-item glass-card" onclick="app.openTopicSets('${t}')">
-                <div class="topic-meta-left"><span class="topic-title">${t}</span><span class="topic-timestamp" id="tmeta-${t.replace(/\W+/g,'_')}">Loading...</span></div>
-                <i class="fa-solid fa-chevron-right text-muted"></i></div>`;
+        this.premiumTopicsList.innerHTML = ALL_TOPICS.map(t => {
+            if(t.kind==='locked') return `
+                <div class="topic-mega-card coming-soon-mega">
+                    <span class="coming-soon-ribbon">SOON</span>
+                    <div class="topic-mega-icon"><i class="fa-solid ${t.icon}"></i></div>
+                    <div><div class="topic-mega-name">${t.name}</div><div class="topic-mega-meta">Coming Soon</div></div>
+                </div>`;
+            return `
+                <div class="topic-mega-card" onclick="app.openTopicGroup('${t.name}','${t.kind}')">
+                    <div class="topic-mega-icon"><i class="fa-solid ${t.icon}"></i></div>
+                    <div><div class="topic-mega-name">${t.name}</div><div class="topic-mega-meta"><i class="fa-solid fa-layer-group"></i> Practice Sets</div></div>
+                    <i class="fa-solid fa-chevron-right topic-mega-arrow"></i>
+                </div>`;
         }).join('');
-        TOPICS.filter(t=>!LOCKED_TOPICS.includes(t)).forEach(async t => {
-            try {
-                if(!appState.cache.topicSets[t]) {
-                    const { data } = await supabaseClient.from('questions').select('topic').eq('quiz_type','topic').like('topic',`${t} - Set%`);
-                    appState.cache.topicSets[t] = [...new Set((data||[]).map(r=>r.topic))];
-                }
-                const cnt=appState.cache.topicSets[t].length;
-                const el=document.getElementById(`tmeta-${t.replace(/\W+/g,'_')}`);
-                if(el) el.innerText = cnt>0?`${cnt} Set${cnt>1?'s':''} · ${cnt*20} Questions`:'No sets yet';
-            } catch(e){}
-        });
     }
 
-    async openTopicSets(topicKey) {
+    async openTopicGroup(groupName, kind) {
         this.triggerHaptic('select');
-        if(!supabaseClient) return;
-        document.getElementById('topic-sets-title').innerText = topicKey;
-        const container=document.getElementById('topic-sets-list');
-        container.innerHTML=`<div class="text-center text-muted p-3"><i class="fa-solid fa-spinner fa-spin"></i> Loading sets...</div>`;
+        appState.activeTopicGroup = groupName;
+        if(kind === 'direct') {
+            // Spellings — free users blocked immediately (next screen is sets)
+            if(!appState.isPremium) { this.triggerPremiumPaywallGate(); return; }
+            this.openSetsView(groupName, null, 'Mixed Spelling Questions • Select a set');
+            return;
+        }
+        // Alphabet-based — free users CAN view letters
+        document.getElementById('topic-letters-title').innerText = groupName;
+        const container = document.getElementById('topic-letters-list');
+        container.innerHTML = `<div class="text-center text-muted p-3"><i class="fa-solid fa-spinner fa-spin"></i> Loading letters...</div>`;
+        this.switchView('topic-letters');
         try {
-            const { data } = await supabaseClient.from('questions').select('topic, created_at').eq('quiz_type','topic').like('topic',`${topicKey} - Set%`);
-            const setMap={};
-            (data||[]).forEach(r => {
-                if(!setMap[r.topic]) setMap[r.topic]={title:r.topic,count:0,date:r.created_at};
-                setMap[r.topic].count++;
-                if(r.created_at>setMap[r.topic].date) setMap[r.topic].date=r.created_at;
-            });
-            const sets=Object.values(setMap).sort((a,b)=>a.title.localeCompare(b.title));
-            appState.cache.topicSets[topicKey]=sets.map(s=>s.title);
-            if(!sets.length) { container.innerHTML=`<div class="glass-card text-center p-4"><p class="text-muted">No question sets yet.</p></div>`; }
-            else {
-                container.innerHTML = sets.map((set,i) => {
-                    const dateStr=new Date(set.date).toLocaleDateString('en-IN',{month:'short',day:'numeric',year:'numeric'});
-                    const setNum=i+1, s=(setNum-1)*20+1, e=setNum*20;
-                    const isLast=i===sets.length-1, locked=!appState.isPremium;
-                    return `<div class="topic-set-card glass-card ${isLast?'latest-set':''} ${locked?'locked-set':''}" onclick="app.handleTopicSetClick('${set.title}','${topicKey}',${set.count},${setNum})">
-                        <div class="set-info"><span class="set-label">Set ${setNum}</span><span class="set-range-tag">Q ${s}–${e}</span>${isLast?`<span class="set-range-tag" style="background:rgba(0,242,254,0.15);border-color:rgba(0,242,254,0.4);">Latest</span>`:''}</div>
-                        <div class="set-meta"><span><i class="fa-solid fa-circle-question"></i> ${set.count} Questions</span><span><i class="fa-regular fa-calendar"></i> ${dateStr}</span></div>
-                        ${locked?`<div class="set-lock-bar" onclick="event.stopPropagation();app.triggerPremiumPaywallGate()"><i class="fa-solid fa-lock"></i> Unlock Premium</div>`:''}
-                    </div>`;
-                }).join('');
-            }
-        } catch(e) { container.innerHTML=`<div class="text-center text-muted p-3">Error loading sets.</div>`; }
+            const { data } = await supabaseClient.from('topic_sets').select('letter,question_count').eq('group_name',groupName);
+            const counts = {};
+            (data||[]).forEach(r => { counts[r.letter] = (counts[r.letter]||0) + (r.question_count||0); });
+            container.innerHTML = LETTERS.map(l => {
+                const cnt = counts[l] || 0;
+                const empty = cnt === 0;
+                return `<div class="letter-box ${empty?'letter-empty':''}" onclick="${empty?'':`app.openLetterSets('${groupName}','${l}')`}">
+                    ${!appState.isPremium && !empty ? '<i class="fa-solid fa-lock letter-lock-dot"></i>' : ''}
+                    <span class="letter-char">${l}</span>
+                    <span class="letter-count">${cnt} Qs</span>
+                </div>`;
+            }).join('');
+        } catch(e) { container.innerHTML = `<div class="text-center text-muted p-3">Error loading letters.</div>`; }
+    }
+
+    openLetterSets(groupName, letter) {
+        if(!appState.isPremium) { this.triggerPremiumPaywallGate(); return; }
+        appState.activeTopicLetter = letter;
+        this.openSetsView(groupName, letter, `${groupName} • Letter ${letter}`);
+    }
+
+    async openSetsView(groupName, letter, subtitleText) {
+        document.getElementById('topic-sets-title').innerText = letter ? `Letter ${letter}` : groupName;
+        document.getElementById('topic-sets-subtitle').innerText = subtitleText;
+        const backBtn = document.getElementById('btn-topic-sets-back');
+        backBtn.onclick = letter ? () => this.switchView('topic-letters') : () => this.switchView('premium');
+
+        const container = document.getElementById('topic-sets-list');
+        container.innerHTML = `<div class="text-center text-muted p-3"><i class="fa-solid fa-spinner fa-spin"></i> Loading sets...</div>`;
         this.switchView('topic-sets');
+        try {
+            let q = supabaseClient.from('topic_sets').select('*').eq('group_name',groupName).order('set_number',{ascending:true});
+            q = letter ? q.eq('letter',letter) : q.is('letter',null);
+            const { data } = await q;
+            if(!data?.length) { container.innerHTML = `<div class="glass-card text-center p-4"><p class="text-muted">No sets available yet.</p></div>`; return; }
+            container.innerHTML = data.map(s => `
+                <div class="topic-set-card glass-card" onclick="app.showSetConfirmPopup('${s.full_key}',${s.question_count},'${s.full_key.replace(/'/g,"\\'")}')">
+                    <div class="set-info"><span class="set-label">Set ${s.set_number}</span><span class="set-range-tag">${s.question_count} Questions</span></div>
+                    <div class="set-meta"><span><i class="fa-solid fa-circle-question"></i> ${s.question_count} Total Questions</span></div>
+                </div>`).join('');
+        } catch(e) { container.innerHTML = `<div class="text-center text-muted p-3">Error loading sets.</div>`; }
     }
 
-    handleTopicSetClick(setTitle, topicKey, qCount, setNum) {
-        if(!appState.isPremium) { this.triggerPremiumPaywallGate(); return; }
-        this.showQuizBlueprint('topic', setTitle, setTitle, qCount, setNum);
-    }
-    handleActivePremiumClick() {
-        const date=appState.cache.activePremiumDate;
-        if(!date) { this.triggerToast('No active quiz found.'); return; }
-        const dateStr=new Date(date).toLocaleDateString('en-IN',{month:'long',day:'numeric',year:'numeric'});
-        this.showQuizBlueprint('daily_premium',`Daily Premium Mix — ${dateStr}`,date,100);
-    }
-
-    renderPastPremiumQuizzes(pastDates) {
-        if(!this.premiumArchivesEl) return;
-        if(!pastDates?.length) { this.premiumArchivesEl.innerHTML=`<div class="text-center text-muted p-3">No past quizzes yet.</div>`; return; }
-        const byMonth={};
-        pastDates.forEach(d => { const key=new Date(d).toLocaleDateString('en-IN',{month:'long',year:'numeric'}); (byMonth[key]=byMonth[key]||[]).push(d); });
-        this.premiumArchivesEl.innerHTML = Object.entries(byMonth).map(([month,dates]) => `
-            <div class="archive-month-group">
-                <div class="archive-month-header glass-card" onclick="this.parentElement.classList.toggle('open')">
-                    <span><i class="fa-regular fa-calendar" style="margin-right:8px;"></i>${month}</span><i class="fa-solid fa-chevron-down arc-chevron"></i>
+    // ── Custom confirm popup (not native alert) ─────────────────
+    showSetConfirmPopup(fullKey, qCount, title) {
+        const overlay = document.createElement('div');
+        overlay.className = 'confirm-modal-overlay'; overlay.id = 'set-confirm-modal';
+        overlay.onclick = (e) => { if(e.target===overlay) overlay.remove(); };
+        overlay.innerHTML = `
+            <div class="confirm-modal-box">
+                <div class="confirm-modal-icon"><i class="fa-solid fa-flag-checkered"></i></div>
+                <div class="confirm-modal-title">Start This Set?</div>
+                <div class="confirm-modal-info"><b>${title}</b><br>${qCount} Questions</div>
+                <div class="confirm-modal-actions">
+                    <button class="confirm-btn-cancel" onclick="document.getElementById('set-confirm-modal').remove()">Cancel</button>
+                    <button class="confirm-btn-start" onclick="app.startTopicQuizFromSet('${fullKey}','${title.replace(/'/g,"\\'")}')">Start</button>
                 </div>
-                <div class="archive-month-dates">
-                    ${dates.map(d => {
-                        const dl=new Date(d).toLocaleDateString('en-IN',{month:'long',day:'numeric'}); const locked=!appState.isPremium;
-                        return `<div class="archive-date-entry" onclick="app.handlePastQuizClick('${d}')">
-                            <span><i class="fa-solid fa-calendar-day text-gold" style="margin-right:6px;"></i>${dl}</span>
-                            ${locked?`<span class="locked-tag"><i class="fa-solid fa-lock"></i> Premium</span>`:`<i class="fa-solid fa-play text-gold"></i>`}
-                        </div>`;
-                    }).join('')}
-                </div></div>`).join('');
+            </div>`;
+        document.body.appendChild(overlay);
     }
 
-    handlePastQuizClick(date) {
-        if(!appState.isPremium) { this.triggerPremiumPaywallGate(); return; }
-        const ds=new Date(date).toLocaleDateString('en-IN',{month:'long',day:'numeric',year:'numeric'});
-        this.showQuizBlueprint('daily_premium',`Premium Mix — ${ds}`,date,100);
+    startTopicQuizFromSet(fullKey, title) {
+        document.getElementById('set-confirm-modal')?.remove();
+        appState.quiz.type = 'topic';
+        appState.quiz.title = title;
+        appState.quiz.quizCategory = fullKey;
+        appState.quiz.isPremiumLocked = false;
+        this.executeQuizInstance();
     }
 
-    // ── QUIZ BLUEPRINT ───────────────────────────────────────────
-    async showQuizBlueprint(type, title, topicKey=null, qCount=null, setNum=null) {
+    // ── FREE QUIZ BLUEPRINT (only path using quiz-details screen) */
+    async showQuizBlueprint(type, title) {
         appState.quiz.type=type; appState.quiz.title=title;
-        if(supabaseClient && !topicKey) {
+        let topicKey=null;
+        if(supabaseClient) {
             const today=new Date().toISOString().split('T')[0];
-            if(type==='free') {
-                const { data } = await supabaseClient.from('questions').select('topic').eq('quiz_type','free').lte('topic',today).order('topic',{ascending:false}).limit(1).maybeSingle();
-                topicKey=data?.topic||null; appState.cache.activeFreeDate=topicKey;
-            } else if(type==='daily_premium') { topicKey=appState.cache.activePremiumDate; }
+            const { data } = await supabaseClient.from('questions').select('topic').eq('quiz_type','free').lte('topic',today).order('topic',{ascending:false}).limit(1).maybeSingle();
+            topicKey=data?.topic||null; appState.cache.activeFreeDate=topicKey;
         }
         appState.quiz.quizCategory=topicKey;
-        const isPremContent = type==='daily_premium'||type==='topic';
-        appState.quiz.isPremiumLocked = isPremContent && !appState.isPremium;
-
-        let dateLbl=new Date().toLocaleDateString('en-IN',{month:'short',day:'numeric',year:'numeric'});
-        if(topicKey && (type==='free'||type==='daily_premium')) dateLbl=new Date(topicKey).toLocaleDateString('en-IN',{month:'short',day:'numeric',year:'numeric'});
-        else if(type==='topic' && topicKey) dateLbl='Topic Based Practice';
-
+        appState.quiz.isPremiumLocked=false;
+        const dateLbl = topicKey ? new Date(topicKey).toLocaleDateString('en-IN',{month:'short',day:'numeric',year:'numeric'}) : new Date().toLocaleDateString('en-IN',{month:'short',day:'numeric',year:'numeric'});
         document.getElementById('qd-subtitle').innerText=title;
         document.getElementById('qd-date').innerText=dateLbl;
-        const total=qCount||(type==='daily_premium'?100:type==='topic'?20:30);
-        document.getElementById('qd-count').innerText=`${total} Questions`;
-
-        const rangeRow=document.getElementById('qd-range-row');
-        if(type==='topic' && setNum) { const s=(setNum-1)*20+1,e=setNum*20; document.getElementById('qd-range').innerText=`Q ${s}–${e}`; rangeRow.style.display='flex'; }
-        else rangeRow.style.display='none';
-
-        document.getElementById('qd-rank-status').innerText = type==='daily_premium'?'Ranked (Logs to Global Leaderboard)':'Unranked Practice';
-
-        if(appState.quiz.isPremiumLocked) { this.btnStartQuiz.className='btn-unlock-premium w-100'; this.btnStartQuiz.innerHTML=`<i class="fa-solid fa-lock"></i> Unlock Premium`; }
-        else { this.btnStartQuiz.className='btn-primary-gradient w-100'; this.btnStartQuiz.innerHTML=`<i class="fa-solid fa-flag-checkered"></i> START QUIZ`; }
+        document.getElementById('qd-count').innerText=`30 Questions`;
+        this.btnStartQuiz.className='btn-primary-gradient w-100';
+        this.btnStartQuiz.innerHTML=`<i class="fa-solid fa-flag-checkered"></i> START QUIZ`;
         this.switchView('quiz-details');
     }
 
-    handleStartQuizClick() { if(appState.quiz.isPremiumLocked) { this.triggerPremiumPaywallGate(); return; } this.executeQuizInstance(); }
+    handleStartQuizClick() { this.executeQuizInstance(); }
 
     // ── QUIZ EXECUTION (NO SHUFFLE) ──────────────────────────────
     async executeQuizInstance() {
@@ -853,7 +828,7 @@ class SSCMaxVocabEngine {
         this.btnStartQuiz.innerHTML=`<i class="fa-solid fa-spinner fa-spin"></i> Loading...`;
         try {
             appState.quiz.active=true;
-            const limit = appState.quiz.type==='daily_premium'?100:appState.quiz.type==='topic'?20:30;
+            const limit = appState.quiz.type==='free' ? 30 : 20;
             appState.quiz.questions = await this.fetchQuestionsFromDB(appState.quiz.type, appState.quiz.quizCategory, limit);
             if(!appState.quiz.questions.length) { alert('No questions found for this quiz.'); this.forceTerminateQuiz(); return; }
             appState.quiz.currentIndex=0; appState.quiz.correctCount=0; appState.quiz.wrongCount=0; appState.quiz.timeSeconds=0;
@@ -874,7 +849,6 @@ class SSCMaxVocabEngine {
         if(error) throw error;
         return (data||[]).map(r=>this.convertDBRow(r));
     }
-
     convertDBRow(row) {
         const ci = {A:0,B:1,C:2,D:3}[row.correct_option?.toUpperCase()] ?? 0;
         return { category:row.topic||'Vocabulary', text:row.question||'', options:[row.option_a||'',row.option_b||'',row.option_c||'',row.option_d||''], correctIndex:ci, explanations:[row.explanation_a||'',row.explanation_b||'',row.explanation_c||'',row.explanation_d||''] };
@@ -893,6 +867,7 @@ class SSCMaxVocabEngine {
         appState.quiz.selectedOption=null;
         this.btnBookmark.classList.remove('bookmarked');
         this.btnBookmark.innerHTML=`<i class="fa-regular fa-bookmark"></i> Bookmark`;
+        this.btnBookmark.style.display = appState.quiz.type==='free' ? 'flex' : 'none';
         this.btnNextQ.classList.add('hidden');
         this.optionsContainer.classList.remove('locked');
         const total=appState.quiz.questions.length;
@@ -910,7 +885,9 @@ class SSCMaxVocabEngine {
             </div>`).join('');
     }
 
+    // Vault saving — FREE QUIZ ONLY
     async toggleBookmarkCurrentQuestion() {
+        if(appState.quiz.type!=='free') return;
         if(!supabaseClient||!appState.currentUser.id) return;
         const q=appState.quiz.questions[appState.quiz.currentIndex];
         const word=q.options[q.correctIndex].split(':')[0].trim();
@@ -952,7 +929,9 @@ class SSCMaxVocabEngine {
         else this.finalizeAssessmentExecution();
     }
 
+    // Vault saving — FREE QUIZ ONLY
     async routeFailedWordToVault(qObj) {
+        if(appState.quiz.type!=='free') return;
         if(!supabaseClient||!appState.currentUser.id) return;
         const word=qObj.options[qObj.correctIndex].split(':')[0].trim();
         const meaning=qObj.explanations[qObj.correctIndex]||qObj.text;
@@ -978,7 +957,11 @@ class SSCMaxVocabEngine {
 
         if(parseFloat(acc)===100) this.launchConfetti();
 
-        if(appState.quiz.type==='daily_premium' && appState.currentUser.id && supabaseClient) {
+        // Streak — free quiz only
+        if(appState.quiz.type==='free') await this.markFreeQuizStreak();
+
+        // Ranks — topic (premium) quizzes log to leaderboard now
+        if(appState.quiz.type==='topic' && appState.currentUser.id && supabaseClient) {
             try {
                 await supabaseClient.from('leaderboard').insert({ telegram_id:appState.currentUser.id, name:appState.currentUser.name, score:appState.quiz.correctCount, time_seconds:appState.quiz.timeSeconds, date:new Date().toISOString().split('T')[0] });
                 appState.cache.leaderboard=null;
@@ -986,7 +969,6 @@ class SSCMaxVocabEngine {
             } catch(e) { console.error('Score post:',e); }
         }
 
-        // Reset result rank toggle state for fresh view
         appState.cache.resultRankLoaded=false;
         const lbSec=document.getElementById('result-lb-section');
         const toggleBtn=document.getElementById('btn-view-rank-toggle');
@@ -1009,28 +991,14 @@ class SSCMaxVocabEngine {
         }
     }
 
-    // ── VIEW YOUR RANK (result screen toggle — fixed) ─────────────
     async toggleResultRankView() {
-        const sec = document.getElementById('result-lb-section');
-        const con = document.getElementById('result-lb-container');
-        const btn = document.getElementById('btn-view-rank-toggle');
+        const sec=document.getElementById('result-lb-section'), con=document.getElementById('result-lb-container'), btn=document.getElementById('btn-view-rank-toggle');
         if(!sec||!con||!btn) return;
         this.triggerHaptic('select');
-
         const isHidden = sec.classList.contains('hidden');
-        if(!isHidden) {
-            sec.classList.add('hidden');
-            btn.classList.remove('expanded');
-            btn.innerHTML=`<i class="fa-solid fa-ranking-star"></i> View Your Rank`;
-            return;
-        }
-
-        sec.classList.remove('hidden');
-        btn.classList.add('expanded');
-        btn.innerHTML=`<i class="fa-solid fa-chevron-up"></i> Hide Rank`;
-
-        if(appState.cache.resultRankLoaded) return; // already fetched this session
-
+        if(!isHidden) { sec.classList.add('hidden'); btn.classList.remove('expanded'); btn.innerHTML=`<i class="fa-solid fa-ranking-star"></i> View Your Rank`; return; }
+        sec.classList.remove('hidden'); btn.classList.add('expanded'); btn.innerHTML=`<i class="fa-solid fa-chevron-up"></i> Hide Rank`;
+        if(appState.cache.resultRankLoaded) return;
         con.innerHTML=`<div class="skeleton-list">${[...Array(3)].map(()=>'<div class="skeleton-row"></div>').join('')}</div>`;
         if(!supabaseClient) { con.innerHTML=`<div class="text-center text-muted p-3">Database unavailable.</div>`; return; }
         try {
@@ -1058,7 +1026,7 @@ class SSCMaxVocabEngine {
     confirmAbandonQuiz() { if(confirm('Abandon assessment? Progress will be lost.')) this.forceTerminateQuiz(); }
     forceTerminateQuiz() { clearInterval(appState.quiz.stopwatchInterval); appState.quiz.active=false; this.switchView('dashboard'); }
 
-    // ── VAULT ────────────────────────────────────────────────────
+    // ── VAULT (Free Quiz words only) ─────────────────────────────
     async fetchVaultData() {
         if(!supabaseClient||!appState.currentUser.id) return;
         const { data, error } = await supabaseClient.from('vault').select('word,category,saved_at').eq('telegram_id',appState.currentUser.id);
@@ -1079,7 +1047,7 @@ class SSCMaxVocabEngine {
         if(appState.searchQuery) arr=arr.filter(i=>i.word.toLowerCase().includes(appState.searchQuery));
         document.getElementById('count-weak').innerText=appState.weakWords.length;
         document.getElementById('count-bookmarked').innerText=appState.bookmarkedWords.length;
-        if(!arr.length) { this.vaultItemsEl.innerHTML=`<div class="glass-card text-center p-4"><p class="text-muted">No items here yet.</p><p class="text-muted" style="font-size:0.78rem;margin-top:6px;">Incorrect answers and bookmarks appear here.</p></div>`; return; }
+        if(!arr.length) { this.vaultItemsEl.innerHTML=`<div class="glass-card text-center p-4"><p class="text-muted">No items here yet.</p><p class="text-muted" style="font-size:0.78rem;margin-top:6px;">Free quiz mistakes and bookmarks appear here.</p></div>`; return; }
         this.vaultItemsEl.innerHTML=arr.map(item=>`
             <div class="glass-card vault-word-card card-animation-swap">
                 <div class="v-header-row"><h4>${item.word}</h4><button class="btn-delete-word" onclick="app.deleteVaultWord('${item.word.replace(/'/g,"\\'")}')"><i class="fa-solid fa-trash-can"></i> Remove</button></div>
@@ -1094,15 +1062,12 @@ class SSCMaxVocabEngine {
         if(supabaseClient&&appState.currentUser.id) await supabaseClient.from('vault').delete().eq('telegram_id',appState.currentUser.id).eq('word',word).eq('category',cat);
     }
 
-    // ── LEADERBOARD (Ranks page w/ Daily/Weekly/Monthly) ────────
+    // ── LEADERBOARD (Ranks page) ─────────────────────────────────
     switchRankPeriod(period) {
         appState.activeRankPeriod=period;
         document.querySelectorAll('.rank-period-btn').forEach(b=>b.classList.toggle('active',b.getAttribute('data-period')===period));
-        this.triggerHaptic('select');
-        appState.cache.leaderboard=null;
-        this.renderLeaderboard();
+        this.triggerHaptic('select'); appState.cache.leaderboard=null; this.renderLeaderboard();
     }
-
     getRankDateRange(period) {
         const now=new Date();
         if(period==='daily') { const d=now.toISOString().split('T')[0]; return { from:d, to:d }; }
@@ -1110,7 +1075,6 @@ class SSCMaxVocabEngine {
         const from=new Date(now.getFullYear(), now.getMonth(), 1);
         return { from:from.toISOString().split('T')[0], to:now.toISOString().split('T')[0] };
     }
-
     async renderLeaderboard() {
         if(!this.leaderboardEl) return;
         const period=appState.activeRankPeriod;
@@ -1118,14 +1082,13 @@ class SSCMaxVocabEngine {
         document.querySelector('#view-ranks h2').innerText = `${labelMap[period]} Elite Ranks`;
         const dateStr=new Date().toLocaleDateString('en-IN',{month:'long',day:'numeric',year:'numeric'});
         document.getElementById('leaderboard-date-subtitle').innerText=`Standings — ${labelMap[period]} · ${dateStr}`;
-
         if(!appState.isPremium) {
             this.leaderboardEl.innerHTML=`
                 <div class="blurred-leaderboard-box">
                     <div class="blur-mask">${[1,2,3].map(n=>`<div class="leader-row glass-card"><div class="leader-meta"><span class="leader-num top-3">#${n}</span><span class="leader-name">Elite Ranker</span></div><div class="leader-scores"><div class="leader-score-pts">●●/100</div></div></div>`).join('')}</div>
                     <div class="premium-unlock-overlay">
                         <i class="fa-solid fa-lock"></i><h3>Elite Rankings Locked</h3>
-                        <p>Complete the Daily Premium Mix to appear on the global leaderboard.</p>
+                        <p>Complete Premium Topic quizzes to appear on the global leaderboard.</p>
                         <button class="btn-primary-gradient mt-3" onclick="app.triggerPremiumPaywallGate()"><i class="fa-solid fa-crown"></i> Unlock Premium</button>
                     </div>
                 </div>`;
@@ -1144,8 +1107,7 @@ class SSCMaxVocabEngine {
                     const agg={};
                     rows.forEach(r => {
                         if(!agg[r.telegram_id]) agg[r.telegram_id]={ telegram_id:r.telegram_id, name:r.name, score:0, time_seconds:0 };
-                        agg[r.telegram_id].score += r.score;
-                        agg[r.telegram_id].time_seconds += r.time_seconds;
+                        agg[r.telegram_id].score += r.score; agg[r.telegram_id].time_seconds += r.time_seconds;
                     });
                     rows = Object.values(agg);
                 }
@@ -1157,9 +1119,7 @@ class SSCMaxVocabEngine {
             const myId=String(appState.currentUser.id);
             const myIndex=lb.findIndex(r=>String(r.telegram_id)===myId);
             let myRankHTML='';
-            if(myIndex===-1 && appState.currentUser.id) {
-                myRankHTML=`<div class="leader-row glass-card user-pinned-rank" style="margin-top:14px;"><div class="leader-meta"><span class="leader-num">#—</span><span class="leader-name">You (Not in Top 10)</span></div><div class="leader-scores"><div class="leader-score-pts" style="font-size:0.78rem;">Complete quiz to rank</div></div></div>`;
-            }
+            if(myIndex===-1 && appState.currentUser.id) myRankHTML=`<div class="leader-row glass-card user-pinned-rank" style="margin-top:14px;"><div class="leader-meta"><span class="leader-num">#—</span><span class="leader-name">You (Not in Top 10)</span></div><div class="leader-scores"><div class="leader-score-pts" style="font-size:0.78rem;">Complete quiz to rank</div></div></div>`;
             this.leaderboardEl.innerHTML=`<div class="leaderboard-list">${this.renderLeaderboardRows(lb)}</div>${myRankHTML}`;
         } catch(e) { console.error('LB error:',e); this.leaderboardEl.innerHTML=`<div class="text-center text-muted p-3">Failed to load rankings.</div>`; }
     }

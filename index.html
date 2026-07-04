@@ -11,7 +11,7 @@
 </head>
 <body>
 
-    <!-- Live theme background layer — JS injects animated elements here per active theme -->
+    <!-- Live theme background layer (default Aurora only now) -->
     <div id="live-theme-layer"></div>
 
     <div class="bg-glow cyan-glow" id="ambient-cyan"></div>
@@ -34,6 +34,8 @@
 
             <!-- ══════════════════════════════════ -->
             <!-- DASHBOARD                         -->
+            <!-- Profile: avatar + name + streak    -->
+            <!-- badge only. No username, no tag.   -->
             <!-- ══════════════════════════════════ -->
             <section id="view-dashboard" class="app-view active">
                 <div class="exam-target-banner">
@@ -48,13 +50,10 @@
                     <div class="profile-info">
                         <div class="profile-name-row">
                             <h3 id="tg-user-name">Loading...</h3>
-                            <!-- Streak badge — JS shows/hides based on streak count -->
                             <span class="streak-badge-inline hidden" id="streak-badge-mini">
                                 <i class="fa-solid fa-fire"></i> <span id="streak-count-mini">0</span>
                             </span>
                         </div>
-                        <p id="tg-user-handle">Connecting to Telegram</p>
-                        <span class="purple-glow-badge mt-2">SSC Aspirant</span>
                     </div>
                 </div>
 
@@ -71,10 +70,12 @@
                         </div>
                         <div class="portal-arrow"><i class="fa-solid fa-arrow-right"></i></div>
                     </div>
+
+                    <!-- Premium card — renamed, description unchanged as instructed -->
                     <div class="portal-card gold-gradient-card mt-3" onclick="app.navigateToPremiumView()">
                         <div class="portal-card-content">
                             <span class="portal-tag gold-tag"><i class="fa-solid fa-crown"></i> ELITE PREMIUM</span>
-                            <h3>Topic Wise Vocabulary Quiz</h3>
+                            <h3>Complete Topic Wise Vocabulary</h3>
                             <p>OWS • Idioms & Phrases • Synonyms • Spelling • Antonyms • Homophones</p>
                             <div class="portal-meta">
                                 <span><i class="fa-solid fa-circle-question"></i> 100 Questions</span>
@@ -84,26 +85,18 @@
                         <div class="portal-arrow"><i class="fa-solid fa-crown"></i></div>
                     </div>
                 </div>
-
-                <!-- Streak strip full card — shown when streak > 0 -->
-                <div class="streak-strip-card glass-card mt-3 hidden" id="streak-strip-full">
-                    <div class="streak-strip-left">
-                        <i class="fa-solid fa-fire streak-flame-icon"></i>
-                        <div>
-                            <div class="streak-strip-num"><span id="streak-count-full">0</span> Day Streak</div>
-                            <div class="streak-strip-sub">Keep it going! Complete today's quiz.</div>
-                        </div>
-                    </div>
-                </div>
             </section>
 
             <!-- ══════════════════════════════════ -->
-            <!-- QUIZ DETAILS                      -->
+            <!-- QUIZ DETAILS — FREE QUIZ ONLY NOW  -->
+            <!-- Premium sets use a lightweight     -->
+            <!-- confirm popup instead (JS-built).  -->
+            <!-- No guidelines/instructions section. -->
             <!-- ══════════════════════════════════ -->
             <section id="view-quiz-details" class="app-view">
                 <div class="screen-header">
                     <h2>Assessment Overview</h2>
-                    <p id="qd-subtitle">Review configuration before starting</p>
+                    <p id="qd-subtitle">Daily Free Quiz</p>
                 </div>
                 <div class="glass-card quiz-rules-card">
                     <div class="rule-row">
@@ -114,93 +107,78 @@
                         <span>❓ Total Questions:</span>
                         <strong id="qd-count">30 Questions</strong>
                     </div>
-                    <div class="rule-row" id="qd-range-row" style="display:none;">
-                        <span>📋 Question Range:</span>
-                        <strong id="qd-range" class="text-cyan">Q 1–20</strong>
-                    </div>
                     <div class="rule-row">
                         <span>⏱️ Quiz Duration:</span>
                         <strong>Elapsed Stopwatch</strong>
                     </div>
-                    <div class="rule-row">
-                        <span>🏆 Rankings:</span>
-                        <strong id="qd-rank-status" class="text-cyan">Unranked Practice</strong>
-                    </div>
-                    <hr class="glass-divider">
-                    <h4>Guidelines:</h4>
-                    <ul class="rules-list">
-                        <li><strong>Mandatory Selection:</strong> Skipping is disabled. You must choose an answer to proceed.</li>
-                        <li><strong>Instant Feedback:</strong> Selecting an option instantly reveals color-coded explanations.</li>
-                        <li><strong>Vault Syncing:</strong> Errors and bookmarks sync automatically to your Vocabulary Vault.</li>
-                    </ul>
                 </div>
                 <div class="action-stack mt-4">
                     <button class="btn-primary-gradient w-100" id="btn-confirm-start-quiz">
                         <i class="fa-solid fa-flag-checkered"></i> START QUIZ
                     </button>
-                    <button class="btn-secondary w-100 mt-2" id="btn-cancel-quiz" onclick="app.cancelFromBlueprint()">
+                    <button class="btn-secondary w-100 mt-2" id="btn-cancel-quiz" onclick="app.switchView('dashboard')">
                         Cancel & Return
                     </button>
                 </div>
             </section>
 
             <!-- ══════════════════════════════════ -->
-            <!-- PREMIUM VIEW                      -->
+            <!-- PREMIUM VIEW — Topics Grid (7)    -->
+            <!-- No more single Daily Mix / archive -->
+            <!-- OWS / Idioms / Synonyms → letters  -->
+            <!-- Spellings → direct sets            -->
+            <!-- Fixed Prep / Sentence Err / Homo   -->
+            <!-- → Coming Soon                       -->
             <!-- ══════════════════════════════════ -->
             <section id="view-premium" class="app-view">
                 <div class="screen-header">
-                    <h2>Elite Access Portal</h2>
-                    <p>Advanced PYQ modules & live competitive ranking</p>
+                    <h2>Complete Topic Wise Vocabulary</h2>
+                    <p>Pick a topic to explore practice sets</p>
                 </div>
+                <div class="topic-mega-grid" id="premium-topics-list">
+                    <div class="skeleton-card-lg"></div>
+                    <div class="skeleton-card-lg"></div>
+                    <div class="skeleton-card-lg"></div>
+                    <div class="skeleton-card-lg"></div>
+                </div>
+            </section>
 
-                <div class="portal-card gold-gradient-card mb-4" id="active-premium-quiz-card" onclick="app.handleActivePremiumClick()">
-                    <div class="portal-card-content">
-                        <span class="portal-tag gold-tag"><i class="fa-solid fa-trophy"></i> LEADERBOARD ACTIVE</span>
-                        <h3>Daily Premium Mix</h3>
-                        <p>100 Questions: OWS • Idioms • Synonyms • Spelling • Error Detection • Mixed PYQ</p>
-                        <div class="portal-meta mt-2">
-                            <span><i class="fa-solid fa-circle-question"></i> 100 Questions</span>
-                            <span class="text-gold prem-quiz-date">
-                                <i class="fa-solid fa-calendar-day"></i>
-                                <span id="active-prem-date-label">Loading...</span>
-                            </span>
-                        </div>
+            <!-- ══════════════════════════════════ -->
+            <!-- TOPIC LETTERS VIEW (A–Z)          -->
+            <!-- Only for OWS / Idioms / Synonyms  -->
+            <!-- ══════════════════════════════════ -->
+            <section id="view-topic-letters" class="app-view">
+                <div class="topic-sets-header">
+                    <button class="btn-back-nav" onclick="app.switchView('premium')">
+                        <i class="fa-solid fa-arrow-left"></i>
+                    </button>
+                    <div class="topic-sets-header-text">
+                        <h2 id="topic-letters-title">Topic</h2>
+                        <p>Select a letter to view sets</p>
                     </div>
-                    <div class="portal-arrow"><i class="fa-solid fa-play"></i></div>
                 </div>
-
-                <h3 class="section-title">
-                    Topic Modules
-                    <span class="section-note">20 Questions / Set</span>
-                </h3>
-                <div class="topic-grid" id="premium-topics-list">
-                    <div class="skeleton-card"></div>
-                    <div class="skeleton-card"></div>
-                    <div class="skeleton-card"></div>
-                    <div class="skeleton-card"></div>
-                    <div class="skeleton-card"></div>
-                    <div class="skeleton-card"></div>
-                </div>
-
-                <h3 class="section-title mt-4">Past Premium Tests</h3>
-                <div class="archive-list-group" id="premium-archives-container">
+                <!-- JS renders 26 letter boxes, 3 per row, greyed if 0 questions -->
+                <div class="alphabet-grid" id="topic-letters-list">
                     <div class="text-center text-muted p-3">
-                        <i class="fa-solid fa-spinner fa-spin"></i> Loading archives...
+                        <i class="fa-solid fa-spinner fa-spin"></i> Loading letters...
                     </div>
                 </div>
             </section>
 
             <!-- ══════════════════════════════════ -->
             <!-- TOPIC SETS VIEW                   -->
+            <!-- Reached from a letter (OWS/Idioms/ -->
+            <!-- Synonyms) OR directly (Spellings)  -->
+            <!-- Back button destination set by JS  -->
             <!-- ══════════════════════════════════ -->
             <section id="view-topic-sets" class="app-view">
                 <div class="topic-sets-header">
-                    <button class="btn-back-nav" onclick="app.switchView('premium')">
+                    <button class="btn-back-nav" id="btn-topic-sets-back" onclick="app.switchView('premium')">
                         <i class="fa-solid fa-arrow-left"></i>
                     </button>
                     <div class="topic-sets-header-text">
-                        <h2 id="topic-sets-title">Topic Sets</h2>
-                        <p>Select a set to begin</p>
+                        <h2 id="topic-sets-title">Sets</h2>
+                        <p id="topic-sets-subtitle">Select a set to begin</p>
                     </div>
                 </div>
                 <div class="topic-sets-container" id="topic-sets-list">
@@ -250,9 +228,6 @@
 
             <!-- ══════════════════════════════════ -->
             <!-- RESULT VIEW                       -->
-            <!-- "View Your Rank" button — shows    -->
-            <!-- rank section right on this screen  -->
-            <!-- without needing to scroll far       -->
             <!-- ══════════════════════════════════ -->
             <section id="view-result" class="app-view full-overlay-view">
                 <div class="result-container">
@@ -295,7 +270,6 @@
                         Return To Dashboard
                     </button>
 
-                    <!-- Direct "View Your Rank" button — no scrolling needed, toggles section below -->
                     <button class="btn-view-rank-toggle w-100 mt-2" id="btn-view-rank-toggle" onclick="app.toggleResultRankView()">
                         <i class="fa-solid fa-ranking-star"></i> View Your Rank
                     </button>
@@ -310,12 +284,12 @@
             </section>
 
             <!-- ══════════════════════════════════ -->
-            <!-- VAULT                             -->
+            <!-- VAULT — Free Quiz only now         -->
             <!-- ══════════════════════════════════ -->
             <section id="view-vault" class="app-view">
                 <div class="screen-header">
                     <h2>Vocabulary Vault</h2>
-                    <p>Weak and bookmarked vocabulary repository</p>
+                    <p>From your Daily Free Quiz attempts</p>
                 </div>
                 <div class="vault-search-wrapper mb-3">
                     <i class="fa-solid fa-magnifying-glass search-icon"></i>
@@ -337,7 +311,8 @@
             </section>
 
             <!-- ══════════════════════════════════ -->
-            <!-- RANKS — Daily / Weekly / Monthly  -->
+            <!-- RANKS — structure kept, scoring    -->
+            <!-- source to be finalized later        -->
             <!-- ══════════════════════════════════ -->
             <section id="view-ranks" class="app-view">
                 <div class="screen-header">
