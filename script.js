@@ -1,13 +1,20 @@
 /**
- * SSC MAX VOCAB — Client Engine v5
- * NEW SYSTEM: Topic Groups -> Alphabets (or direct) -> Sets -> Confirm -> Quiz
- * Admin: Set Registry (create empty, then fill/edit questions)
+ * SSC MAX VOCAB — Client Engine v6 (FINAL)
+ * Topics now embedded directly on Dashboard (no separate premium screen).
+ * Explanation shown ONLY under the correct option.
+ * Topic cards simplified — name + arrow only.
+ * Admin Topic Bank: create/edit/delete sets & questions, recalc counts,
+ * free-quiz question editor, global search.
  *
- * REQUIRED SUPABASE SETUP (run once in SQL Editor):
+ * ═══════════════════════════════════════════════════════════════
+ * REQUIRED SUPABASE SETUP — run in SQL Editor (fixes "permission
+ * denied for table topic_sets" seen in the admin panel):
+ * ═══════════════════════════════════════════════════════════════
  * ALTER TABLE users ADD COLUMN IF NOT EXISTS streak integer DEFAULT 0;
  * ALTER TABLE users ADD COLUMN IF NOT EXISTS last_active_date date;
  * ALTER TABLE users ADD COLUMN IF NOT EXISTS last_grace_date date;
  * ALTER TABLE users ADD COLUMN IF NOT EXISTS banned boolean DEFAULT false;
+ *
  * CREATE TABLE IF NOT EXISTS topic_sets (
  *   id bigserial primary key,
  *   group_name text not null,
@@ -17,6 +24,11 @@
  *   question_count integer default 0,
  *   created_at timestamptz default now()
  * );
+ *
+ * -- THE PERMISSION FIX (run both lines, harmless if already applied):
+ * ALTER TABLE topic_sets DISABLE ROW LEVEL SECURITY;
+ * GRANT ALL ON TABLE topic_sets TO anon, authenticated;
+ * GRANT USAGE, SELECT ON ALL SEQUENCES IN SCHEMA public TO anon, authenticated;
  */
 
 const SUPABASE_URL = 'https://tbiktjhwdlwzrhwursxk.supabase.co';
@@ -26,15 +38,14 @@ try { if (window.supabase?.createClient) supabaseClient = window.supabase.create
 
 const ALPHABET_TOPICS = ['One Word Substitution','Idioms & Phrases','Synonyms'];
 const DIRECT_TOPICS = ['Spellings'];
-const LOCKED_TOPICS = ['Homonyms & Homophones','Fixed Prepositions','Sentence Error Detection'];
 const ALL_TOPICS = [
-    { name:'One Word Substitution', icon:'fa-book-open', kind:'alphabet' },
-    { name:'Idioms & Phrases',      icon:'fa-comments',  kind:'alphabet' },
-    { name:'Synonyms',              icon:'fa-arrows-left-right', kind:'alphabet' },
-    { name:'Spellings',             icon:'fa-spell-check', kind:'direct' },
-    { name:'Homonyms & Homophones', icon:'fa-clone',     kind:'locked' },
-    { name:'Fixed Prepositions',    icon:'fa-thumbtack', kind:'locked' },
-    { name:'Sentence Error Detection', icon:'fa-bug',    kind:'locked' }
+    { name:'One Word Substitution', kind:'alphabet' },
+    { name:'Idioms & Phrases',      kind:'alphabet' },
+    { name:'Synonyms',              kind:'alphabet' },
+    { name:'Spellings',             kind:'direct' },
+    { name:'Homonyms & Homophones', kind:'locked' },
+    { name:'Fixed Prepositions',    kind:'locked' },
+    { name:'Sentence Error Detection', kind:'locked' }
 ];
 const LETTERS = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ'.split('');
 
@@ -44,12 +55,18 @@ let appState = {
     currentView:'dashboard', activeVaultTab:'weak', activeRankPeriod:'daily',
     searchQuery:'', weakWords:[], bookmarkedWords:[], streak:0,
     activeTopicGroup:null, activeTopicLetter:null,
-    quiz:{ active:false, type:'free', title:'', quizCategory:null, isPremiumLocked:false, questions:[], currentIndex:0, selectedOption:null, correctCount:0, wrongCount:0, timeSeconds:0, stopwatchInterval:null },
-    cache:{ activeFreeDate:null, leaderboard:null, resultRankLoaded:false, topicSetsRegistry:null }
+    quiz:{ active:false, type:'free', title:'', quizCategory:null, questions:[], currentIndex:0, selectedOption:null, correctCount:0, wrongCount:0, timeSeconds:0, stopwatchInterval:null },
+    cache:{ activeFreeDate:null, leaderboard:null, resultRankLoaded:false }
 };
 
 class SSCMaxVocabEngine {
-    constructor() { this.initDOMNodes(); this.bindNavigationEvents(); this.injectLiveThemeLayer(); this.initTelegramContext(); }
+    constructor() {
+        this.initDOMNodes();
+        this.bindNavigationEvents();
+        this.injectLiveThemeLayer();
+        this.renderPremiumTopicsGrid(); // topics render immediately on dashboard, no click needed
+        this.initTelegramContext();
+    }
 
     initDOMNodes() {
         this.premiumTopicsList = document.getElementById('premium-topics-list');
@@ -68,15 +85,18 @@ class SSCMaxVocabEngine {
         const layer = document.getElementById('live-theme-layer'); if(!layer) return;
         document.body.setAttribute('data-theme','aurora');
         let html = '<div class="theme-orb"></div><div class="theme-orb"></div><div class="theme-orb"></div>';
-        for(let i=0;i<18;i++) {
+        for(let i=0;i<14;i++) {
             const top=Math.random()*100, left=Math.random()*100, size=1+Math.random()*2;
             html += `<div class="theme-star" style="top:${top}%;left:${left}%;width:${size}px;height:${size}px;animation-delay:${(Math.random()*3).toFixed(1)}s;"></div>`;
         }
         layer.innerHTML = html;
     }
 
-    safeLocalGet(key){ try{ return localStorage.getItem(key);}catch(e){return null;} }
-    safeLocalSet(key,val){ try{ localStorage.setItem(key,val);}catch(e){} }
+    permissionHint(e) {
+        return (e?.message||'').toLowerCase().includes('permission denied')
+            ? ' — Run the Supabase permission-fix SQL (see script.js header comment / setup notes) then try again.'
+            : '';
+    }
 
     // ── TELEGRAM ─────────────────────────────────────────────────
     initTelegramContext() {
@@ -133,6 +153,7 @@ class SSCMaxVocabEngine {
                 <textarea id="adm-free-txt" class="adm-textarea" rows="8" placeholder="1. Question text&#10;A. Option&#10;B. Option&#10;C. Option&#10;D. Option&#10;Answer: A&#10;Explanation: Meaning here"></textarea>
                 <div id="adm-free-count" style="font-size:0.72rem;color:var(--text-muted);margin-top:6px;"></div>
                 <button class="adm-btn-cyan w-100 mt-3" onclick="app.publishAdminFreeQuiz()">🚀 PUBLISH FREE QUIZ</button>
+                <button class="adm-btn-gold w-100 mt-2" onclick="app.openManageFreeQuizModal()"><i class="fa-solid fa-pen-to-square"></i> View / Edit Today's Questions</button>
             </div>
             <div class="glass-card">
                 <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:12px;">
@@ -143,8 +164,15 @@ class SSCMaxVocabEngine {
             </div>
         </div>
 
-        <!-- ══════ TOPIC BANK — the big new admin feature ══════ -->
+        <!-- ══════ TOPIC BANK ══════ -->
         <div id="adm-sec-bank" class="adm-sec" style="display:none;">
+            <div class="glass-card mb-3">
+                <h4 style="color:var(--gold-premium);margin-bottom:10px;"><i class="fa-solid fa-magnifying-glass"></i> Search All Questions</h4>
+                <input type="text" id="adm-search-input" class="adm-input" placeholder="Type keyword and press search..." onkeyup="if(event.key==='Enter') app.searchAllQuestions()">
+                <button class="adm-btn-cyan w-100 mt-2" onclick="app.searchAllQuestions()">Search</button>
+                <div id="adm-search-results" class="mt-2"></div>
+            </div>
+
             <div class="glass-card mb-3">
                 <h4 style="color:var(--gold-premium);margin-bottom:14px;"><i class="fa-solid fa-plus"></i> Create New Set</h4>
                 <label class="adm-label">Topic Group</label>
@@ -162,9 +190,12 @@ class SSCMaxVocabEngine {
             </div>
 
             <div class="glass-card">
-                <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:12px;">
+                <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:12px;flex-wrap:wrap;gap:8px;">
                     <h4 style="color:var(--neon-cyan);">All Sets</h4>
-                    <button class="adm-btn-cyan" style="padding:6px 12px;font-size:0.72rem;" onclick="app.loadAllTopicSets()">↻ Refresh</button>
+                    <div style="display:flex;gap:6px;">
+                        <button class="adm-btn-cyan" style="padding:6px 10px;font-size:0.68rem;" onclick="app.loadAllTopicSets()">↻ Refresh</button>
+                        <button class="adm-btn-gold" style="padding:6px 10px;font-size:0.68rem;" onclick="app.recalcAllSetCounts()">🔢 Recalc Counts</button>
+                    </div>
                 </div>
                 <select id="adm-bank-filter" class="adm-input mb-3" onchange="app.loadAllTopicSets()">
                     <option value="all">All Topics</option>
@@ -234,6 +265,31 @@ class SSCMaxVocabEngine {
         if(secId==='bank')  this.loadAllTopicSets();
     }
 
+    // ── GLOBAL QUESTION SEARCH ────────────────────────────────────
+    async searchAllQuestions() {
+        const term = document.getElementById('adm-search-input')?.value.trim();
+        const el = document.getElementById('adm-search-results');
+        if(!el) return;
+        if(!term) { el.innerHTML=''; return; }
+        el.innerHTML = `<div class="text-center text-muted p-3"><i class="fa-solid fa-spinner fa-spin"></i></div>`;
+        try {
+            const { data, error } = await supabaseClient.from('questions').select('id,quiz_type,topic,question').ilike('question', `%${term}%`).limit(30);
+            if(error) throw error;
+            if(!data?.length) { el.innerHTML = `<p class="text-muted text-center p-3">No matches found.</p>`; return; }
+            el.innerHTML = data.map(q => `
+                <div class="admin-scheduled-row" style="cursor:pointer;" onclick="app.jumpToQuestionSet('${q.quiz_type}','${q.topic.replace(/'/g,"\\'")}')">
+                    <div><div class="admin-scheduled-date" style="font-size:0.8rem;">${q.question.slice(0,55)}${q.question.length>55?'…':''}</div>
+                    <div class="admin-scheduled-count">${q.quiz_type} • ${q.topic}</div></div>
+                    <i class="fa-solid fa-chevron-right text-muted"></i>
+                </div>`).join('');
+        } catch(e) { el.innerHTML = `<p style="color:var(--danger-red);text-align:center;">Error: ${e.message}${this.permissionHint(e)}</p>`; }
+    }
+
+    jumpToQuestionSet(quizType, topicKey) {
+        if(quizType==='topic') this.openManageSetModal(topicKey);
+        else if(quizType==='free') this.openManageFreeQuizModal();
+    }
+
     // ── TOPIC BANK: Create / List / Manage Sets ─────────────────
     async createTopicSet() {
         if(!supabaseClient) return;
@@ -243,14 +299,15 @@ class SSCMaxVocabEngine {
         try {
             let q = supabaseClient.from('topic_sets').select('set_number').eq('group_name',group);
             q = isAlpha ? q.eq('letter',letter) : q.is('letter',null);
-            const { data:existing } = await q;
+            const { data:existing, error:selErr } = await q;
+            if(selErr) throw selErr;
             const setNumber = (existing?.length||0) + 1;
             const fullKey = isAlpha ? `${group} - ${letter} - Set ${setNumber}` : `${group} - Set ${setNumber}`;
             const { error } = await supabaseClient.from('topic_sets').insert({ group_name:group, letter, set_number:setNumber, full_key:fullKey, question_count:0 });
             if(error) throw error;
             this.triggerToast(`✅ Created: ${fullKey}`);
             this.loadAllTopicSets();
-        } catch(e) { alert('Error creating set (check "topic_sets" table exists): '+e.message); }
+        } catch(e) { alert('Error creating set: '+e.message+this.permissionHint(e)); }
     }
 
     async loadAllTopicSets() {
@@ -267,25 +324,37 @@ class SSCMaxVocabEngine {
             el.innerHTML = data.map(s => `
                 <div class="admin-scheduled-row" style="cursor:pointer;" onclick="app.openManageSetModal('${s.full_key}')">
                     <div>
-                        <div class="admin-scheduled-date">${s.full_key}</div>
+                        <div class="admin-scheduled-date">${s.full_key} ${s.question_count===0?'<span class="set-empty-badge">EMPTY</span>':''}</div>
                         <div class="admin-scheduled-count">${s.question_count} question(s)</div>
                     </div>
                     <i class="fa-solid fa-chevron-right text-muted"></i>
                 </div>`).join('');
-        } catch(e) { el.innerHTML = `<p style="color:var(--danger-red);text-align:center;">Error: ${e.message}</p>`; }
+        } catch(e) { el.innerHTML = `<p style="color:var(--danger-red);text-align:center;">Error: ${e.message}${this.permissionHint(e)}</p>`; }
+    }
+
+    async recalcAllSetCounts() {
+        if(!supabaseClient) return;
+        try {
+            const { data: sets, error } = await supabaseClient.from('topic_sets').select('full_key');
+            if(error) throw error;
+            if(!sets?.length) { this.triggerToast('No sets to recalculate.'); return; }
+            for(const s of sets) { await this.syncSetQuestionCount(s.full_key); }
+            this.triggerToast(`✅ Recalculated ${sets.length} set(s)`);
+            this.loadAllTopicSets();
+        } catch(e) { alert('Error: '+e.message+this.permissionHint(e)); }
     }
 
     async openManageSetModal(fullKey) {
         const overlay = document.createElement('div');
-        overlay.className = 'admin-modal-overlay';
-        overlay.id = 'manage-set-modal';
+        overlay.className = 'admin-modal-overlay'; overlay.id = 'manage-set-modal';
         overlay.onclick = (e) => { if(e.target===overlay) overlay.remove(); };
         overlay.innerHTML = `
             <div class="admin-modal-sheet">
                 <div class="admin-modal-header">
-                    <h3 style="font-size:0.95rem;">${fullKey}</h3>
+                    <h3 style="font-size:0.9rem;flex:1;">${fullKey}</h3>
                     <button class="admin-modal-close" onclick="document.getElementById('manage-set-modal').remove()"><i class="fa-solid fa-xmark"></i></button>
                 </div>
+                <button class="adm-btn-red w-100 mb-3" onclick="app.deleteEntireSet('${fullKey}')"><i class="fa-solid fa-trash"></i> Delete Entire Set</button>
                 <div class="glass-card mb-3">
                     <label class="adm-label" style="margin-top:0;">Add More Questions</label>
                     <textarea id="manage-set-add-txt" class="adm-textarea" rows="6" placeholder="1. Question text&#10;A. Option&#10;B. Option&#10;C. Option&#10;D. Option&#10;Answer: A&#10;Explanation: Meaning"></textarea>
@@ -294,16 +363,51 @@ class SSCMaxVocabEngine {
                 <div id="manage-set-questions-list"><div class="text-center text-muted p-3"><i class="fa-solid fa-spinner fa-spin"></i></div></div>
             </div>`;
         document.body.appendChild(overlay);
-        this.loadSetQuestions(fullKey);
+        this.loadQuestionsIntoContainer('manage-set-questions-list', 'topic', fullKey, fullKey);
     }
 
-    async loadSetQuestions(fullKey) {
-        const el = document.getElementById('manage-set-questions-list');
+    async deleteEntireSet(fullKey) {
+        if(!confirm(`Delete ENTIRE set "${fullKey}" and ALL its questions? This cannot be undone.`)) return;
+        if(!confirm('Really sure? This is permanent.')) return;
+        try {
+            await supabaseClient.from('questions').delete().eq('quiz_type','topic').eq('topic', fullKey);
+            await supabaseClient.from('topic_sets').delete().eq('full_key', fullKey);
+            document.getElementById('manage-set-modal')?.remove();
+            this.triggerToast('Set deleted.');
+            this.loadAllTopicSets();
+        } catch(e) { alert('Delete error: '+e.message+this.permissionHint(e)); }
+    }
+
+    // ── Free Quiz question editor (reuses same UI as Topic Bank) ─
+    async openManageFreeQuizModal() {
+        if(!supabaseClient) return;
+        const today = new Date().toISOString().split('T')[0];
+        const { data } = await supabaseClient.from('questions').select('topic').eq('quiz_type','free').lte('topic',today).order('topic',{ascending:false}).limit(1).maybeSingle();
+        const dateKey = data?.topic;
+        if(!dateKey) { alert('No active free quiz found for today or earlier.'); return; }
+        const overlay = document.createElement('div');
+        overlay.className='admin-modal-overlay'; overlay.id='manage-free-modal';
+        overlay.onclick = (e)=>{ if(e.target===overlay) overlay.remove(); };
+        overlay.innerHTML = `
+            <div class="admin-modal-sheet">
+                <div class="admin-modal-header">
+                    <h3 style="font-size:0.9rem;">Free Quiz — ${new Date(dateKey).toLocaleDateString('en-IN',{month:'short',day:'numeric',year:'numeric'})}</h3>
+                    <button class="admin-modal-close" onclick="document.getElementById('manage-free-modal').remove()"><i class="fa-solid fa-xmark"></i></button>
+                </div>
+                <div id="manage-free-questions-list"><div class="text-center text-muted p-3"><i class="fa-solid fa-spinner fa-spin"></i></div></div>
+            </div>`;
+        document.body.appendChild(overlay);
+        this.loadQuestionsIntoContainer('manage-free-questions-list', 'free', dateKey, null);
+    }
+
+    // Shared editable-question list renderer (used by Topic Bank + Free Quiz editor)
+    async loadQuestionsIntoContainer(containerId, quizType, topicKey, fullKeyForCount) {
+        const el = document.getElementById(containerId);
         if(!el||!supabaseClient) return;
         try {
-            const { data, error } = await supabaseClient.from('questions').select('*').eq('topic',fullKey).order('id',{ascending:true});
+            const { data, error } = await supabaseClient.from('questions').select('*').eq('quiz_type',quizType).eq('topic',topicKey).order('id',{ascending:true});
             if(error) throw error;
-            if(!data?.length) { el.innerHTML = `<p class="text-muted text-center p-3">No questions yet. Add some above.</p>`; return; }
+            if(!data?.length) { el.innerHTML = `<p class="text-muted text-center p-3">No questions yet.</p>`; return; }
             el.innerHTML = data.map(q => `
                 <div class="glass-card mb-2" id="qrow-${q.id}" style="padding:14px;">
                     <textarea class="adm-input" style="min-height:44px;margin-bottom:8px;" id="qedit-text-${q.id}">${q.question}</textarea>
@@ -322,10 +426,10 @@ class SSCMaxVocabEngine {
                     <input class="adm-input" style="padding:8px 10px;font-size:0.78rem;margin-bottom:10px;" id="qedit-expl-${q.id}" placeholder="Explanation" value="${(q.explanation_a||q.explanation_b||q.explanation_c||q.explanation_d||'').replace(/"/g,'&quot;')}">
                     <div style="display:flex;gap:8px;">
                         <button class="adm-btn-cyan" style="flex:1;padding:8px;font-size:0.75rem;" onclick="app.saveQuestionEdit(${q.id})"><i class="fa-solid fa-check"></i> Save</button>
-                        <button class="adm-btn-red" style="flex:1;padding:8px;font-size:0.75rem;" onclick="app.deleteQuestionRow(${q.id},'${fullKey}')"><i class="fa-solid fa-trash"></i> Delete</button>
+                        <button class="adm-btn-red" style="flex:1;padding:8px;font-size:0.75rem;" onclick="app.deleteQuestionRow(${q.id}, ${fullKeyForCount?`'${fullKeyForCount}'`:'null'})"><i class="fa-solid fa-trash"></i> Delete</button>
                     </div>
                 </div>`).join('');
-        } catch(e) { el.innerHTML = `<p style="color:var(--danger-red);text-align:center;">Error: ${e.message}</p>`; }
+        } catch(e) { el.innerHTML = `<p style="color:var(--danger-red);text-align:center;">Error: ${e.message}${this.permissionHint(e)}</p>`; }
     }
 
     async saveQuestionEdit(id) {
@@ -343,17 +447,17 @@ class SSCMaxVocabEngine {
                 explanation_c: correct==='C'?expl:'', explanation_d: correct==='D'?expl:''
             }).eq('id', id);
             this.triggerToast('Question updated!');
-        } catch(e) { alert('Save error: '+e.message); }
+        } catch(e) { alert('Save error: '+e.message+this.permissionHint(e)); }
     }
 
     async deleteQuestionRow(id, fullKey) {
         if(!confirm('Delete this question permanently?')) return;
         try {
             await supabaseClient.from('questions').delete().eq('id', id);
-            await this.syncSetQuestionCount(fullKey);
+            if(fullKey) await this.syncSetQuestionCount(fullKey);
             document.getElementById(`qrow-${id}`)?.remove();
             this.triggerToast('Question deleted');
-        } catch(e) { alert('Delete error: '+e.message); }
+        } catch(e) { alert('Delete error: '+e.message+this.permissionHint(e)); }
     }
 
     async addMoreQuestionsToSet(fullKey) {
@@ -366,13 +470,13 @@ class SSCMaxVocabEngine {
             await this.syncSetQuestionCount(fullKey);
             document.getElementById('manage-set-add-txt').value='';
             this.triggerToast(`✅ Added ${parsed.length} question(s)`);
-            this.loadSetQuestions(fullKey);
-        } catch(e) { alert('Error: '+e.message); }
+            this.loadQuestionsIntoContainer('manage-set-questions-list', 'topic', fullKey, fullKey);
+        } catch(e) { alert('Error: '+e.message+this.permissionHint(e)); }
     }
 
     async syncSetQuestionCount(fullKey) {
         try {
-            const { count } = await supabaseClient.from('questions').select('*',{count:'exact',head:true}).eq('topic',fullKey);
+            const { count } = await supabaseClient.from('questions').select('*',{count:'exact',head:true}).eq('quiz_type','topic').eq('topic',fullKey);
             await supabaseClient.from('topic_sets').update({ question_count: count||0 }).eq('full_key', fullKey);
         } catch(e) { console.error('Count sync failed:', e); }
     }
@@ -398,7 +502,8 @@ class SSCMaxVocabEngine {
             const { count: todayAttempts } = await supabaseClient.from('leaderboard').select('*',{count:'exact',head:true}).eq('date',today);
             const { count: totalFreeQ }  = await supabaseClient.from('questions').select('*',{count:'exact',head:true}).eq('quiz_type','free');
             const { count: totalTopicQ } = await supabaseClient.from('questions').select('*',{count:'exact',head:true}).eq('quiz_type','topic');
-            const { count: totalSets }   = await supabaseClient.from('topic_sets').select('*',{count:'exact',head:true});
+            let totalSets = 0;
+            try { const r = await supabaseClient.from('topic_sets').select('*',{count:'exact',head:true}); totalSets = r.count||0; } catch(e){}
             el.innerHTML = `
                 <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;">
                     <div class="res-card glass-card stat-clickable" onclick="app.openUsersModal()"><span class="res-val text-cyan">${totalUsers??0}</span><span class="res-lbl">Total Users</span></div>
@@ -406,7 +511,7 @@ class SSCMaxVocabEngine {
                     <div class="res-card glass-card"><span class="res-val text-success">${todayAttempts??0}</span><span class="res-lbl">Quiz Attempts Today</span></div>
                     <div class="res-card glass-card"><span class="res-val">${totalFreeQ??0}</span><span class="res-lbl">Free Questions in DB</span></div>
                     <div class="res-card glass-card"><span class="res-val">${totalTopicQ??0}</span><span class="res-lbl">Topic Questions in DB</span></div>
-                    <div class="res-card glass-card"><span class="res-val">${totalSets??0}</span><span class="res-lbl">Total Sets Created</span></div>
+                    <div class="res-card glass-card"><span class="res-val">${totalSets}</span><span class="res-lbl">Total Sets Created</span></div>
                 </div>`;
         } catch(e) { el.innerHTML = `<p style="color:var(--danger-red);text-align:center;">Error: ${e.message}</p>`; }
     }
@@ -631,7 +736,6 @@ class SSCMaxVocabEngine {
                 if(diff === 1) {
                     newStreak = (row.streak||0) + 1;
                 } else if(diff === 2) {
-                    // 1 day missed — allow grace if not used in last 7 days
                     const graceRecent = newGraceDate && (Math.round((new Date(today)-new Date(newGraceDate))/86400000) <= 7);
                     if(!graceRecent) { newStreak = (row.streak||0) + 1; newGraceDate = today; }
                     else { newStreak = 1; }
@@ -680,13 +784,12 @@ class SSCMaxVocabEngine {
         const v=document.getElementById(`view-${viewId}`);
         if(v) { v.classList.add('active'); appState.currentView=viewId; }
         document.querySelectorAll('.nav-tab').forEach(t=>t.classList.toggle('active',t.getAttribute('data-target')===viewId));
-        if(viewId==='vault')   this.renderVault();
-        if(viewId==='ranks')   this.renderLeaderboard();
-        if(viewId==='premium') this.renderPremiumTopicsGrid();
+        if(viewId==='dashboard') this.renderPremiumTopicsGrid();
+        if(viewId==='vault')     this.renderVault();
+        if(viewId==='ranks')     this.renderLeaderboard();
         if(v) v.scrollTop=0;
     }
 
-    navigateToPremiumView() { this.switchView('premium'); }
     triggerPremiumPaywallGate() {
         const msg=encodeURIComponent('Hi! I want to unlock Premium Membership for SSC MAX VOCAB.');
         const link=`https://t.me/jangra854x?text=${msg}`;
@@ -695,7 +798,7 @@ class SSCMaxVocabEngine {
     }
 
     // ══════════════════════════════════════════════════════════════
-    // PREMIUM FLOW: Topics -> Letters/Direct -> Sets -> Confirm -> Quiz
+    // TOPIC-WISE VOCAB FLOW: Topics(dashboard) -> Letters/Direct -> Sets -> Confirm -> Quiz
     // ══════════════════════════════════════════════════════════════
     renderPremiumTopicsGrid() {
         if(!this.premiumTopicsList) return;
@@ -703,13 +806,11 @@ class SSCMaxVocabEngine {
             if(t.kind==='locked') return `
                 <div class="topic-mega-card coming-soon-mega">
                     <span class="coming-soon-ribbon">SOON</span>
-                    <div class="topic-mega-icon"><i class="fa-solid ${t.icon}"></i></div>
-                    <div><div class="topic-mega-name">${t.name}</div><div class="topic-mega-meta">Coming Soon</div></div>
+                    <div class="topic-mega-name">${t.name}</div>
                 </div>`;
             return `
                 <div class="topic-mega-card" onclick="app.openTopicGroup('${t.name}','${t.kind}')">
-                    <div class="topic-mega-icon"><i class="fa-solid ${t.icon}"></i></div>
-                    <div><div class="topic-mega-name">${t.name}</div><div class="topic-mega-meta"><i class="fa-solid fa-layer-group"></i> Practice Sets</div></div>
+                    <div class="topic-mega-name">${t.name}</div>
                     <i class="fa-solid fa-chevron-right topic-mega-arrow"></i>
                 </div>`;
         }).join('');
@@ -719,18 +820,17 @@ class SSCMaxVocabEngine {
         this.triggerHaptic('select');
         appState.activeTopicGroup = groupName;
         if(kind === 'direct') {
-            // Spellings — free users blocked immediately (next screen is sets)
             if(!appState.isPremium) { this.triggerPremiumPaywallGate(); return; }
             this.openSetsView(groupName, null, 'Mixed Spelling Questions • Select a set');
             return;
         }
-        // Alphabet-based — free users CAN view letters
         document.getElementById('topic-letters-title').innerText = groupName;
         const container = document.getElementById('topic-letters-list');
         container.innerHTML = `<div class="text-center text-muted p-3"><i class="fa-solid fa-spinner fa-spin"></i> Loading letters...</div>`;
         this.switchView('topic-letters');
         try {
-            const { data } = await supabaseClient.from('topic_sets').select('letter,question_count').eq('group_name',groupName);
+            const { data, error } = await supabaseClient.from('topic_sets').select('letter,question_count').eq('group_name',groupName);
+            if(error) throw error;
             const counts = {};
             (data||[]).forEach(r => { counts[r.letter] = (counts[r.letter]||0) + (r.question_count||0); });
             container.innerHTML = LETTERS.map(l => {
@@ -742,7 +842,7 @@ class SSCMaxVocabEngine {
                     <span class="letter-count">${cnt} Qs</span>
                 </div>`;
             }).join('');
-        } catch(e) { container.innerHTML = `<div class="text-center text-muted p-3">Error loading letters.</div>`; }
+        } catch(e) { container.innerHTML = `<div class="text-center text-muted p-3">Error loading letters: ${e.message}${this.permissionHint(e)}</div>`; }
     }
 
     openLetterSets(groupName, letter) {
@@ -755,7 +855,7 @@ class SSCMaxVocabEngine {
         document.getElementById('topic-sets-title').innerText = letter ? `Letter ${letter}` : groupName;
         document.getElementById('topic-sets-subtitle').innerText = subtitleText;
         const backBtn = document.getElementById('btn-topic-sets-back');
-        backBtn.onclick = letter ? () => this.switchView('topic-letters') : () => this.switchView('premium');
+        backBtn.onclick = letter ? () => this.switchView('topic-letters') : () => this.switchView('dashboard');
 
         const container = document.getElementById('topic-sets-list');
         container.innerHTML = `<div class="text-center text-muted p-3"><i class="fa-solid fa-spinner fa-spin"></i> Loading sets...</div>`;
@@ -763,14 +863,15 @@ class SSCMaxVocabEngine {
         try {
             let q = supabaseClient.from('topic_sets').select('*').eq('group_name',groupName).order('set_number',{ascending:true});
             q = letter ? q.eq('letter',letter) : q.is('letter',null);
-            const { data } = await q;
+            const { data, error } = await q;
+            if(error) throw error;
             if(!data?.length) { container.innerHTML = `<div class="glass-card text-center p-4"><p class="text-muted">No sets available yet.</p></div>`; return; }
             container.innerHTML = data.map(s => `
                 <div class="topic-set-card glass-card" onclick="app.showSetConfirmPopup('${s.full_key}',${s.question_count},'${s.full_key.replace(/'/g,"\\'")}')">
                     <div class="set-info"><span class="set-label">Set ${s.set_number}</span><span class="set-range-tag">${s.question_count} Questions</span></div>
                     <div class="set-meta"><span><i class="fa-solid fa-circle-question"></i> ${s.question_count} Total Questions</span></div>
                 </div>`).join('');
-        } catch(e) { container.innerHTML = `<div class="text-center text-muted p-3">Error loading sets.</div>`; }
+        } catch(e) { container.innerHTML = `<div class="text-center text-muted p-3">Error loading sets: ${e.message}${this.permissionHint(e)}</div>`; }
     }
 
     // ── Custom confirm popup (not native alert) ─────────────────
@@ -796,7 +897,6 @@ class SSCMaxVocabEngine {
         appState.quiz.type = 'topic';
         appState.quiz.title = title;
         appState.quiz.quizCategory = fullKey;
-        appState.quiz.isPremiumLocked = false;
         this.executeQuizInstance();
     }
 
@@ -810,7 +910,6 @@ class SSCMaxVocabEngine {
             topicKey=data?.topic||null; appState.cache.activeFreeDate=topicKey;
         }
         appState.quiz.quizCategory=topicKey;
-        appState.quiz.isPremiumLocked=false;
         const dateLbl = topicKey ? new Date(topicKey).toLocaleDateString('en-IN',{month:'short',day:'numeric',year:'numeric'}) : new Date().toLocaleDateString('en-IN',{month:'short',day:'numeric',year:'numeric'});
         document.getElementById('qd-subtitle').innerText=title;
         document.getElementById('qd-date').innerText=dateLbl;
@@ -862,6 +961,7 @@ class SSCMaxVocabEngine {
         appState.quiz.stopwatchInterval=setInterval(()=>{ appState.quiz.timeSeconds++; el.innerText=fmt(appState.quiz.timeSeconds); },1000);
     }
 
+    // Explanation is now rendered ONLY for the correct option
     renderCurrentQuestion() {
         const q=appState.quiz.questions[appState.quiz.currentIndex];
         appState.quiz.selectedOption=null;
@@ -876,13 +976,16 @@ class SSCMaxVocabEngine {
         document.getElementById('question-category-tag').innerText=q.category||'Vocabulary';
         document.getElementById('question-text-body').innerText=q.text;
         this.quizFrame.classList.remove('card-animation-swap'); void this.quizFrame.offsetWidth; this.quizFrame.classList.add('card-animation-swap');
-        this.optionsContainer.innerHTML = q.options.map((opt,idx)=>`
+        this.optionsContainer.innerHTML = q.options.map((opt,idx)=>{
+            const isCorrect = idx === q.correctIndex;
+            return `
             <div class="option-wrapper">
                 <div class="option-node" onclick="app.lockAnswerSelection(${idx})">
                     <span class="opt-letter">${String.fromCharCode(65+idx)}.</span><span class="opt-text">${opt}</span><div class="option-indicator"></div>
                 </div>
-                <div class="option-explanation-box hidden" id="expl-${idx}">${q.explanations[idx]||(idx===q.correctIndex?'✓ Correct answer':'✗ Incorrect choice')}</div>
-            </div>`).join('');
+                ${isCorrect ? `<div class="option-explanation-box hidden expl-correct" id="expl-${idx}">${q.explanations[idx] || 'This is the correct answer.'}</div>` : ''}
+            </div>`;
+        }).join('');
     }
 
     // Vault saving — FREE QUIZ ONLY
@@ -907,6 +1010,7 @@ class SSCMaxVocabEngine {
         }
     }
 
+    // Explanation reveal — only the correct option's box (if it exists) gets shown
     lockAnswerSelection(idx) {
         if(appState.quiz.selectedOption!==null) return;
         appState.quiz.selectedOption=idx;
@@ -916,9 +1020,12 @@ class SSCMaxVocabEngine {
         this.triggerHaptic(correct?'correct':'wrong');
         if(correct) appState.quiz.correctCount++; else { appState.quiz.wrongCount++; this.routeFailedWordToVault(q); }
         this.optionsContainer.querySelectorAll('.option-node').forEach((node,i)=>{
-            const ex=document.getElementById(`expl-${i}`); if(ex) ex.classList.remove('hidden');
-            if(i===q.correctIndex) { node.classList.add('correct'); if(ex) ex.classList.add('expl-correct'); }
-            else if(i===idx) { node.classList.add('incorrect'); if(ex) ex.classList.add('expl-incorrect'); }
+            if(i===q.correctIndex) {
+                node.classList.add('correct');
+                const ex=document.getElementById(`expl-${i}`); if(ex) ex.classList.remove('hidden');
+            } else if(i===idx) {
+                node.classList.add('incorrect');
+            }
         });
         this.btnNextQ.classList.remove('hidden');
     }
@@ -957,10 +1064,8 @@ class SSCMaxVocabEngine {
 
         if(parseFloat(acc)===100) this.launchConfetti();
 
-        // Streak — free quiz only
         if(appState.quiz.type==='free') await this.markFreeQuizStreak();
 
-        // Ranks — topic (premium) quizzes log to leaderboard now
         if(appState.quiz.type==='topic' && appState.currentUser.id && supabaseClient) {
             try {
                 await supabaseClient.from('leaderboard').insert({ telegram_id:appState.currentUser.id, name:appState.currentUser.name, score:appState.quiz.correctCount, time_seconds:appState.quiz.timeSeconds, date:new Date().toISOString().split('T')[0] });
@@ -991,6 +1096,8 @@ class SSCMaxVocabEngine {
         }
     }
 
+    // "View Your Rank" — works for ALL users (free + premium), shows
+    // today's global rankings pulled from actual quiz completions.
     async toggleResultRankView() {
         const sec=document.getElementById('result-lb-section'), con=document.getElementById('result-lb-container'), btn=document.getElementById('btn-view-rank-toggle');
         if(!sec||!con||!btn) return;
@@ -1003,12 +1110,13 @@ class SSCMaxVocabEngine {
         if(!supabaseClient) { con.innerHTML=`<div class="text-center text-muted p-3">Database unavailable.</div>`; return; }
         try {
             const today=new Date().toISOString().split('T')[0];
-            const { data } = await supabaseClient.from('leaderboard').select('*').eq('date',today).order('score',{ascending:false}).order('time_seconds',{ascending:true}).limit(10);
+            const { data, error } = await supabaseClient.from('leaderboard').select('*').eq('date',today).order('score',{ascending:false}).order('time_seconds',{ascending:true}).limit(10);
+            if(error) throw error;
             const lb = data||[];
             appState.cache.resultRankLoaded = true;
-            if(!lb.length) { con.innerHTML=`<div class="text-center text-muted p-3">No scores yet today. Be the first! 🏆</div>`; return; }
+            if(!lb.length) { con.innerHTML=`<div class="text-center text-muted p-3">No Topic-Wise quiz scores logged today yet. Complete a Premium Topic set to be the first! 🏆</div>`; return; }
             con.innerHTML = this.renderLeaderboardRows(lb);
-        } catch(e) { con.innerHTML=`<div class="text-center text-muted p-3">Failed to load rankings.</div>`; }
+        } catch(e) { con.innerHTML=`<div class="text-center text-muted p-3">Failed to load rankings: ${e.message}</div>`; }
     }
 
     renderLeaderboardRows(lb) {

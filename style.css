@@ -1342,9 +1342,12 @@ html { scroll-behavior: smooth; }
     from { opacity: 0; transform: translateY(14px); }
     to   { opacity: 1; transform: translateY(0); }
 }
-.portal-card, .glass-card, .topic-card-item, .topic-set-card,
-.title-card-item, .leader-row {
-    animation: cardRise 0.4s ease both;
+/* Only top-level / low-frequency cards get entrance animation.
+   High-frequency list items (leader-row, options, vault cards) do NOT —
+   animating dozens of re-rendered nodes on every list refresh is what
+   was causing scroll jank. */
+.portal-card, .topic-mega-card, .topic-set-card {
+    animation: cardRise 0.3s ease both;
 }
 
 /* ── Confetti burst for perfect scores (result page) ───────────── */
@@ -1842,3 +1845,90 @@ body[data-theme="aurora"] #live-theme-layer .theme-orb:nth-child(3) {
 .free-limit-banner i { font-size: 1.3rem; color: var(--gold-premium); flex-shrink: 0; }
 .free-limit-banner-text { font-size: 0.78rem; color: var(--text-muted); line-height: 1.4; }
 .free-limit-banner-text b { color: var(--gold-premium); }
+
+
+
+/* ═══════════════════════════════════════════════════════════
+   v6 UPDATE — Dashboard-Embedded Topics, Smooth Scroll Fixes,
+   Cleaner Topic Cards, Admin Bank Polish
+   ═══════════════════════════════════════════════════════════ */
+
+/* ── PERFORMANCE PASS — fix scroll jank ──────────────────────── */
+/* Reduce expensive blur radii that were forcing repaints on scroll */
+.glass-card { backdrop-filter: blur(12px); -webkit-backdrop-filter: blur(12px); }
+
+/* Contain layout/paint per-view so scrolling one view never forces
+   recalculation of siblings; huge win on long lists. */
+.app-view { contain: layout style paint; }
+#view-container { contain: layout style; overscroll-behavior-y: contain; }
+
+/* Native momentum scroll only — JS 'smooth' scrollTop calls felt heavy */
+html { scroll-behavior: auto; }
+#view-container, .full-overlay-view { scroll-behavior: auto; }
+
+/* Kill will-change on elements that don't need continuous compositing —
+   leaving will-change on everything was quietly eating GPU memory. */
+.leader-row, .option-wrapper, .vault-word-card, .archive-date-entry,
+.title-card-item, .glass-card { will-change: auto; }
+
+/* Cheaper twinkle — opacity-only, GPU compositor friendly, low element count already */
+.theme-star { animation-duration: 3.4s; }
+
+/* Reduce shadow recalculation cost on frequently toggled option nodes */
+.option-node { will-change: auto; }
+
+/* ── Topic-Wise section embedded directly on Dashboard ───────── */
+.topic-wise-section {
+    padding: 2px 2px 0;
+}
+.topic-wise-heading {
+    font-size: 1.18rem;
+    font-weight: 800;
+    margin-top: 10px;
+    line-height: 1.3;
+}
+.topic-wise-desc {
+    font-size: 0.82rem;
+    color: var(--text-muted);
+    margin-top: 5px;
+    margin-bottom: 2px;
+}
+
+/* ── Topic Mega Card — simplified (name + arrow only, no meta line) */
+.topic-mega-card {
+    justify-content: center;
+    gap: 10px;
+}
+.topic-mega-name {
+    margin-top: 0;
+    font-size: 1rem;
+}
+/* meta line removed by JS; keep rule harmless if still present anywhere */
+.topic-mega-meta { display: none; }
+
+/* ── Admin: empty-set indicator in Topic Bank list ───────────── */
+.set-empty-badge {
+    font-size: 0.62rem;
+    font-weight: 800;
+    padding: 2px 7px;
+    border-radius: 7px;
+    background: rgba(239,68,68,0.12);
+    color: var(--danger-red);
+    border: 1px solid rgba(239,68,68,0.25);
+    margin-left: 6px;
+}
+
+/* ── Admin Topic Bank question edit cards — tighter, clearer ─── */
+#manage-set-questions-list .glass-card {
+    border: 1px solid rgba(255,255,255,0.06);
+}
+#manage-set-questions-list textarea.adm-input {
+    resize: vertical;
+    font-family: var(--font-stack);
+}
+
+/* ── Explanation box — only shown under the correct option now,
+   so give it a touch more presence since it's the sole one ──── */
+.option-explanation-box.expl-correct {
+    font-weight: 500;
+}
