@@ -1932,3 +1932,218 @@ html { scroll-behavior: auto; }
 .option-explanation-box.expl-correct {
     font-weight: 500;
 }
+
+/* ═══════════════════════════════════════════════════════════
+   v7 UPDATE — Dashboard Hero Redesign, Premium Topic Card
+   Backgrounds, 4-col Sets Grid, Vault Rebuild, Rank-in-Result
+   Everything below is ADDITIVE — nothing above this line was
+   touched or removed.
+   ═══════════════════════════════════════════════════════════ */
+
+/* ── Dashboard Hero Wrap — the whole "upar wala" block ───────── */
+.dash-hero-wrap {
+    position: relative;
+    overflow: hidden;
+    border-radius: 24px;
+    padding: 14px 14px 4px;
+    background: linear-gradient(165deg, rgba(0,242,254,0.07) 0%, rgba(10,12,24,0.2) 45%, rgba(168,85,247,0.08) 100%);
+    border: 1px solid var(--border-glass);
+    isolation: isolate;
+}
+.dash-hero-wrap > *:not(.dash-hero-decor) { position: relative; z-index: 2; }
+
+/* Decorative layer — floating orbs / sparkles / stickers */
+.dash-hero-decor {
+    position: absolute;
+    inset: 0;
+    z-index: 1;
+    pointer-events: none;
+    overflow: hidden;
+    border-radius: 24px;
+}
+.hero-orb {
+    position: absolute;
+    border-radius: 50%;
+    filter: blur(60px);
+    opacity: 0.55;
+    animation: heroOrbFloat 9s ease-in-out infinite alternate;
+}
+.hero-orb-cyan   { width: 160px; height: 160px; top: -50px; left: -30px; background: var(--neon-cyan); }
+.hero-orb-purple { width: 140px; height: 140px; bottom: -40px; right: -20px; background: var(--purple-neon); animation-delay: -3s; }
+.hero-orb-gold   { width: 100px; height: 100px; top: 40%; right: 15%; background: var(--gold-premium); opacity: 0.35; animation-delay: -6s; }
+@keyframes heroOrbFloat {
+    0%   { transform: translate(0,0) scale(1); }
+    100% { transform: translate(18px,-14px) scale(1.15); }
+}
+.hero-sparkle {
+    position: absolute;
+    width: 4px; height: 4px;
+    border-radius: 50%;
+    background: #fff;
+    box-shadow: 0 0 8px 2px rgba(255,255,255,0.8);
+    animation: heroSparkleTwinkle 2.6s ease-in-out infinite;
+}
+.hero-sparkle-1 { top: 18%; left: 22%; animation-delay: 0s; }
+.hero-sparkle-2 { top: 55%; left: 78%; animation-delay: 0.8s; }
+.hero-sparkle-3 { top: 75%; left: 35%; animation-delay: 1.5s; }
+@keyframes heroSparkleTwinkle {
+    0%, 100% { opacity: 0.15; transform: scale(0.8); }
+    50%      { opacity: 1;    transform: scale(1.4); }
+}
+.hero-sticker {
+    position: absolute;
+    font-size: 1rem;
+    color: var(--gold-premium);
+    opacity: 0.5;
+    animation: heroStickerBob 5s ease-in-out infinite;
+    filter: drop-shadow(0 0 6px rgba(255,184,0,0.4));
+}
+.hero-sticker-1 { top: 10%; right: 12%; animation-delay: -1s; color: var(--neon-cyan); filter: drop-shadow(0 0 6px rgba(0,242,254,0.4)); }
+.hero-sticker-2 { bottom: 14%; left: 8%; animation-delay: -3s; }
+@keyframes heroStickerBob {
+    0%, 100% { transform: translateY(0) rotate(0deg); }
+    50%      { transform: translateY(-8px) rotate(12deg); }
+}
+
+/* Avatar gets a glowing gradient ring so the profile card doesn't look bare */
+.profile-avatar-ring {
+    position: relative;
+    width: 60px; height: 60px;
+    border-radius: 50%;
+    padding: 2px;
+    background: conic-gradient(from 0deg, var(--neon-cyan), var(--purple-neon), var(--gold-premium), var(--neon-cyan));
+    animation: ringSpin 6s linear infinite;
+    flex-shrink: 0;
+}
+.profile-avatar-ring .tg-avatar { width: 100%; height: 100%; border: 2px solid var(--bg-dark); }
+@keyframes ringSpin { to { transform: rotate(360deg); } }
+
+/* ── Premium Topic Cards — CSS-only shimmer + per-card accent
+   (no JS/HTML change needed — cards already come from JS with
+   class .topic-mega-card, we just theme them here) ──────────── */
+.topic-mega-card {
+    position: relative;
+    overflow: hidden;
+    background: linear-gradient(135deg, rgba(255,255,255,0.04) 0%, rgba(255,255,255,0.01) 100%);
+    border: 1px solid var(--border-glass);
+}
+.topic-mega-card::before {
+    content: '';
+    position: absolute;
+    inset: 0;
+    background: linear-gradient(120deg, transparent 20%, rgba(255,255,255,0.10) 50%, transparent 80%);
+    transform: translateX(-100%);
+    animation: cardShimmer 4.5s ease-in-out infinite;
+    pointer-events: none;
+}
+@keyframes cardShimmer {
+    0%, 30%  { transform: translateX(-120%); }
+    70%, 100%{ transform: translateX(120%); }
+}
+.topic-mega-card::after {
+    position: absolute;
+    top: 10px; right: 12px;
+    font-size: 1.05rem;
+    opacity: 0.65;
+    pointer-events: none;
+    animation: heroStickerBob 4.5s ease-in-out infinite;
+}
+/* Distinct accent + cute sticker per topic, cycling through the grid */
+.topic-mega-card:nth-of-type(7n+1) { border-color: rgba(0,242,254,0.28); box-shadow: 0 0 18px rgba(0,242,254,0.08); }
+.topic-mega-card:nth-of-type(7n+1)::after { content: '✨'; }
+.topic-mega-card:nth-of-type(7n+2) { border-color: rgba(168,85,247,0.28); box-shadow: 0 0 18px rgba(168,85,247,0.08); }
+.topic-mega-card:nth-of-type(7n+2)::after { content: '🌸'; }
+.topic-mega-card:nth-of-type(7n+3) { border-color: rgba(255,184,0,0.28); box-shadow: 0 0 18px rgba(255,184,0,0.08); }
+.topic-mega-card:nth-of-type(7n+3)::after { content: '⭐'; }
+.topic-mega-card:nth-of-type(7n+4) { border-color: rgba(16,185,129,0.28); box-shadow: 0 0 18px rgba(16,185,129,0.08); }
+.topic-mega-card:nth-of-type(7n+4)::after { content: '🍃'; }
+.topic-mega-card:nth-of-type(7n+5) { border-color: rgba(239,68,68,0.22); box-shadow: 0 0 18px rgba(239,68,68,0.08); }
+.topic-mega-card:nth-of-type(7n+5)::after { content: '🌙'; }
+.topic-mega-card:nth-of-type(7n+6) { border-color: rgba(0,242,254,0.22); box-shadow: 0 0 18px rgba(255,255,255,0.06); }
+.topic-mega-card:nth-of-type(7n+6)::after { content: '💫'; }
+.topic-mega-card:nth-of-type(7n+0) { border-color: rgba(168,85,247,0.22); box-shadow: 0 0 18px rgba(168,85,247,0.08); }
+.topic-mega-card:nth-of-type(7n+0)::after { content: '🎀'; }
+.topic-mega-card:active { transform: scale(0.97); }
+
+/* ── Sets grid — 4 per row, styled like the alphabet letter boxes ── */
+.sets-grid-4col {
+    display: grid;
+    grid-template-columns: repeat(4, 1fr);
+    gap: 8px;
+}
+.sets-grid-4col .topic-set-card {
+    padding: 12px 6px;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    text-align: center;
+    gap: 4px;
+    border-radius: 14px;
+    font-size: 0.72rem;
+    transition: transform 0.18s ease, border-color 0.18s ease;
+}
+.sets-grid-4col .topic-set-card:active { transform: scale(0.93); border-color: var(--border-glass-focus); }
+
+/* ── Vault v7 — topic-wise wrong-answer sets ─────────────────── */
+.vault-section-label {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    font-size: 0.85rem;
+    font-weight: 800;
+    color: var(--neon-cyan);
+    margin-bottom: 12px;
+}
+.vault-topics-scroll {
+    display: flex;
+    gap: 8px;
+    overflow-x: auto;
+    padding-bottom: 10px;
+    margin-bottom: 6px;
+    scrollbar-width: none;
+}
+.vault-topics-scroll::-webkit-scrollbar { display: none; }
+.vault-topic-pill {
+    flex-shrink: 0;
+    padding: 8px 16px;
+    border-radius: 20px;
+    font-size: 0.78rem;
+    font-weight: 700;
+    color: var(--text-muted);
+    background: rgba(255,255,255,0.04);
+    border: 1px solid var(--border-glass);
+    cursor: pointer;
+    white-space: nowrap;
+    transition: all 0.18s ease;
+}
+.vault-topic-pill.active {
+    color: #000;
+    background: linear-gradient(135deg, var(--neon-cyan), #0064fe);
+    border-color: transparent;
+}
+.vault-sets-grid {
+    display: grid;
+    grid-template-columns: repeat(2, 1fr);
+    gap: 10px;
+}
+.vault-set-card {
+    padding: 16px 14px;
+    border-radius: 16px;
+    cursor: pointer;
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+    transition: transform 0.18s ease;
+}
+.vault-set-card:active { transform: scale(0.96); }
+.vault-set-card .vs-icon { font-size: 1.2rem; color: var(--danger-red); }
+.vault-set-card .vs-title { font-size: 0.85rem; font-weight: 800; }
+.vault-set-card .vs-count { font-size: 0.7rem; color: var(--text-muted); }
+.vault-set-card .vs-progress-track { height: 4px; border-radius: 4px; background: rgba(255,255,255,0.06); overflow: hidden; }
+.vault-set-card .vs-progress-fill { height: 100%; background: linear-gradient(90deg, var(--neon-cyan), var(--purple-neon)); }
+
+/* ── Result screen — rank now shown directly, no toggle button ──── */
+.result-lb-wrap {
+    animation: fadeIn 0.35s ease;
+}

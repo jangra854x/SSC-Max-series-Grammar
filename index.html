@@ -34,44 +34,68 @@
 
             <!-- ══════════════════════════════════════════════ -->
             <!-- DASHBOARD                                     -->
-            <!-- Free Quiz card, then DIRECTLY the Topic-Wise  -->
-            <!-- Vocabulary content (no separate premium card/ -->
-            <!-- screen anymore — embedded right here).        -->
+            <!-- v7 — Everything above "Topic Wise Vocabulary" -->
+            <!-- rebuilt into a single "hero" wrapper with     -->
+            <!-- decorative glow/sticker layers (CSS + JS will -->
+            <!-- animate these — see dash-hero-decor children) -->
+            <!-- so it stops looking flat/empty.               -->
             <!-- ══════════════════════════════════════════════ -->
             <section id="view-dashboard" class="app-view active">
-                <div class="exam-target-banner">
-                    SSC CGL • CHSL • MTS • GD • CPO • Steno • Selection Post
-                </div>
-                <div class="pyq-focus-banner mt-2">
-                    Complete SSC Vocabulary Preparation • PYQ Based
-                </div>
 
-                <div class="profile-header glass-card mt-3">
-                    <img src="https://placehold.co/120x120/121627/00f2fe?text=TG" alt="Avatar" class="tg-avatar" id="tg-user-avatar">
-                    <div class="profile-info">
-                        <div class="profile-name-row">
-                            <h3 id="tg-user-name">Loading...</h3>
-                            <span class="streak-badge-inline hidden" id="streak-badge-mini">
-                                <i class="fa-solid fa-fire"></i> <span id="streak-count-mini">0</span>
-                            </span>
-                        </div>
+                <div class="dash-hero-wrap" id="dash-hero-wrap">
+
+                    <!-- Decorative-only layer — pure eye-candy, no logic.
+                         CSS (next message) will animate orbs/sparkles/stickers here.
+                         Safe to add more <div class="hero-*"> children later. -->
+                    <div class="dash-hero-decor" id="dash-hero-decor" aria-hidden="true">
+                        <div class="hero-orb hero-orb-cyan"></div>
+                        <div class="hero-orb hero-orb-purple"></div>
+                        <div class="hero-orb hero-orb-gold"></div>
+                        <div class="hero-sparkle hero-sparkle-1"></div>
+                        <div class="hero-sparkle hero-sparkle-2"></div>
+                        <div class="hero-sparkle hero-sparkle-3"></div>
+                        <div class="hero-sticker hero-sticker-1"><i class="fa-solid fa-wand-magic-sparkles"></i></div>
+                        <div class="hero-sticker hero-sticker-2"><i class="fa-solid fa-star"></i></div>
                     </div>
-                </div>
 
-                <div class="portal-cards-stack mt-4">
-                    <div class="portal-card cyan-gradient-card" onclick="app.showQuizBlueprint('free','Daily Free Quiz')">
-                        <div class="portal-card-content">
-                            <span class="portal-tag cyan-tag">DAILY DIAGNOSTIC</span>
-                            <h3>Daily Free Quiz</h3>
-                            <p>Test your standard TCS vocabulary baseline. High-frequency questions without paywalls.</p>
-                            <div class="portal-meta">
-                                <span><i class="fa-solid fa-circle-question"></i> 30 Questions</span>
-                                <span><i class="fa-solid fa-book-open"></i> PYQ Based</span>
+                    <div class="exam-target-banner">
+                        SSC CGL • CHSL • MTS • GD • CPO • Steno • Selection Post
+                    </div>
+                    <div class="pyq-focus-banner mt-2">
+                        Complete SSC Vocabulary Preparation • PYQ Based
+                    </div>
+
+                    <div class="profile-header glass-card mt-3" id="dash-profile-card">
+                        <div class="profile-avatar-ring">
+                            <img src="https://placehold.co/120x120/121627/00f2fe?text=TG" alt="Avatar" class="tg-avatar" id="tg-user-avatar">
+                        </div>
+                        <div class="profile-info">
+                            <div class="profile-name-row">
+                                <h3 id="tg-user-name">Loading...</h3>
+                                <span class="streak-badge-inline hidden" id="streak-badge-mini">
+                                    <i class="fa-solid fa-fire"></i> <span id="streak-count-mini">0</span>
+                                </span>
                             </div>
                         </div>
-                        <div class="portal-arrow"><i class="fa-solid fa-arrow-right"></i></div>
                     </div>
+
+                    <div class="portal-cards-stack mt-4">
+                        <div class="portal-card cyan-gradient-card" onclick="app.showQuizBlueprint('free','Daily Free Quiz')">
+                            <div class="portal-card-content">
+                                <span class="portal-tag cyan-tag">DAILY DIAGNOSTIC</span>
+                                <h3>Daily Free Quiz</h3>
+                                <p>Test your standard TCS vocabulary baseline. High-frequency questions without paywalls.</p>
+                                <div class="portal-meta">
+                                    <span><i class="fa-solid fa-circle-question"></i> 30 Questions</span>
+                                    <span><i class="fa-solid fa-book-open"></i> PYQ Based</span>
+                                </div>
+                            </div>
+                            <div class="portal-arrow"><i class="fa-solid fa-arrow-right"></i></div>
+                        </div>
+                    </div>
+
                 </div>
+                <!-- /dash-hero-wrap -->
 
                 <!-- Topic Wise Vocabulary — directly embedded, no card wrapper needed -->
                 <div class="topic-wise-section mt-4">
@@ -148,6 +172,10 @@
             <!-- Reached from a letter OR directly  -->
             <!-- (Spellings). Back destination set  -->
             <!-- dynamically by JS.                 -->
+            <!-- v7 — sets-grid-4col class added so  -->
+            <!-- sets sit 4-per-row like the alphabet -->
+            <!-- grid instead of a loose stacked list -->
+            <!-- (styling to be added in CSS pass).   -->
             <!-- ══════════════════════════════════ -->
             <section id="view-topic-sets" class="app-view">
                 <div class="topic-sets-header">
@@ -159,7 +187,7 @@
                         <p id="topic-sets-subtitle">Select a set to begin</p>
                     </div>
                 </div>
-                <div class="topic-sets-container" id="topic-sets-list">
+                <div class="topic-sets-container sets-grid-4col" id="topic-sets-list">
                     <div class="text-center text-muted p-3">
                         <i class="fa-solid fa-spinner fa-spin"></i> Loading sets...
                     </div>
@@ -206,8 +234,14 @@
 
             <!-- ══════════════════════════════════ -->
             <!-- RESULT VIEW                       -->
-            <!-- "View Your Rank" works for ALL     -->
-            <!-- users (free + premium)             -->
+            <!-- v7 — "View Your Rank" toggle button -->
+            <!-- removed. Rank list is now shown      -->
+            <!-- DIRECTLY under the feedback card,     -->
+            <!-- no separate option/click needed —     -->
+            <!-- this section replaces the old bottom  -->
+            <!-- nav "Ranks" tab as the one place ranks -->
+            <!-- are shown (JS wiring for auto-loading  -->
+            <!-- comes in the next script.js pass).     -->
             <!-- ══════════════════════════════════ -->
             <section id="view-result" class="app-view full-overlay-view">
                 <div class="result-container">
@@ -250,40 +284,59 @@
                         Return To Dashboard
                     </button>
 
-                    <button class="btn-view-rank-toggle w-100 mt-2" id="btn-view-rank-toggle" onclick="app.toggleResultRankView()">
-                        <i class="fa-solid fa-ranking-star"></i> View Your Rank
-                    </button>
-
-                    <div class="result-lb-wrap hidden" id="result-lb-section">
+                    <!-- Rank shown directly now — no toggle button -->
+                    <div class="result-lb-wrap" id="result-lb-section">
                         <div class="result-lb-divider">
                             <span>Today's Elite Rankings</span>
                         </div>
-                        <div id="result-lb-container"></div>
+                        <div id="result-lb-container">
+                            <div class="text-center text-muted p-3">
+                                <i class="fa-solid fa-spinner fa-spin"></i> Loading rankings...
+                            </div>
+                        </div>
                     </div>
                 </div>
             </section>
 
             <!-- ══════════════════════════════════ -->
-            <!-- VAULT — Free Quiz only             -->
+            <!-- VAULT                             -->
+            <!-- v7 — Rebuilt around auto-generated -->
+            <!-- "wrong question" sets (max 20 Qs   -->
+            <!-- each) instead of a flat weak-word   -->
+            <!-- list:                                -->
+            <!--  • Free user  → sees ONLY the Free   -->
+            <!--    Quiz label + its sets directly.    -->
+            <!--  • Premium user → sees NO Free Quiz   -->
+            <!--    label; instead a horizontal row of -->
+            <!--    topic names (vault-topics-row),    -->
+            <!--    and sets for the selected topic     -->
+            <!--    render below (vault-sets-container).-->
+            <!-- Clicking a set → start-quiz popup     -->
+            <!-- (JS-generated modal, same pattern as   -->
+            <!-- the topic-sets confirm popup).         -->
+            <!-- Actual data logic + free/premium       -->
+            <!-- toggling comes in the next script.js.  -->
             <!-- ══════════════════════════════════ -->
             <section id="view-vault" class="app-view">
                 <div class="screen-header">
                     <h2>Vocabulary Vault</h2>
-                    <p>From your Daily Free Quiz attempts</p>
+                    <p id="vault-subtitle">Practice sets built from your wrong answers</p>
                 </div>
                 <div class="vault-search-wrapper mb-3">
                     <i class="fa-solid fa-magnifying-glass search-icon"></i>
-                    <input type="search" id="vault-search-input" placeholder="Search stored words..." oninput="app.filterVaultContent()">
+                    <input type="search" id="vault-search-input" placeholder="Search sets..." oninput="app.filterVaultContent()">
                 </div>
-                <div class="vault-dual-tabs mb-3">
-                    <button class="vault-tab-btn active" data-tab="weak" onclick="app.switchVaultTab('weak')">
-                        Weak Words (<span id="count-weak">0</span>)
-                    </button>
-                    <button class="vault-tab-btn" data-tab="bookmarked" onclick="app.switchVaultTab('bookmarked')">
-                        Bookmarked (<span id="count-bookmarked">0</span>)
-                    </button>
+
+                <!-- Free-user-only label (JS shows/hides based on isPremium) -->
+                <div class="vault-section-label" id="vault-freequiz-label">
+                    <i class="fa-solid fa-bolt"></i> Free Quiz
                 </div>
-                <div class="vault-stack-list" id="vault-items-container">
+
+                <!-- Premium-only: one-line scroll of topic names -->
+                <div class="vault-topics-scroll hidden" id="vault-topics-row"></div>
+
+                <!-- Sets for whichever context is active (free quiz OR selected topic) -->
+                <div class="vault-sets-grid" id="vault-sets-container">
                     <div class="text-center text-muted p-3">
                         <i class="fa-solid fa-spinner fa-spin"></i> Syncing vault...
                     </div>
@@ -292,6 +345,13 @@
 
             <!-- ══════════════════════════════════ -->
             <!-- RANKS                             -->
+            <!-- v7 — No longer reachable from the   -->
+            <!-- bottom nav (that tab is removed for -->
+            <!-- now, see nav below). Ranks are shown -->
+            <!-- directly inside the Result screen    -->
+            <!-- instead. Section kept in the DOM,     -->
+            <!-- untouched, in case it's needed again  -->
+            <!-- later — just not linked anywhere.     -->
             <!-- ══════════════════════════════════ -->
             <section id="view-ranks" class="app-view">
                 <div class="screen-header">
@@ -308,16 +368,15 @@
 
         </main>
 
-        <!-- Bottom nav — admin 4th tab injected by JS on admin login -->
+        <!-- Bottom nav — admin 4th tab injected by JS on admin login.
+             "Ranks" tab removed for now (v7) — rank now shows directly
+             on the Result screen instead of being a separate page. -->
         <nav class="bottom-nav-bar">
             <button class="nav-tab active" data-target="dashboard">
                 <i class="fa-solid fa-house"></i><span>Dashboard</span>
             </button>
             <button class="nav-tab" data-target="vault">
                 <i class="fa-solid fa-bookmark"></i><span>Vault</span>
-            </button>
-            <button class="nav-tab" data-target="ranks">
-                <i class="fa-solid fa-trophy"></i><span>Ranks</span>
             </button>
         </nav>
 

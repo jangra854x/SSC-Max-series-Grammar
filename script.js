@@ -29,6 +29,40 @@
  * ALTER TABLE topic_sets DISABLE ROW LEVEL SECURITY;
  * GRANT ALL ON TABLE topic_sets TO anon, authenticated;
  * GRANT USAGE, SELECT ON ALL SEQUENCES IN SCHEMA public TO anon, authenticated;
+ *
+ * ═══════════════════════════════════════════════════════════════
+ * v7 UPDATE — NEW TABLES REQUIRED FOR THE REBUILT VAULT (run once):
+ * The old flat "vault" table (word/category) is no longer written to.
+ * It is NOT deleted by this app — your existing data stays safe —
+ * but the new Vault UI runs entirely on these two new tables instead:
+ * ═══════════════════════════════════════════════════════════════
+ * CREATE TABLE IF NOT EXISTS vault_sets (
+ *   id bigserial primary key,
+ *   telegram_id bigint not null,
+ *   topic text not null,               -- 'Free Quiz' or a premium topic name
+ *   set_number integer not null,
+ *   question_count integer default 0,
+ *   created_at timestamptz default now(),
+ *   unique(telegram_id, topic, set_number)
+ * );
+ *
+ * CREATE TABLE IF NOT EXISTS vault_questions (
+ *   id bigserial primary key,
+ *   telegram_id bigint not null,
+ *   vault_set_id bigint references vault_sets(id) on delete cascade,
+ *   topic text not null,
+ *   question text not null,
+ *   option_a text, option_b text, option_c text, option_d text,
+ *   correct_option text,
+ *   explanation_a text, explanation_b text, explanation_c text, explanation_d text,
+ *   added_at timestamptz default now()
+ * );
+ *
+ * ALTER TABLE vault_sets DISABLE ROW LEVEL SECURITY;
+ * ALTER TABLE vault_questions DISABLE ROW LEVEL SECURITY;
+ * GRANT ALL ON TABLE vault_sets TO anon, authenticated;
+ * GRANT ALL ON TABLE vault_questions TO anon, authenticated;
+ * GRANT USAGE, SELECT ON ALL SEQUENCES IN SCHEMA public TO anon, authenticated;
  */
 
 const SUPABASE_URL = 'https://tbiktjhwdlwzrhwursxk.supabase.co';
@@ -48,14 +82,16 @@ const ALL_TOPICS = [
     { name:'Sentence Error Detection', kind:'locked' }
 ];
 const LETTERS = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ'.split('');
+// v7 — premium users see one row of these in the Vault (locked topics excluded)
+const VAULT_TOPICS = ALL_TOPICS.filter(t => t.kind !== 'locked').map(t => t.name);
 
 let appState = {
     isPremium:false, isAdmin:false, isBanned:false,
     currentUser:{ id:null, name:'', username:'', photo_url:'' },
-    currentView:'dashboard', activeVaultTab:'weak', activeRankPeriod:'daily',
-    searchQuery:'', weakWords:[], bookmarkedWords:[], streak:0,
+    currentView:'dashboard', activeRankPeriod:'daily',
+    searchQuery:'', activeVaultTopic:null, streak:0,
     activeTopicGroup:null, activeTopicLetter:null,
-    quiz:{ active:false, type:'free', title:'', quizCategory:null, questions:[], currentIndex:0, selectedOption:null, correctCount:0, wrongCount:0, timeSeconds:0, stopwatchInterval:null },
+    quiz:{ active:false, type:'free', title:'', quizCategory:null, questions:[], currentIndex:0, selectedOption:null, correctCount:0, wrongCount:0, timeSeconds:0, stopwatchInterval:null, vaultTopic:null, vaultSetId:null },
     cache:{ activeFreeDate:null, leaderboard:null, resultRankLoaded:false }
 };
 
@@ -70,7 +106,6 @@ class SSCMaxVocabEngine {
 
     initDOMNodes() {
         this.premiumTopicsList = document.getElementById('premium-topics-list');
-        this.vaultItemsEl      = document.getElementById('vault-items-container');
         this.leaderboardEl     = document.getElementById('leaderboard-master-container');
         this.quizFrame         = document.getElementById('question-card-frame');
         this.optionsContainer  = document.getElementById('question-options-container');
@@ -718,7 +753,6 @@ class SSCMaxVocabEngine {
             appState.streak = userRow?.streak || 0;
             this.updateHeaderBadge(appState.isPremium);
             this.renderStreakUI();
-            await this.fetchVaultData();
         } catch(e) { console.error('Sync:',e); this.updateHeaderBadge(false); }
     }
 
@@ -852,26 +886,42 @@ class SSCMaxVocabEngine {
     }
 
     async openSetsView(groupName, letter, subtitleText) {
-        document.getElementById('topic-sets-title').innerText = letter ? `Letter ${letter}` : groupName;
-        document.getElementById('topic-sets-subtitle').innerText = subtitleText;
         const backBtn = document.getElementById('btn-topic-sets-back');
-        backBtn.onclick = letter ? () => this.switchView('topic-letters') : () => this.switchView('dashboard');
+        const backFn = letter ? () => this.switchView('topic-letters') : () => this.switchView('dashboard');
+        backBtn.onclick = backFn;
 
-        const container = document.getElementById('topic-sets-list');
-        container.innerHTML = `<div class="text-center text-muted p-3"><i class="fa-solid fa-spinner fa-spin"></i> Loading sets...</div>`;
-        this.switchView('topic-sets');
+        // v7 — fetch first, so a single set can skip straight to the
+        // start popup instead of forcing an extra "pick a set" click.
         try {
             let q = supabaseClient.from('topic_sets').select('*').eq('group_name',groupName).order('set_number',{ascending:true});
             q = letter ? q.eq('letter',letter) : q.is('letter',null);
             const { data, error } = await q;
             if(error) throw error;
-            if(!data?.length) { container.innerHTML = `<div class="glass-card text-center p-4"><p class="text-muted">No sets available yet.</p></div>`; return; }
-            container.innerHTML = data.map(s => `
+            const sets = data||[];
+
+            if(sets.length === 1) {
+                const s = sets[0];
+                const title = letter ? `${groupName} • Letter ${letter} • Set ${s.set_number}` : `${groupName} • Set ${s.set_number}`;
+                this.showSetConfirmPopup(s.full_key, s.question_count, title);
+                return;
+            }
+
+            document.getElementById('topic-sets-title').innerText = letter ? `Letter ${letter}` : groupName;
+            document.getElementById('topic-sets-subtitle').innerText = subtitleText;
+            const container = document.getElementById('topic-sets-list');
+            this.switchView('topic-sets');
+            if(!sets.length) { container.innerHTML = `<div class="glass-card text-center p-4"><p class="text-muted">No sets available yet.</p></div>`; return; }
+            container.innerHTML = sets.map(s => `
                 <div class="topic-set-card glass-card" onclick="app.showSetConfirmPopup('${s.full_key}',${s.question_count},'${s.full_key.replace(/'/g,"\\'")}')">
                     <div class="set-info"><span class="set-label">Set ${s.set_number}</span><span class="set-range-tag">${s.question_count} Questions</span></div>
                     <div class="set-meta"><span><i class="fa-solid fa-circle-question"></i> ${s.question_count} Total Questions</span></div>
                 </div>`).join('');
-        } catch(e) { container.innerHTML = `<div class="text-center text-muted p-3">Error loading sets: ${e.message}${this.permissionHint(e)}</div>`; }
+        } catch(e) {
+            document.getElementById('topic-sets-title').innerText = letter ? `Letter ${letter}` : groupName;
+            document.getElementById('topic-sets-subtitle').innerText = subtitleText;
+            this.switchView('topic-sets');
+            document.getElementById('topic-sets-list').innerHTML = `<div class="text-center text-muted p-3">Error loading sets: ${e.message}${this.permissionHint(e)}</div>`;
+        }
     }
 
     // ── Custom confirm popup (not native alert) ─────────────────
@@ -927,8 +977,12 @@ class SSCMaxVocabEngine {
         this.btnStartQuiz.innerHTML=`<i class="fa-solid fa-spinner fa-spin"></i> Loading...`;
         try {
             appState.quiz.active=true;
-            const limit = appState.quiz.type==='free' ? 30 : 20;
-            appState.quiz.questions = await this.fetchQuestionsFromDB(appState.quiz.type, appState.quiz.quizCategory, limit);
+            if(appState.quiz.type==='vault') {
+                appState.quiz.questions = await this.fetchVaultSetQuestions(appState.quiz.quizCategory);
+            } else {
+                const limit = appState.quiz.type==='free' ? 30 : 20;
+                appState.quiz.questions = await this.fetchQuestionsFromDB(appState.quiz.type, appState.quiz.quizCategory, limit);
+            }
             if(!appState.quiz.questions.length) { alert('No questions found for this quiz.'); this.forceTerminateQuiz(); return; }
             appState.quiz.currentIndex=0; appState.quiz.correctCount=0; appState.quiz.wrongCount=0; appState.quiz.timeSeconds=0;
             document.getElementById('quiz-title-display').innerText=appState.quiz.title;
@@ -951,6 +1005,15 @@ class SSCMaxVocabEngine {
     convertDBRow(row) {
         const ci = {A:0,B:1,C:2,D:3}[row.correct_option?.toUpperCase()] ?? 0;
         return { category:row.topic||'Vocabulary', text:row.question||'', options:[row.option_a||'',row.option_b||'',row.option_c||'',row.option_d||''], correctIndex:ci, explanations:[row.explanation_a||'',row.explanation_b||'',row.explanation_c||'',row.explanation_d||''] };
+    }
+
+    // v7 — questions for a Vault "wrong answer" set (used by both free-quiz
+    // and premium-topic vault sets, same table either way)
+    async fetchVaultSetQuestions(setId) {
+        if(!supabaseClient) return [];
+        const { data, error } = await supabaseClient.from('vault_questions').select('*').eq('vault_set_id', setId).order('id',{ascending:true});
+        if(error) throw error;
+        return (data||[]).map(r=>this.convertDBRow(r));
     }
 
     startElapsedStopwatch() {
@@ -988,26 +1051,14 @@ class SSCMaxVocabEngine {
         }).join('');
     }
 
-    // Vault saving — FREE QUIZ ONLY
-    async toggleBookmarkCurrentQuestion() {
-        if(appState.quiz.type!=='free') return;
-        if(!supabaseClient||!appState.currentUser.id) return;
-        const q=appState.quiz.questions[appState.quiz.currentIndex];
-        const word=q.options[q.correctIndex].split(':')[0].trim();
-        const meaning=q.explanations[q.correctIndex]||q.text;
-        const bookmarked=!this.btnBookmark.classList.contains('bookmarked');
-        if(bookmarked) {
-            this.btnBookmark.classList.add('bookmarked'); this.btnBookmark.innerHTML=`<i class="fa-solid fa-bookmark"></i> Saved`; this.triggerHaptic('select');
-            if(!appState.bookmarkedWords.find(w=>w.word===word)) {
-                appState.bookmarkedWords.push({word,category:'bookmarked',meaning});
-                this.triggerToast(`Saved "${word}" to Vault!`);
-                await supabaseClient.from('vault').insert({telegram_id:appState.currentUser.id,word,category:'bookmarked',saved_at:new Date().toISOString()});
-            }
-        } else {
-            this.btnBookmark.classList.remove('bookmarked'); this.btnBookmark.innerHTML=`<i class="fa-regular fa-bookmark"></i> Bookmark`;
-            appState.bookmarkedWords=appState.bookmarkedWords.filter(w=>w.word!==word);
-            await supabaseClient.from('vault').delete().eq('telegram_id',appState.currentUser.id).eq('word',word).eq('category','bookmarked');
-        }
+    // v7 — the old word-splitting "insert word into vault" system is
+    // retired per instructions (Vault is now built from wrong-answer
+    // sets automatically — see routeFailedQuestionToVault below).
+    // Button kept harmless/inert so the existing quiz-screen markup
+    // doesn't error; no DB writes happen here anymore.
+    toggleBookmarkCurrentQuestion() {
+        this.triggerHaptic('select');
+        this.triggerToast('Wrong answers are auto-saved to your Vault now.');
     }
 
     // Explanation reveal — only the correct option's box (if it exists) gets shown
@@ -1018,7 +1069,8 @@ class SSCMaxVocabEngine {
         const q=appState.quiz.questions[appState.quiz.currentIndex];
         const correct=idx===q.correctIndex;
         this.triggerHaptic(correct?'correct':'wrong');
-        if(correct) appState.quiz.correctCount++; else { appState.quiz.wrongCount++; this.routeFailedWordToVault(q); }
+        if(correct) { appState.quiz.correctCount++; this.removeQuestionFromVaultIfPresent(q); }
+        else        { appState.quiz.wrongCount++;   this.routeFailedQuestionToVault(q); }
         this.optionsContainer.querySelectorAll('.option-node').forEach((node,i)=>{
             if(i===q.correctIndex) {
                 node.classList.add('correct');
@@ -1036,16 +1088,63 @@ class SSCMaxVocabEngine {
         else this.finalizeAssessmentExecution();
     }
 
-    // Vault saving — FREE QUIZ ONLY
-    async routeFailedWordToVault(qObj) {
-        if(appState.quiz.type!=='free') return;
+    // v7 — VAULT ENGINE (wrong-answer sets, max 20 Qs each, auto-splitting)
+    // Works for Free Quiz AND every Premium topic. A question answered
+    // wrong in a normal quiz gets filed here; answering it right later
+    // (from anywhere — normal quiz OR a vault retry) removes it again.
+    getVaultTopicLabel() {
+        if(appState.quiz.type==='free')  return 'Free Quiz';
+        if(appState.quiz.type==='topic') return appState.activeTopicGroup || appState.quiz.title || 'Topic';
+        if(appState.quiz.type==='vault') return appState.quiz.vaultTopic || 'Free Quiz';
+        return 'Free Quiz';
+    }
+
+    async getOrCreateOpenVaultSet(topic) {
+        const { data:sets, error } = await supabaseClient.from('vault_sets').select('*')
+            .eq('telegram_id',appState.currentUser.id).eq('topic',topic).order('set_number',{ascending:true});
+        if(error) throw error;
+        const openSet = (sets||[]).find(s => (s.question_count||0) < 20);
+        if(openSet) return openSet;
+        const nextNum = sets?.length ? Math.max(...sets.map(s=>s.set_number)) + 1 : 1;
+        const { data:created, error:insErr } = await supabaseClient.from('vault_sets')
+            .insert({ telegram_id:appState.currentUser.id, topic, set_number:nextNum, question_count:0 })
+            .select().single();
+        if(insErr) throw insErr;
+        return created;
+    }
+
+    async routeFailedQuestionToVault(qObj) {
         if(!supabaseClient||!appState.currentUser.id) return;
-        const word=qObj.options[qObj.correctIndex].split(':')[0].trim();
-        const meaning=qObj.explanations[qObj.correctIndex]||qObj.text;
-        if(!appState.weakWords.find(w=>w.word.toLowerCase()===word.toLowerCase())) {
-            appState.weakWords.push({word,category:'weak',meaning});
-            await supabaseClient.from('vault').insert({telegram_id:appState.currentUser.id,word,category:'weak',saved_at:new Date().toISOString()});
-        }
+        const topic = this.getVaultTopicLabel();
+        try {
+            const { data:existing } = await supabaseClient.from('vault_questions').select('id')
+                .eq('telegram_id',appState.currentUser.id).eq('topic',topic).eq('question',qObj.text).maybeSingle();
+            if(existing) return; // already tracked in vault, no duplicate
+            const set = await this.getOrCreateOpenVaultSet(topic);
+            const letters=['A','B','C','D'];
+            await supabaseClient.from('vault_questions').insert({
+                telegram_id:appState.currentUser.id, vault_set_id:set.id, topic, question:qObj.text,
+                option_a:qObj.options[0], option_b:qObj.options[1], option_c:qObj.options[2], option_d:qObj.options[3],
+                correct_option:letters[qObj.correctIndex],
+                explanation_a:qObj.explanations[0], explanation_b:qObj.explanations[1], explanation_c:qObj.explanations[2], explanation_d:qObj.explanations[3]
+            });
+            await supabaseClient.from('vault_sets').update({ question_count:(set.question_count||0)+1 }).eq('id',set.id);
+        } catch(e) { console.error('Vault route failed:', e, this.permissionHint(e)); }
+    }
+
+    async removeQuestionFromVaultIfPresent(qObj) {
+        if(!supabaseClient||!appState.currentUser.id) return;
+        const topic = this.getVaultTopicLabel();
+        try {
+            const { data:existing } = await supabaseClient.from('vault_questions').select('id,vault_set_id')
+                .eq('telegram_id',appState.currentUser.id).eq('topic',topic).eq('question',qObj.text).maybeSingle();
+            if(!existing) return;
+            await supabaseClient.from('vault_questions').delete().eq('id',existing.id);
+            const { data:setRow } = await supabaseClient.from('vault_sets').select('question_count').eq('id',existing.vault_set_id).maybeSingle();
+            const newCount = Math.max(0, (setRow?.question_count||1) - 1);
+            if(newCount === 0) await supabaseClient.from('vault_sets').delete().eq('id',existing.vault_set_id);
+            else await supabaseClient.from('vault_sets').update({ question_count:newCount }).eq('id',existing.vault_set_id);
+        } catch(e) { console.error('Vault remove failed:', e, this.permissionHint(e)); }
     }
 
     async finalizeAssessmentExecution() {
