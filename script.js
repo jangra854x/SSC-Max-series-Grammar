@@ -70,13 +70,13 @@ const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBh
 let supabaseClient = null;
 try { if (window.supabase?.createClient) supabaseClient = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY); } catch(e) { console.error('Supabase init:', e); }
 
-const ALPHABET_TOPICS = ['One Word Substitution','Idioms & Phrases','Synonyms'];
-const DIRECT_TOPICS = ['Spellings'];
+const ALPHABET_TOPICS = ['One Word Substitution','Idioms & Phrases','Synonyms','Spellings'];
+const DIRECT_TOPICS = []; // v8 — Spellings moved to letter-wise, no direct-only topics remain
 const ALL_TOPICS = [
     { name:'One Word Substitution', kind:'alphabet' },
     { name:'Idioms & Phrases',      kind:'alphabet' },
     { name:'Synonyms',              kind:'alphabet' },
-    { name:'Spellings',             kind:'direct' },
+    { name:'Spellings',             kind:'alphabet' },
     { name:'Homonyms & Homophones', kind:'locked' },
     { name:'Fixed Prepositions',    kind:'locked' },
     { name:'Sentence Error Detection', kind:'locked' }
@@ -531,24 +531,55 @@ class SSCMaxVocabEngine {
         if(!el||!supabaseClient) return;
         el.innerHTML = `<div class="text-center text-muted p-3"><i class="fa-solid fa-spinner fa-spin"></i></div>`;
         try {
+            const today = new Date().toISOString().split('T')[0];
+            const todayStart = `${today}T00:00:00`;
+
             const { count: totalUsers }   = await supabaseClient.from('users').select('*',{count:'exact',head:true});
             const { count: premiumCount } = await supabaseClient.from('premium_users').select('*',{count:'exact',head:true});
-            const today = new Date().toISOString().split('T')[0];
+            let bannedCount = 0, newUsersToday = 0;
+            try { const r = await supabaseClient.from('users').select('*',{count:'exact',head:true}).eq('banned',true); bannedCount = r.count||0; } catch(e){}
+            try { const r = await supabaseClient.from('users').select('*',{count:'exact',head:true}).gte('joined_at',todayStart); newUsersToday = r.count||0; } catch(e){}
+
             const { count: todayAttempts } = await supabaseClient.from('leaderboard').select('*',{count:'exact',head:true}).eq('date',today);
+            const { count: totalAttempts } = await supabaseClient.from('leaderboard').select('*',{count:'exact',head:true});
+
             const { count: totalFreeQ }  = await supabaseClient.from('questions').select('*',{count:'exact',head:true}).eq('quiz_type','free');
             const { count: totalTopicQ } = await supabaseClient.from('questions').select('*',{count:'exact',head:true}).eq('quiz_type','topic');
-            let totalSets = 0;
+            let totalSets = 0, emptySets = 0;
             try { const r = await supabaseClient.from('topic_sets').select('*',{count:'exact',head:true}); totalSets = r.count||0; } catch(e){}
+            try { const r = await supabaseClient.from('topic_sets').select('*',{count:'exact',head:true}).eq('question_count',0); emptySets = r.count||0; } catch(e){}
+
+            let vaultSets = 0, vaultQuestions = 0;
+            try { const r = await supabaseClient.from('vault_sets').select('*',{count:'exact',head:true}); vaultSets = r.count||0; } catch(e){}
+            try { const r = await supabaseClient.from('vault_questions').select('*',{count:'exact',head:true}); vaultQuestions = r.count||0; } catch(e){}
+
+            const statBlock = (val,label,color='',onclick='') => `<div class="res-card glass-card ${onclick?'stat-clickable':''}" ${onclick?`onclick="${onclick}"`:''}><span class="res-val ${color}">${val}</span><span class="res-lbl">${label}</span></div>`;
             el.innerHTML = `
+                <div style="font-size:0.72rem;font-weight:800;color:var(--text-muted);letter-spacing:0.03em;margin-bottom:8px;">👥 Users</div>
+                <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-bottom:16px;">
+                    ${statBlock(totalUsers??0,'Total Users','text-cyan','app.openUsersModal()')}
+                    ${statBlock(premiumCount??0,'Premium Users','text-gold')}
+                    ${statBlock(newUsersToday,'New Users Today','text-success')}
+                    ${statBlock(bannedCount,'Banned Users','text-danger')}
+                </div>
+                <div style="font-size:0.72rem;font-weight:800;color:var(--text-muted);letter-spacing:0.03em;margin-bottom:8px;">📊 Activity</div>
+                <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-bottom:16px;">
+                    ${statBlock(todayAttempts??0,'Attempts Today','text-success')}
+                    ${statBlock(totalAttempts??0,'Attempts All-Time','')}
+                </div>
+                <div style="font-size:0.72rem;font-weight:800;color:var(--text-muted);letter-spacing:0.03em;margin-bottom:8px;">📚 Content</div>
+                <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-bottom:16px;">
+                    ${statBlock(totalFreeQ??0,'Free Questions in DB','')}
+                    ${statBlock(totalTopicQ??0,'Topic Questions in DB','')}
+                    ${statBlock(totalSets,'Total Sets Created','')}
+                    ${statBlock(emptySets,'Empty Sets (need Qs)', emptySets>0?'text-danger':'text-success')}
+                </div>
+                <div style="font-size:0.72rem;font-weight:800;color:var(--text-muted);letter-spacing:0.03em;margin-bottom:8px;">🗂️ Vault Engagement</div>
                 <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;">
-                    <div class="res-card glass-card stat-clickable" onclick="app.openUsersModal()"><span class="res-val text-cyan">${totalUsers??0}</span><span class="res-lbl">Total Users</span></div>
-                    <div class="res-card glass-card"><span class="res-val text-gold">${premiumCount??0}</span><span class="res-lbl">Premium Users</span></div>
-                    <div class="res-card glass-card"><span class="res-val text-success">${todayAttempts??0}</span><span class="res-lbl">Quiz Attempts Today</span></div>
-                    <div class="res-card glass-card"><span class="res-val">${totalFreeQ??0}</span><span class="res-lbl">Free Questions in DB</span></div>
-                    <div class="res-card glass-card"><span class="res-val">${totalTopicQ??0}</span><span class="res-lbl">Topic Questions in DB</span></div>
-                    <div class="res-card glass-card"><span class="res-val">${totalSets}</span><span class="res-lbl">Total Sets Created</span></div>
+                    ${statBlock(vaultSets,'Vault Sets (all users)','text-cyan')}
+                    ${statBlock(vaultQuestions,'Wrong Qs Tracked','text-gold')}
                 </div>`;
-        } catch(e) { el.innerHTML = `<p style="color:var(--danger-red);text-align:center;">Error: ${e.message}</p>`; }
+        } catch(e) { el.innerHTML = `<p style="color:var(--danger-red);text-align:center;">Error: ${e.message}${this.permissionHint(e)}</p>`; }
     }
 
     async openUsersModal() {
@@ -914,7 +945,6 @@ class SSCMaxVocabEngine {
             container.innerHTML = sets.map(s => `
                 <div class="topic-set-card glass-card" onclick="app.showSetConfirmPopup('${s.full_key}',${s.question_count},'${s.full_key.replace(/'/g,"\\'")}')">
                     <div class="set-info"><span class="set-label">Set ${s.set_number}</span><span class="set-range-tag">${s.question_count} Questions</span></div>
-                    <div class="set-meta"><span><i class="fa-solid fa-circle-question"></i> ${s.question_count} Total Questions</span></div>
                 </div>`).join('');
         } catch(e) {
             document.getElementById('topic-sets-title').innerText = letter ? `Letter ${letter}` : groupName;
@@ -1165,21 +1195,19 @@ class SSCMaxVocabEngine {
 
         if(appState.quiz.type==='free') await this.markFreeQuizStreak();
 
-        if(appState.quiz.type==='topic' && appState.currentUser.id && supabaseClient) {
+        // v8 FIX — free quiz completions never posted to the leaderboard
+        // before, so free-quiz-only users never had a rank to show.
+        // Vault-origin retries are excluded (they're revision drills,
+        // not fresh attempts) but both Free Quiz and Premium Topic count.
+        if((appState.quiz.type==='free' || appState.quiz.type==='topic') && appState.currentUser.id && supabaseClient) {
             try {
                 await supabaseClient.from('leaderboard').insert({ telegram_id:appState.currentUser.id, name:appState.currentUser.name, score:appState.quiz.correctCount, time_seconds:appState.quiz.timeSeconds, date:new Date().toISOString().split('T')[0] });
                 appState.cache.leaderboard=null;
-                this.triggerToast('Score synced to Global Rankings!');
             } catch(e) { console.error('Score post:',e); }
         }
 
-        appState.cache.resultRankLoaded=false;
-        const lbSec=document.getElementById('result-lb-section');
-        const toggleBtn=document.getElementById('btn-view-rank-toggle');
-        if(lbSec) lbSec.classList.add('hidden');
-        if(toggleBtn) { toggleBtn.classList.remove('expanded'); toggleBtn.innerHTML=`<i class="fa-solid fa-ranking-star"></i> View Your Rank`; }
-
         this.switchView('result');
+        this.loadResultRankings(); // v8 — rank shown directly now, no toggle click needed
     }
 
     launchConfetti() {
@@ -1195,16 +1223,11 @@ class SSCMaxVocabEngine {
         }
     }
 
-    // "View Your Rank" — works for ALL users (free + premium), shows
-    // today's global rankings pulled from actual quiz completions.
-    async toggleResultRankView() {
-        const sec=document.getElementById('result-lb-section'), con=document.getElementById('result-lb-container'), btn=document.getElementById('btn-view-rank-toggle');
-        if(!sec||!con||!btn) return;
-        this.triggerHaptic('select');
-        const isHidden = sec.classList.contains('hidden');
-        if(!isHidden) { sec.classList.add('hidden'); btn.classList.remove('expanded'); btn.innerHTML=`<i class="fa-solid fa-ranking-star"></i> View Your Rank`; return; }
-        sec.classList.remove('hidden'); btn.classList.add('expanded'); btn.innerHTML=`<i class="fa-solid fa-chevron-up"></i> Hide Rank`;
-        if(appState.cache.resultRankLoaded) return;
+    // v8 — rank now loads directly on the result screen automatically,
+    // no "View Your Rank" click needed. Works for ALL users (free + premium).
+    async loadResultRankings() {
+        const con=document.getElementById('result-lb-container');
+        if(!con) return;
         con.innerHTML=`<div class="skeleton-list">${[...Array(3)].map(()=>'<div class="skeleton-row"></div>').join('')}</div>`;
         if(!supabaseClient) { con.innerHTML=`<div class="text-center text-muted p-3">Database unavailable.</div>`; return; }
         try {
@@ -1212,10 +1235,9 @@ class SSCMaxVocabEngine {
             const { data, error } = await supabaseClient.from('leaderboard').select('*').eq('date',today).order('score',{ascending:false}).order('time_seconds',{ascending:true}).limit(10);
             if(error) throw error;
             const lb = data||[];
-            appState.cache.resultRankLoaded = true;
-            if(!lb.length) { con.innerHTML=`<div class="text-center text-muted p-3">No Topic-Wise quiz scores logged today yet. Complete a Premium Topic set to be the first! 🏆</div>`; return; }
+            if(!lb.length) { con.innerHTML=`<div class="text-center text-muted p-3">No scores logged today yet. Be the first! 🏆</div>`; return; }
             con.innerHTML = this.renderLeaderboardRows(lb);
-        } catch(e) { con.innerHTML=`<div class="text-center text-muted p-3">Failed to load rankings: ${e.message}</div>`; }
+        } catch(e) { con.innerHTML=`<div class="text-center text-muted p-3">Failed to load rankings: ${e.message}${this.permissionHint(e)}</div>`; }
     }
 
     renderLeaderboardRows(lb) {
@@ -1233,40 +1255,106 @@ class SSCMaxVocabEngine {
     confirmAbandonQuiz() { if(confirm('Abandon assessment? Progress will be lost.')) this.forceTerminateQuiz(); }
     forceTerminateQuiz() { clearInterval(appState.quiz.stopwatchInterval); appState.quiz.active=false; this.switchView('dashboard'); }
 
-    // ── VAULT (Free Quiz words only) ─────────────────────────────
-    async fetchVaultData() {
-        if(!supabaseClient||!appState.currentUser.id) return;
-        const { data, error } = await supabaseClient.from('vault').select('word,category,saved_at').eq('telegram_id',appState.currentUser.id);
-        if(!error&&data) {
-            appState.weakWords = data.filter(v=>v.category==='weak').map(v=>({word:v.word,category:'weak',meaning:'Review this in the context of your quiz.'}));
-            appState.bookmarkedWords = data.filter(v=>v.category==='bookmarked').map(v=>({word:v.word,category:'bookmarked',meaning:'Bookmarked vocabulary item.'}));
+    // ── VAULT (v8 — wrong-answer sets, rendered per topic) ──────
+    // Free users  → only "Free Quiz" sets.
+    // Premium users → one-line topic row, sets shown per selected topic.
+    async renderVault() {
+        const freeLabelEl = document.getElementById('vault-freequiz-label');
+        const topicsRowEl = document.getElementById('vault-topics-row');
+        const setsEl = document.getElementById('vault-sets-container');
+        if(!setsEl) return;
+
+        // Decide + apply the free/premium layout FIRST (synchronously),
+        // before any await — this is what was showing "Free Quiz" stuck
+        // above the spinner for premium/admin accounts before.
+        if(appState.isPremium) {
+            if(freeLabelEl) freeLabelEl.classList.add('hidden');
+            if(topicsRowEl) topicsRowEl.classList.remove('hidden');
+            if(!appState.activeVaultTopic || !VAULT_TOPICS.includes(appState.activeVaultTopic)) {
+                appState.activeVaultTopic = VAULT_TOPICS[0];
+            }
+            if(topicsRowEl) {
+                topicsRowEl.innerHTML = VAULT_TOPICS.map(t => `
+                    <div class="vault-topic-pill ${t===appState.activeVaultTopic?'active':''}" onclick="app.switchVaultTopic('${t.replace(/'/g,"\\'")}')">${t}</div>
+                `).join('');
+            }
+        } else {
+            if(freeLabelEl) freeLabelEl.classList.remove('hidden');
+            if(topicsRowEl) { topicsRowEl.classList.add('hidden'); topicsRowEl.innerHTML=''; }
+            appState.activeVaultTopic = 'Free Quiz';
+        }
+
+        if(!supabaseClient || !appState.currentUser.id) {
+            setsEl.innerHTML = `<div class="text-center text-muted p-3">Login required to load your Vault.</div>`;
+            return;
+        }
+        await this.loadVaultSetsForTopic(appState.activeVaultTopic);
+    }
+
+    switchVaultTopic(topic) {
+        appState.activeVaultTopic = topic;
+        this.triggerHaptic('select');
+        document.querySelectorAll('.vault-topic-pill').forEach(p => p.classList.toggle('active', p.innerText===topic));
+        this.loadVaultSetsForTopic(topic);
+    }
+
+    filterVaultContent() {
+        appState.searchQuery = document.getElementById('vault-search-input').value.toLowerCase().trim();
+        this.loadVaultSetsForTopic(appState.activeVaultTopic || 'Free Quiz');
+    }
+
+    async loadVaultSetsForTopic(topic) {
+        const setsEl = document.getElementById('vault-sets-container');
+        if(!setsEl) return;
+        setsEl.innerHTML = `<div class="text-center text-muted p-3"><i class="fa-solid fa-spinner fa-spin"></i></div>`;
+        if(!supabaseClient) { setsEl.innerHTML = `<div class="text-center text-muted p-3">Database unavailable.</div>`; return; }
+        try {
+            const { data, error } = await supabaseClient.from('vault_sets').select('*')
+                .eq('telegram_id', appState.currentUser.id).eq('topic', topic).order('set_number',{ascending:true});
+            if(error) throw error;
+            let sets = data||[];
+            if(appState.searchQuery) sets = sets.filter(s => `${topic} wrong set ${s.set_number}`.toLowerCase().includes(appState.searchQuery));
+            if(!sets.length) {
+                setsEl.innerHTML = `<div class="glass-card text-center p-4"><p class="text-muted">No wrong-answer sets here yet.</p><p class="text-muted" style="font-size:0.78rem;margin-top:6px;">Mistakes from your ${topic} quizzes will show up here automatically.</p></div>`;
+                return;
+            }
+            setsEl.innerHTML = sets.map(s => `
+                <div class="vault-set-card glass-card" onclick="app.showVaultSetConfirmPopup(${s.id},'${topic.replace(/'/g,"\\'")}',${s.set_number},${s.question_count})">
+                    <i class="fa-solid fa-triangle-exclamation vs-icon"></i>
+                    <span class="vs-title">Wrong Set ${s.set_number}</span>
+                    <span class="vs-count">${s.question_count} / 20 Questions</span>
+                    <div class="vs-progress-track"><div class="vs-progress-fill" style="width:${Math.min(100,(s.question_count/20)*100)}%;"></div></div>
+                </div>`).join('');
+        } catch(e) {
+            setsEl.innerHTML = `<div class="text-center text-muted p-3">Error loading vault: ${e.message}${this.permissionHint(e)}</div>`;
         }
     }
-    switchVaultTab(tabKey) {
-        appState.activeVaultTab=tabKey;
-        document.querySelectorAll('.vault-tab-btn').forEach(b=>b.classList.toggle('active',b.getAttribute('data-tab')===tabKey));
-        this.triggerHaptic('select'); this.renderVault();
+
+    showVaultSetConfirmPopup(setId, topic, setNumber, qCount) {
+        const overlay = document.createElement('div');
+        overlay.className = 'confirm-modal-overlay'; overlay.id = 'vault-set-confirm-modal';
+        overlay.onclick = (e) => { if(e.target===overlay) overlay.remove(); };
+        overlay.innerHTML = `
+            <div class="confirm-modal-box">
+                <div class="confirm-modal-icon"><i class="fa-solid fa-flag-checkered"></i></div>
+                <div class="confirm-modal-title">Start This Set?</div>
+                <div class="confirm-modal-info"><b>${topic} — Wrong Set ${setNumber}</b><br>${qCount} Questions</div>
+                <div class="confirm-modal-actions">
+                    <button class="confirm-btn-cancel" onclick="document.getElementById('vault-set-confirm-modal').remove()">Cancel</button>
+                    <button class="confirm-btn-start" onclick="app.startVaultQuizFromSet(${setId},'${topic.replace(/'/g,"\\'")}',${setNumber})">Start</button>
+                </div>
+            </div>`;
+        document.body.appendChild(overlay);
     }
-    filterVaultContent() { appState.searchQuery=document.getElementById('vault-search-input').value.toLowerCase().trim(); this.renderVault(); }
-    renderVault() {
-        if(!this.vaultItemsEl) return;
-        let arr=appState.activeVaultTab==='bookmarked'?appState.bookmarkedWords:appState.weakWords;
-        if(appState.searchQuery) arr=arr.filter(i=>i.word.toLowerCase().includes(appState.searchQuery));
-        document.getElementById('count-weak').innerText=appState.weakWords.length;
-        document.getElementById('count-bookmarked').innerText=appState.bookmarkedWords.length;
-        if(!arr.length) { this.vaultItemsEl.innerHTML=`<div class="glass-card text-center p-4"><p class="text-muted">No items here yet.</p><p class="text-muted" style="font-size:0.78rem;margin-top:6px;">Free quiz mistakes and bookmarks appear here.</p></div>`; return; }
-        this.vaultItemsEl.innerHTML=arr.map(item=>`
-            <div class="glass-card vault-word-card card-animation-swap">
-                <div class="v-header-row"><h4>${item.word}</h4><button class="btn-delete-word" onclick="app.deleteVaultWord('${item.word.replace(/'/g,"\\'")}')"><i class="fa-solid fa-trash-can"></i> Remove</button></div>
-                <p class="v-meaning">${item.meaning}</p>
-            </div>`).join('');
-    }
-    async deleteVaultWord(word) {
-        const cat=appState.activeVaultTab;
-        if(cat==='bookmarked') appState.bookmarkedWords=appState.bookmarkedWords.filter(w=>w.word!==word);
-        else appState.weakWords=appState.weakWords.filter(w=>w.word!==word);
-        this.triggerHaptic('select'); this.renderVault(); this.triggerToast(`Removed "${word}"`);
-        if(supabaseClient&&appState.currentUser.id) await supabaseClient.from('vault').delete().eq('telegram_id',appState.currentUser.id).eq('word',word).eq('category',cat);
+
+    startVaultQuizFromSet(setId, topic, setNumber) {
+        document.getElementById('vault-set-confirm-modal')?.remove();
+        appState.quiz.type = 'vault';
+        appState.quiz.title = `${topic} — Wrong Set ${setNumber}`;
+        appState.quiz.quizCategory = setId;
+        appState.quiz.vaultTopic = topic;
+        appState.quiz.vaultSetId = setId;
+        this.executeQuizInstance();
     }
 
     // ── LEADERBOARD (Ranks page) ─────────────────────────────────

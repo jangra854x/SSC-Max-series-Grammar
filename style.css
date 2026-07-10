@@ -2147,3 +2147,103 @@ html { scroll-behavior: auto; }
 .result-lb-wrap {
     animation: fadeIn 0.35s ease;
 }
+
+
+/* ═══════════════════════════════════════════════════════════
+   v8 UPDATE — Bug Fixes (nav sizing, quiz scroll/jitter, sets
+   card overflow) + correct-answer effect + premium polish.
+   Everything below is ADDITIVE / OVERRIDE-ONLY — nothing above
+   this line was removed or rewritten.
+   ═══════════════════════════════════════════════════════════ */
+
+/* ── FIX: page-wide jitter on mobile (Telegram's toolbar resize
+   was recalculating 100vh constantly). 100dvh is ignored by
+   browsers that don't support it, so this is a safe no-op there
+   and the original 100vh above still applies as the fallback ── */
+body { height: 100dvh; }
+
+/* ── FIX: bottom nav had empty space on the right — it was
+   still built for the old 3-tab / 4-tab (with Ranks) layout.
+   Now: 2 tabs for normal users, 3 for admin (Dashboard/Vault/Admin) ── */
+.bottom-nav-bar { grid-template-columns: repeat(2, 1fr); }
+.bottom-nav-bar.admin-nav { grid-template-columns: repeat(3, 1fr); }
+
+/* ── FIX: quiz/result full-screen views — replacing width/height:100%
+   with real inset anchoring stops it from being recalculated (and
+   visually "jumping") every time the mobile browser chrome resizes.
+   This also restores proper internal scrolling so the Next Question
+   button is reachable instead of being clipped off-screen. ── */
+.full-overlay-view {
+    top: 0; left: 0; right: 0; bottom: 0;
+    width: auto; height: auto;
+    -webkit-overflow-scrolling: touch;
+    overscroll-behavior-y: contain;
+}
+
+/* ── FIX: sets-grid-4col cards were squeezing "Set 1" + the question
+   badge into one cramped row, cutting off text (see screenshot).
+   Stack them instead, and hide the redundant lower "Total Questions"
+   line — the badge already shows the count once. ── */
+.sets-grid-4col .topic-set-card {
+    min-height: 96px;
+}
+.sets-grid-4col .topic-set-card .set-info {
+    flex-direction: column;
+    gap: 6px;
+    margin-bottom: 0;
+}
+.sets-grid-4col .topic-set-card .set-label {
+    font-size: 0.8rem;
+    white-space: nowrap;
+}
+.sets-grid-4col .topic-set-card .set-range-tag {
+    font-size: 0.6rem;
+    padding: 3px 8px;
+    white-space: nowrap;
+}
+.sets-grid-4col .topic-set-card .set-meta { display: none; }
+
+/* ── Correct-answer effect — plays automatically every time the
+   ".correct" class lands on an option (every quiz, every question,
+   no JS change needed since that class was already being applied) ── */
+.option-node.correct {
+    animation: correctGlowPulse 0.6s ease-out;
+}
+@keyframes correctGlowPulse {
+    0%   { box-shadow: 0 0 0 0 rgba(16,185,129,0.55); }
+    100% { box-shadow: 0 0 22px 3px rgba(16,185,129,0.22); }
+}
+.option-node.correct .option-indicator {
+    animation: correctCheckPop 0.45s cubic-bezier(0.34,1.56,0.64,1);
+}
+@keyframes correctCheckPop {
+    0%   { transform: scale(0) rotate(-20deg); opacity: 0; }
+    60%  { transform: scale(1.35) rotate(8deg); opacity: 1; }
+    100% { transform: scale(1) rotate(0deg); opacity: 1; }
+}
+
+/* ── Cleanup: avatar ring markup was reverted in HTML, so retire
+   the spin animation that used to live on it (nothing references
+   .profile-avatar-ring anymore — kept selector inert, not deleted,
+   in case it's wanted again later). ── */
+.profile-avatar-ring { animation: none; }
+
+/* ── Premium polish pass — deeper glass elevation + smoother
+   interactive states across the app, applied broadly via existing
+   classes so no HTML/JS changes are needed. ── */
+.glass-card {
+    box-shadow: 0 8px 24px -12px rgba(0,0,0,0.5), inset 0 1px 0 rgba(255,255,255,0.04);
+}
+.btn-primary-gradient {
+    transition: transform 0.15s ease, box-shadow 0.15s ease, filter 0.15s ease;
+}
+.btn-primary-gradient:active {
+    transform: scale(0.97);
+    filter: brightness(1.08);
+}
+.portal-card, .topic-mega-card, .topic-set-card, .vault-set-card {
+    transition: transform 0.18s ease, border-color 0.18s ease, box-shadow 0.18s ease;
+}
+.portal-card:active, .vault-set-card:active {
+    box-shadow: 0 0 20px -4px rgba(0,242,254,0.25);
+}
