@@ -92,19 +92,43 @@ let appState = {
     searchQuery:'', activeVaultTopic:null, streak:0,
     activeTopicGroup:null, activeTopicLetter:null,
     quiz:{ active:false, type:'free', title:'', quizCategory:null, questions:[], currentIndex:0, selectedOption:null, correctCount:0, wrongCount:0, timeSeconds:0, stopwatchInterval:null, vaultTopic:null, vaultSetId:null },
-    cache:{ activeFreeDate:null, leaderboard:null, resultRankLoaded:false },
-    // Phase 1 preferences (localStorage-backed, see initPreferences())
-    currentFontSize:'normal', hapticEnabled:true
+    cache:{ activeFreeDate:null, leaderboard:null, resultRankLoaded:false }
 };
 
 class SSCMaxVocabEngine {
     constructor() {
         this.initDOMNodes();
+        this.initTheme();
         this.bindNavigationEvents();
         this.injectLiveThemeLayer();
-        this.initPreferences();
         this.renderPremiumTopicsGrid(); // topics render immediately on dashboard, no click needed
         this.initTelegramContext();
+    }
+
+    // ── THEME (light default / dark toggle) ───────────────────────
+    initTheme() {
+        const saved = localStorage.getItem('ssc_theme_pref') || 'light';
+        this.applyTheme(saved);
+        const btn = document.getElementById('theme-toggle-btn');
+        if (btn) btn.addEventListener('click', () => {
+            const current = document.documentElement.getAttribute('data-theme') === 'dark' ? 'dark' : 'light';
+            this.applyTheme(current === 'dark' ? 'light' : 'dark');
+        });
+    }
+    applyTheme(mode) {
+        document.documentElement.setAttribute('data-theme', mode);
+        localStorage.setItem('ssc_theme_pref', mode);
+        const icon = document.getElementById('theme-toggle-icon');
+        if (icon) icon.className = mode === 'dark' ? 'fa-solid fa-sun' : 'fa-solid fa-moon';
+    }
+
+    // ── VIEWPORT FIX (keeps "Start Quiz" etc. from hiding behind the
+    // bottom nav inside Telegram's mini-app webview, whose visible
+    // height can be shorter than the CSS 100vh/100dvh it reports) ──
+    syncViewportHeight() {
+        const tg = window.Telegram?.WebApp;
+        const h = (tg && (tg.viewportStableHeight || tg.viewportHeight)) || window.innerHeight;
+        document.documentElement.style.setProperty('--app-vh', h + 'px');
     }
 
     initDOMNodes() {
@@ -120,14 +144,12 @@ class SSCMaxVocabEngine {
     }
 
     injectLiveThemeLayer() {
+        // v9: the old always-on "aurora" skin used to hijack --gold-premium
+        // into purple and spawn 14 twinkling star nodes. That's retired in
+        // favor of the light/dark toggle in initTheme(), so this layer now
+        // stays empty (kept in the DOM only so old CSS selectors don't error).
         const layer = document.getElementById('live-theme-layer'); if(!layer) return;
-        document.body.setAttribute('data-theme','aurora');
-        let html = '<div class="theme-orb"></div><div class="theme-orb"></div><div class="theme-orb"></div>';
-        for(let i=0;i<14;i++) {
-            const top=Math.random()*100, left=Math.random()*100, size=1+Math.random()*2;
-            html += `<div class="theme-star" style="top:${top}%;left:${left}%;width:${size}px;height:${size}px;animation-delay:${(Math.random()*3).toFixed(1)}s;"></div>`;
-        }
-        layer.innerHTML = html;
+        layer.innerHTML = '';
     }
 
     permissionHint(e) {
@@ -143,12 +165,17 @@ class SSCMaxVocabEngine {
         if(tg) {
             tg.ready(); tg.expand();
             if(tg.disableVerticalSwipes) tg.disableVerticalSwipes();
+            this.syncViewportHeight();
+            tg.onEvent('viewportChanged', () => this.syncViewportHeight());
             const u = tg.initDataUnsafe?.user;
             if(u) {
                 userId=u.id; name=`${u.first_name} ${u.last_name||''}`.trim();
                 handle=u.username?`@${u.username}`:`ID: ${u.id}`; avatar=u.photo_url||'';
                 if(avatar) { const av=document.getElementById('tg-user-avatar'); if(av) av.src=avatar; }
             }
+        } else {
+            this.syncViewportHeight();
+            window.addEventListener('resize', () => this.syncViewportHeight());
         }
         appState.currentUser = { id:userId, name, username:handle, photo_url:avatar };
         const n=document.getElementById('tg-user-name');
@@ -828,7 +855,6 @@ class SSCMaxVocabEngine {
     }
 
     triggerHaptic(type) {
-        if (appState.hapticEnabled === false) return;
         const h=window.Telegram?.WebApp?.HapticFeedback; if(!h) return;
         try {
             if(type==='select')  h.selectionChanged();
@@ -843,40 +869,20 @@ class SSCMaxVocabEngine {
         document.querySelectorAll('.nav-tab').forEach(tab => { tab.onclick=()=>this.switchView(tab.getAttribute('data-target')); });
     }
 
-    // Defines back-navigation relationships so switchView knows which
-    // direction to animate (forward = slide from right, back = slide from left)
-    viewHierarchy = { 'dashboard':0, 'topic-letters':1, 'topic-sets':2, 'quiz-details':3, 'quiz':4, 'result':5, 'vault':1, 'ranks':1 };
-
     switchView(viewId) {
         if(appState.isBanned) return;
         if(appState.quiz.active && viewId!=='quiz' && viewId!=='result') {
             if(!confirm('Assessment running. Discard and exit?')) return;
             this.forceTerminateQuiz();
         }
-        const prevViewId = appState.currentView;
-        const prevRank = this.viewHierarchy[prevViewId] ?? 0;
-        const nextRank = this.viewHierarchy[viewId] ?? 0;
-        const goingBack = nextRank < prevRank;
-
-        const prevEl = document.querySelector('.app-view.active');
-        prevEl?.classList.remove('active','view-back');
+        document.querySelector('.app-view.active')?.classList.remove('active');
         const v=document.getElementById(`view-${viewId}`);
-        if(v) {
-            v.classList.remove('view-back');
-            if(goingBack) v.classList.add('view-back');
-            // restart animation reliably
-            void v.offsetWidth;
-            v.classList.add('active');
-            appState.currentView=viewId;
-        }
+        if(v) { v.classList.add('active'); appState.currentView=viewId; }
         document.querySelectorAll('.nav-tab').forEach(t=>t.classList.toggle('active',t.getAttribute('data-target')===viewId));
         if(viewId==='dashboard') this.renderPremiumTopicsGrid();
         if(viewId==='vault')     this.renderVault();
         if(viewId==='ranks')     this.renderLeaderboard();
         if(v) v.scrollTop=0;
-
-        // Keep the settings FAB clear of full-screen quiz/result overlays
-        document.body.classList.toggle('hide-settings-fab', viewId==='quiz' || viewId==='result');
     }
 
     triggerPremiumPaywallGate() {
@@ -891,14 +897,14 @@ class SSCMaxVocabEngine {
     // ══════════════════════════════════════════════════════════════
     renderPremiumTopicsGrid() {
         if(!this.premiumTopicsList) return;
-        this.premiumTopicsList.innerHTML = ALL_TOPICS.map((t,i) => {
+        this.premiumTopicsList.innerHTML = ALL_TOPICS.map(t => {
             if(t.kind==='locked') return `
-                <div class="topic-mega-card coming-soon-mega stagger-in" style="--stagger-i:${i}">
+                <div class="topic-mega-card coming-soon-mega">
                     <span class="coming-soon-ribbon">SOON</span>
                     <div class="topic-mega-name">${t.name}</div>
                 </div>`;
             return `
-                <div class="topic-mega-card stagger-in" style="--stagger-i:${i}" onclick="app.openTopicGroup('${t.name}','${t.kind}')">
+                <div class="topic-mega-card" onclick="app.openTopicGroup('${t.name}','${t.kind}')">
                     <div class="topic-mega-name">${t.name}</div>
                     <i class="fa-solid fa-chevron-right topic-mega-arrow"></i>
                 </div>`;
@@ -968,7 +974,7 @@ class SSCMaxVocabEngine {
             if(!sets.length) { container.innerHTML = `<div class="glass-card text-center p-4"><p class="text-muted">No sets available yet.</p></div>`; return; }
             container.innerHTML = sets.map(s => `
                 <div class="topic-set-card glass-card" onclick="app.showSetConfirmPopup('${s.full_key}',${s.question_count},'${s.full_key.replace(/'/g,"\\'")}')">
-                    <div class="set-info"><span class="set-label">Set ${s.set_number}</span><span class="set-range-tag">${s.question_count} Questions</span></div>
+                    <div class="set-info"><span class="set-label">Set ${s.set_number}</span><span class="set-range-tag">${s.question_count}Q</span></div>
                 </div>`).join('');
         } catch(e) {
             document.getElementById('topic-sets-title').innerText = letter ? `Letter ${letter}` : groupName;
@@ -1119,17 +1125,6 @@ class SSCMaxVocabEngine {
     lockAnswerSelection(idx) {
         if(appState.quiz.selectedOption!==null) return;
         appState.quiz.selectedOption=idx;
-
-        // Brief "tap-pending" pulse on the tapped option before the
-        // correct/incorrect reveal — gives immediate tactile feedback.
-        const tappedNode = this.optionsContainer.querySelectorAll('.option-node')[idx];
-        if(tappedNode) tappedNode.classList.add('tap-pending');
-        this.triggerHaptic('select');
-
-        setTimeout(() => this.revealAnswerResult(idx), 140);
-    }
-
-    revealAnswerResult(idx) {
         this.optionsContainer.classList.add('locked');
         const q=appState.quiz.questions[appState.quiz.currentIndex];
         const correct=idx===q.correctIndex;
@@ -1137,7 +1132,6 @@ class SSCMaxVocabEngine {
         if(correct) { appState.quiz.correctCount++; this.removeQuestionFromVaultIfPresent(q); }
         else        { appState.quiz.wrongCount++;   this.routeFailedQuestionToVault(q); }
         this.optionsContainer.querySelectorAll('.option-node').forEach((node,i)=>{
-            node.classList.remove('tap-pending');
             if(i===q.correctIndex) {
                 node.classList.add('correct');
                 const ex=document.getElementById(`expl-${i}`); if(ex) ex.classList.remove('hidden');
@@ -1227,10 +1221,7 @@ class SSCMaxVocabEngine {
         document.getElementById('res-time').innerText=`${m}m ${s}s`;
         document.getElementById('res-tier-badge').innerText=parseFloat(acc)>=90?'👑 ELITE ACCURACY':'⚡ STANDARD EVALUATION';
 
-        if(parseFloat(acc)===100) this.launchConfetti(45);
-        else if(parseFloat(acc)>=80) this.launchConfetti(18);
-
-        this.staggerResultCards();
+        if(parseFloat(acc)===100) this.launchConfetti();
 
         if(appState.quiz.type==='free') await this.markFreeQuizStreak();
 
@@ -1249,29 +1240,16 @@ class SSCMaxVocabEngine {
         this.loadResultRankings(); // v8 — rank shown directly now, no toggle click needed
     }
 
-    // Staggers the result stat cards (score/accuracy/correct/wrong/time)
-    // in with a rising fade instead of appearing instantly.
-    staggerResultCards() {
-        document.querySelectorAll('.res-card').forEach((card, i) => {
-            card.classList.remove('stagger-in');
-            card.style.setProperty('--stagger-i', i);
-            void card.offsetWidth;
-            card.classList.add('stagger-in');
-        });
-    }
-
-    launchConfetti(count = 40) {
+    launchConfetti() {
         const colors=['#00f2fe','#ffb800','#a855f7','#10b981','#ef4444'];
-        for(let i=0;i<count;i++) {
+        for(let i=0;i<40;i++) {
             const c=document.createElement('div'); c.className='confetti-piece';
             c.style.left=Math.random()*100+'vw';
             c.style.background=colors[Math.floor(Math.random()*colors.length)];
             c.style.animationDelay=(Math.random()*0.5)+'s';
-            c.style.animationDuration=(2.6+Math.random()*1.2)+'s';
             c.style.borderRadius=Math.random()>0.5?'50%':'2px';
-            c.style.setProperty('--drift', `${(Math.random()*160-80).toFixed(0)}px`);
             document.body.appendChild(c);
-            setTimeout(()=>c.remove(),4200);
+            setTimeout(()=>c.remove(),3500);
         }
     }
 
@@ -1477,87 +1455,6 @@ class SSCMaxVocabEngine {
         const t=document.createElement('div'); t.id='app-toast-alert';
         Object.assign(t.style,{position:'fixed',bottom:'95px',left:'50%',transform:'translateX(-50%)',background:'rgba(18,22,39,0.97)',border:'1px solid var(--neon-cyan)',color:'#fff',padding:'12px 24px',borderRadius:'30px',fontSize:'0.8rem',fontWeight:'700',zIndex:'9999',boxShadow:'0 0 18px var(--neon-cyan-glow)',whiteSpace:'nowrap',pointerEvents:'none'});
         t.innerText=msg; document.body.appendChild(t); setTimeout(()=>t.remove(),2600);
-    }
-
-    // ══════════════════════════════════════════════════════════════
-    // PHASE 1 — FONT SIZE ADJUSTER, RIPPLE, SETTINGS SHEET
-    // Pure client-side, localStorage-backed, no Supabase changes.
-    // ══════════════════════════════════════════════════════════════
-
-    initPreferences() {
-        // Font size
-        const savedFontSize = localStorage.getItem('ssc_fontsize') || 'normal';
-        this.applyFontSize(savedFontSize, false);
-
-        // Haptic toggle
-        const hapticOn = localStorage.getItem('ssc_haptic_enabled');
-        appState.hapticEnabled = hapticOn === null ? true : hapticOn === 'true';
-        const hapticToggle = document.getElementById('toggle-haptic');
-        if (hapticToggle) hapticToggle.checked = appState.hapticEnabled;
-
-        this.initRippleEffect();
-    }
-
-    // ── Font Size ────────────────────────────────────────────────
-    applyFontSize(sizeName, animate = true) {
-        document.documentElement.setAttribute('data-fontsize', sizeName);
-        const labels = { small: 'Small', normal: 'Normal', large: 'Large', xlarge: 'Extra Large' };
-        const lbl = document.getElementById('fontsize-current-label');
-        if (lbl) lbl.innerText = labels[sizeName] || 'Normal';
-        appState.currentFontSize = sizeName;
-        if (animate) this.triggerHaptic('select');
-    }
-
-    adjustFontSize(direction) {
-        const steps = ['small', 'normal', 'large', 'xlarge'];
-        const current = appState.currentFontSize || 'normal';
-        let idx = steps.indexOf(current);
-        idx = Math.min(steps.length - 1, Math.max(0, idx + direction));
-        const next = steps[idx];
-        this.applyFontSize(next, true);
-        localStorage.setItem('ssc_fontsize', next);
-    }
-
-    // ── Settings toggle (haptic on/off, extensible later) ───────
-    toggleSetting(key, value) {
-        if (key === 'haptic') {
-            appState.hapticEnabled = value;
-            localStorage.setItem('ssc_haptic_enabled', value ? 'true' : 'false');
-        }
-    }
-
-    // ── Settings Sheet open/close ────────────────────────────────
-    openSettingsSheet() {
-        const bd = document.getElementById('settings-sheet-backdrop');
-        if (bd) bd.classList.add('open');
-        this.triggerHaptic('select');
-    }
-    closeSettingsSheet() {
-        const bd = document.getElementById('settings-sheet-backdrop');
-        if (bd) bd.classList.remove('open');
-    }
-    closeSettingsSheetIfBackdrop(e) {
-        if (e.target && e.target.id === 'settings-sheet-backdrop') this.closeSettingsSheet();
-    }
-
-    // ── Ripple Effect ────────────────────────────────────────────
-    // Delegated pointerdown listener — works for elements added
-    // dynamically after quiz/topic data loads, no per-element binding needed.
-    initRippleEffect() {
-        const rippleSelector = '.btn-primary-gradient, .btn-secondary, .portal-card, .option-node, .topic-mega-card, .vault-set-card, .nav-tab, .settings-fab, .fontsize-btn, .rank-period-btn';
-        document.addEventListener('pointerdown', (e) => {
-            const target = e.target.closest(rippleSelector);
-            if (!target) return;
-            const rect = target.getBoundingClientRect();
-            const size = Math.max(rect.width, rect.height) * 1.4;
-            const dot = document.createElement('span');
-            dot.className = 'ripple-dot';
-            dot.style.width = dot.style.height = `${size}px`;
-            dot.style.left = `${e.clientX - rect.left - size / 2}px`;
-            dot.style.top = `${e.clientY - rect.top - size / 2}px`;
-            target.appendChild(dot);
-            setTimeout(() => dot.remove(), 650);
-        }, { passive: true });
     }
 }
 

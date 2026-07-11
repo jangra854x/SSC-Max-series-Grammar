@@ -1,23 +1,62 @@
-/* Core Dark Premium Visual Tokens & Color Palette */
+/* Core Visual Tokens & Color Palette
+   Default = LIGHT "iPhone-style" premium glass theme.
+   Dark mode (opt-in via toggle) lives in the [data-theme="dark"]
+   block further down and simply swaps these same variables. */
 :root {
-    --bg-dark: #07080e;
-    --bg-card: rgba(18, 22, 39, 0.75);
-    --bg-card-solid: #121627;
-    --bg-explanation: #0f172a; 
-    --neon-cyan: #00f2fe;
-    --neon-cyan-glow: rgba(0, 242, 254, 0.35);
-    --gold-premium: #ffb800;
-    --gold-glow: rgba(255, 184, 0, 0.35);
-    --purple-neon: #a855f7;
-    --purple-glow: rgba(168, 85, 247, 0.5);
-    --text-primary: #f1f3f9;
-    --text-muted: #828ca4;
-    --success-green: #10b981;
-    --danger-red: #ef4444;
-    --border-glass: rgba(255, 255, 255, 0.08);
-    --border-glass-focus: rgba(0, 242, 254, 0.4);
+    --bg-dark: #eef1f6;
+    --bg-app-gradient: linear-gradient(160deg, #f7f9fc 0%, #eaeef6 55%, #e7ecf5 100%);
+    --bg-card: rgba(255, 255, 255, 0.62);
+    --bg-card-solid: #ffffff;
+    --bg-explanation: #f3f6fb;
+    --neon-cyan: #0a84ff;
+    --neon-cyan-glow: rgba(10, 132, 255, 0.22);
+    --gold-premium: #ff9f0a;
+    --gold-glow: rgba(255, 159, 10, 0.25);
+    --purple-neon: #af52de;
+    --purple-glow: rgba(175, 82, 222, 0.28);
+    --text-primary: #1c1c1e;
+    --text-secondary: #48484a;
+    --text-muted: #8a8a8e;
+    --success-green: #34c759;
+    --danger-red: #ff3b30;
+    --border-glass: rgba(0, 0, 0, 0.08);
+    --border-glass-focus: rgba(10, 132, 255, 0.35);
+    --overlay-soft: rgba(0, 0, 0, 0.04);
+    --overlay-soft-strong: rgba(0, 0, 0, 0.07);
+    --header-bg: rgba(255, 255, 255, 0.72);
+    --nav-bg: rgba(255, 255, 255, 0.78);
+    --app-shell-bg: rgba(255, 255, 255, 0.55);
+    --shadow-elevated: 0 8px 28px -14px rgba(30, 41, 70, 0.18);
     --font-stack: 'Plus Jakarta Sans', system-ui, -apple-system, sans-serif;
     --safe-area-bottom: env(safe-area-inset-bottom, 0px);
+}
+
+/* ── DARK MODE — toggled on demand, everything below just swaps tokens ── */
+[data-theme="dark"] {
+    --bg-dark: #07080e;
+    --bg-app-gradient: linear-gradient(160deg, #0b0d16 0%, #07080e 60%, #05060b 100%);
+    --bg-card: rgba(22, 25, 38, 0.72);
+    --bg-card-solid: #14161f;
+    --bg-explanation: #12141f;
+    --neon-cyan: #22a3ff;
+    --neon-cyan-glow: rgba(34, 163, 255, 0.35);
+    --gold-premium: #ffb800;
+    --gold-glow: rgba(255, 184, 0, 0.3);
+    --purple-neon: #bf5af2;
+    --purple-glow: rgba(191, 90, 242, 0.35);
+    --text-primary: #f2f3f7;
+    --text-secondary: #cbd0da;
+    --text-muted: #8b93a4;
+    --success-green: #30d158;
+    --danger-red: #ff453a;
+    --border-glass: rgba(255, 255, 255, 0.09);
+    --border-glass-focus: rgba(34, 163, 255, 0.4);
+    --overlay-soft: rgba(255, 255, 255, 0.04);
+    --overlay-soft-strong: rgba(255, 255, 255, 0.07);
+    --header-bg: rgba(10, 11, 18, 0.72);
+    --nav-bg: rgba(10, 11, 18, 0.82);
+    --app-shell-bg: rgba(9, 10, 16, 0.9);
+    --shadow-elevated: 0 8px 28px -14px rgba(0, 0, 0, 0.6);
 }
 
 /* Hardware Acceleration & Global Resets */
@@ -159,7 +198,7 @@ body.premium-enhanced .bg-glow {
     width: 100%; height: 100%;
     background: var(--bg-dark);
     z-index: 100;
-    padding: 24px 20px calc(100px + var(--safe-area-bottom)) 20px;
+    padding: 24px 20px;
     overflow-y: auto;
 }
 
@@ -374,7 +413,7 @@ body.premium-enhanced .bg-glow {
     border-radius: 12px; background-color: var(--bg-explanation);
     border: 1px solid rgba(255, 255, 255, 0.05);
     border-left: 4px solid var(--border-glass);
-    color: #e2e8f0; animation: fadeIn 0.3s ease forwards;
+    color: var(--text-secondary); animation: fadeIn 0.3s ease forwards;
 }
 .option-explanation-box.expl-correct { border-left-color: var(--success-green); }
 .option-explanation-box.expl-incorrect { border-left-color: var(--danger-red); }
@@ -398,7 +437,7 @@ body.premium-enhanced .bg-glow {
 .res-val { font-size: 1.35rem; font-weight: 800; }
 .res-lbl { font-size: 0.75rem; color: var(--text-muted); margin-top: 4px; }
 .feedback-card { width: 100%; padding: 16px; margin-bottom: 32px; text-align: left; }
-.feedback-text { font-size: 0.85rem; line-height: 1.45; color: #b3bcce; }
+.feedback-text { font-size: 0.85rem; line-height: 1.45; color: var(--text-secondary); }
 
 .vault-search-wrapper { position: relative; display: flex; align-items: center; }
 .search-icon { position: absolute; left: 16px; color: var(--text-muted); font-size: 0.9rem; }
@@ -425,7 +464,7 @@ body.premium-enhanced .bg-glow {
 .vault-word-card { display: flex; flex-direction: column; gap: 10px; }
 .v-header-row { display: flex; justify-content: space-between; align-items: center; }
 .v-header-row h4 { font-size: 1.1rem; font-weight: 700; color: var(--neon-cyan); }
-.v-meaning { font-size: 0.85rem; color: #d5dbe6; line-height: 1.4; }
+.v-meaning { font-size: 0.85rem; color: var(--text-secondary); line-height: 1.4; }
 .v-action-bar { display: flex; justify-content: flex-end; margin-top: 4px; }
 
 .btn-delete-word {
@@ -1350,10 +1389,10 @@ html { scroll-behavior: smooth; }
     animation: cardRise 0.3s ease both;
 }
 
-/* ── Confetti burst for result page (100% score = celebration) ── */
+/* ── Confetti burst for perfect scores (result page) ───────────── */
 @keyframes confettiFall {
-    0%   { transform: translateY(-20px) translateX(0) rotate(0deg); opacity: 1; }
-    100% { transform: translateY(105vh) translateX(var(--drift, 30px)) rotate(720deg); opacity: 0; }
+    0%   { transform: translateY(-20px) rotate(0deg); opacity: 1; }
+    100% { transform: translateY(400px) rotate(720deg); opacity: 0; }
 }
 .confetti-piece {
     position: fixed;
@@ -2247,367 +2286,171 @@ body { height: 100dvh; }
 .portal-card:active, .vault-set-card:active {
     box-shadow: 0 0 20px -4px rgba(0,242,254,0.25);
 }
-/* ═══════════════════════════════════════════════════════════
-   PHASE 1 ADDITIONS — Theme System, Ripple, Shimmer Boost,
-   Font Size Adjuster. Pure additive, nothing above is removed.
-   ═══════════════════════════════════════════════════════════ */
 
-/* ── Settings trigger — now a floating action button, see FAB rules below ── */
+/* ═══════════════════════════════════════════════════════════════
+   v9 UPDATE — iPhone-style Bright Premium Glass Theme + Dark Mode
+   Toggle + Bugfixes. Purely additive/override — nothing above this
+   line was removed, and no quiz/data/Supabase logic is touched.
+   ═══════════════════════════════════════════════════════════════ */
 
-/* ── Settings Bottom Sheet ───────────────────────────────── */
-.settings-sheet-backdrop {
-    position: fixed; inset: 0;
-    background: rgba(0,0,0,0.6);
-    z-index: 200;
-    display: none;
-    opacity: 0;
-    transition: opacity 0.25s ease;
-}
-.settings-sheet-backdrop.open { display: block; opacity: 1; }
-.settings-sheet {
-    position: fixed;
-    left: 0; right: 0; bottom: 0;
-    background: var(--bg-card-solid);
-    border-top: 1px solid var(--border-glass);
-    border-radius: 22px 22px 0 0;
-    z-index: 201;
-    padding: 20px 20px calc(24px + var(--safe-area-bottom)) 20px;
-    transform: translateY(100%);
-    transition: transform 0.32s cubic-bezier(0.16, 1, 0.3, 1);
-    max-height: 80vh;
-    overflow-y: auto;
-}
-.settings-sheet-backdrop.open .settings-sheet { transform: translateY(0); }
-.settings-sheet-handle {
-    width: 40px; height: 4px; border-radius: 2px;
-    background: var(--border-glass);
-    margin: 0 auto 16px auto;
-}
-.settings-sheet-title { font-size: 1.05rem; font-weight: 800; margin-bottom: 4px; }
-.settings-sheet-section { margin-top: 20px; }
-.settings-sheet-label { font-size: 0.78rem; font-weight: 700; color: var(--text-muted); text-transform: uppercase; letter-spacing: 0.04em; margin-bottom: 10px; }
-
-/* ── Font Size Adjuster ──────────────────────────────────── */
-.fontsize-adjust-row {
-    display: flex;
-    align-items: center;
-    gap: 10px;
-    background: var(--bg-dark);
-    border: 1px solid var(--border-glass);
-    border-radius: 12px;
-    padding: 10px 14px;
-}
-.fontsize-btn {
-    width: 32px; height: 32px;
-    border-radius: 8px;
-    border: 1px solid var(--border-glass);
-    background: var(--bg-card-solid);
-    color: var(--text-primary);
-    font-weight: 800;
-    display: flex; align-items: center; justify-content: center;
-    cursor: pointer;
-}
-.fontsize-btn:active { transform: scale(0.92); }
-.fontsize-btn.a-minus { font-size: 0.75rem; }
-.fontsize-btn.a-plus { font-size: 1.05rem; }
-.fontsize-label { flex: 1; text-align: center; font-size: 0.82rem; color: var(--text-muted); font-weight: 600; }
-
-/* Font-size scale classes applied to <html> by script.js (key: ssc_fontsize) */
-html[data-fontsize="small"] .question-text { font-size: 0.98rem; }
-html[data-fontsize="small"] .opt-text { font-size: 0.82rem; }
-html[data-fontsize="normal"] .question-text { font-size: 1.1rem; }
-html[data-fontsize="normal"] .opt-text { font-size: 0.9rem; }
-html[data-fontsize="large"] .question-text { font-size: 1.28rem; }
-html[data-fontsize="large"] .opt-text { font-size: 1.02rem; }
-html[data-fontsize="xlarge"] .question-text { font-size: 1.46rem; }
-html[data-fontsize="xlarge"] .opt-text { font-size: 1.14rem; }
-
-/* Quick in-quiz A+/A- toggle (top-right of question card) */
-.quiz-fontsize-toggle {
-    position: absolute;
-    top: 14px; right: 14px;
-    display: flex; gap: 6px;
-    z-index: 2;
-}
-.quiz-fontsize-toggle .fontsize-btn { width: 26px; height: 26px; font-size: 0.68rem; }
-.question-wrapper { position: relative; }
-
-/* ── Button Ripple Effect ─────────────────────────────────
-   JS spawns a .ripple-dot span inside the clicked element on
-   pointerdown; element needs position:relative + overflow:hidden
-   (added broadly below to the interactive classes already used
-   across the app, without touching their existing rules above). ── */
-.btn-primary-gradient, .btn-secondary, .portal-card, .option-node,
-.topic-mega-card, .vault-set-card, .nav-tab, .settings-fab,
-.fontsize-btn, .rank-period-btn {
-    position: relative;
-    overflow: hidden;
-}
-.ripple-dot {
-    position: absolute;
-    border-radius: 50%;
-    background: rgba(255, 255, 255, 0.35);
-    transform: scale(0);
-    animation: rippleExpand 0.6s ease-out forwards;
-    pointer-events: none;
-}
-@keyframes rippleExpand {
-    to { transform: scale(2.8); opacity: 0; }
-}
-
-/* ── Skeleton Shimmer Boost (stronger, more visible sweep) ── */
-.skeleton-card, .skeleton-row, .skeleton-card-lg {
-    animation-duration: 1.4s;
-    background: linear-gradient(100deg,
-        rgba(255,255,255,0.03) 30%,
-        rgba(255,255,255,0.10) 50%,
-        rgba(255,255,255,0.03) 70%);
-    background-size: 250% 100%;
-}
-
-/* ── Safe-area top padding for header (notch/dynamic island) ── */
-.app-header {
-    padding-top: calc(14px + env(safe-area-inset-top, 0px));
-}
-
-/* ── Settings Toggle Switch (haptic on/off etc.) ─────────── */
-.settings-toggle-switch {
-    position: relative;
-    display: inline-block;
-    width: 44px; height: 26px;
-    flex-shrink: 0;
-}
-.settings-toggle-switch input { opacity: 0; width: 0; height: 0; }
-.settings-toggle-slider {
-    position: absolute; cursor: pointer;
-    top: 0; left: 0; right: 0; bottom: 0;
-    background: var(--border-glass);
-    border: 1px solid var(--border-glass);
-    border-radius: 26px;
+/* ── App shell now sits on the new gradient + frosted glass ─────── */
+html, body {
+    background: var(--bg-app-gradient), var(--bg-dark);
     transition: background-color 0.25s ease;
 }
-.settings-toggle-slider::before {
-    content: "";
-    position: absolute;
-    height: 20px; width: 20px;
-    left: 2px; bottom: 2px;
-    background: var(--text-primary);
-    border-radius: 50%;
-    transition: transform 0.25s ease;
+#app {
+    background: var(--app-shell-bg);
+    backdrop-filter: blur(28px) saturate(160%);
+    -webkit-backdrop-filter: blur(28px) saturate(160%);
+    border-left: 1px solid var(--border-glass);
+    border-right: 1px solid var(--border-glass);
 }
-.settings-toggle-switch input:checked + .settings-toggle-slider {
-    background: var(--neon-cyan);
-    border-color: var(--neon-cyan);
+.app-header {
+    background: var(--header-bg);
+    border-bottom: 1px solid var(--border-glass);
 }
-.settings-toggle-switch input:checked + .settings-toggle-slider::before {
-    transform: translateX(18px);
-    background: #0a0b12;
+.full-overlay-view { background: var(--bg-dark); }
+
+/* Scrollbars follow theme instead of a hardcoded white tint */
+#view-container::-webkit-scrollbar-thumb,
+.full-overlay-view::-webkit-scrollbar-thumb,
+#adm-premium-users-list::-webkit-scrollbar-thumb {
+    background: var(--overlay-soft-strong);
 }
 
-/* ═══════════════════════════════════════════════════════════
-   PHASE 2 — REAL VISUAL TRANSFORMATION
-   Floating settings FAB, distinct animated theme backgrounds,
-   living mesh-gradient card backgrounds, answer selection
-   animation, confetti celebration, page transitions.
-   ═══════════════════════════════════════════════════════════ */
+/* ── Soft-tint surfaces that were hand-tuned for a dark background
+   now read off the theme tokens instead, so they stay legible and
+   "glassy" in both light and dark mode ── */
+.tier-indicator-badge,
+.btn-secondary,
+.btn-close,
+.btn-bookmark-q,
+.portal-arrow,
+.quiz-progress-wrapper,
+.vault-dual-tabs,
+.archive-entry-card,
+.option-node,
+#ambient-cyan, #ambient-purple {
+    background: var(--overlay-soft);
+}
+.vault-tab-btn.active { background: var(--overlay-soft-strong); }
+.portal-arrow { color: var(--text-primary); }
+.archive-entry-card:hover { background: var(--overlay-soft-strong); }
+.locked-topic-card { background: var(--overlay-soft); border-color: var(--border-glass); }
 
-/* ── Floating Settings Button (replaces cramped header button) ──
-   Sits above the bottom nav, right-aligned, clear of content. ── */
-.settings-fab {
-    position: fixed;
-    right: 16px;
-    bottom: calc(84px + var(--safe-area-bottom));
-    width: 50px; height: 50px;
-    border-radius: 50%;
-    background: linear-gradient(135deg, var(--neon-cyan), var(--purple-neon));
-    border: none;
-    color: #05060d;
-    font-size: 1.05rem;
+.premium-unlock-overlay { background: var(--app-shell-bg); }
+.crown-badge-wrapper { background: var(--gold-glow); border-color: var(--gold-glow); }
+
+/* Bottom nav — frosted glass instead of a flat dark bar */
+.bottom-nav-bar {
+    background: var(--nav-bg);
+    border-top: 1px solid var(--border-glass);
+    box-shadow: 0 -8px 24px -18px rgba(30, 41, 70, 0.25);
+}
+
+/* Buttons keep their accent gradients but pick up theme-aware shadows */
+.btn-primary-gradient { box-shadow: 0 6px 20px -6px var(--neon-cyan-glow); }
+.btn-secondary { color: var(--text-secondary); border: 1px solid var(--border-glass); }
+
+/* Glass cards get a lighter, cleaner elevation on bright glass instead
+   of the heavy dark drop-shadow tuned for the old theme */
+.glass-card {
+    box-shadow: var(--shadow-elevated), inset 0 1px 0 rgba(255,255,255,0.5);
+}
+[data-theme="dark"] .glass-card {
+    box-shadow: var(--shadow-elevated), inset 0 1px 0 rgba(255,255,255,0.04);
+}
+
+.header-actions { display: flex; align-items: center; gap: 10px; }
+
+/* ── Theme toggle switch (header) ─────────────────────────────── */
+.theme-toggle-btn {
+    width: 36px; height: 36px; border-radius: 50%;
     display: flex; align-items: center; justify-content: center;
+    background: var(--overlay-soft);
+    border: 1px solid var(--border-glass);
+    color: var(--text-primary);
+    font-size: 0.9rem;
     cursor: pointer;
-    z-index: 85;
-    box-shadow: 0 6px 20px -4px var(--neon-cyan-glow), 0 2px 8px rgba(0,0,0,0.4);
-    transition: transform 0.25s cubic-bezier(0.34,1.56,0.64,1), box-shadow 0.25s ease;
+    transition: background 0.2s ease, color 0.2s ease;
 }
-.settings-fab:active { transform: scale(0.88) rotate(25deg); }
-.settings-fab i { animation: fabGearSpin 8s linear infinite; }
-@keyframes fabGearSpin { to { transform: rotate(360deg); } }
+.theme-toggle-btn:active { transform: scale(0.94); }
 
-/* Hide FAB while a full-overlay view (quiz/result) is active so it
-   never floats over quiz content — toggled via body class in JS. */
-body.hide-settings-fab .settings-fab { display: none; }
+/* ── Kill every decorative, continuously-looping animation. These
+   were the main source of visual "lag" (blur+transform running
+   forever). Interaction feedback (button press, question-card swap,
+   correct-answer flash, loading spinners/skeletons) is untouched —
+   those are short, one-shot, and part of normal app feel. ── */
+.bg-glow,
+body.premium-enhanced .bg-glow,
+.purple-glow-badge,
+.animate-bounce,
+.latest-set,
+.streak-badge-inline,
+.user-title-badge.red-title,
+.streak-strip-card::before,
+.streak-flame-icon,
+.title-hard::before,
+.title-hard::after,
+.theme-preview-aurora::before,
+.theme-preview-molten::before,
+.theme-preview-matrix::before,
+.theme-preview-velvet::before,
+.premium-particle,
+.tier-indicator-badge.elite::after,
+body[data-theme="aurora"] #live-theme-layer .theme-orb,
+#live-theme-layer .theme-star,
+.theme-live-tag i,
+.hero-orb,
+.hero-sparkle,
+.hero-sticker,
+.topic-mega-card::before,
+.topic-mega-card::after {
+    animation: none !important;
+}
+/* Softened static versions of the above, so removing motion doesn't
+   leave anything looking broken or too flat */
+.bg-glow { opacity: 0.18; }
+[data-theme="dark"] .bg-glow { opacity: 0.35; }
+.purple-glow-badge { box-shadow: 0 0 10px var(--purple-glow); }
+.latest-set { border-color: var(--neon-cyan) !important; }
+.tier-indicator-badge.elite::after { display: none; }
+.hero-orb, .hero-sparkle, .hero-sticker { opacity: 0.35; }
+.topic-mega-card::before { display: none; }
 
-/* ══════════════════════════════════════════════════════════
-   AMBIENT BACKGROUND — lightweight, static (no continuous
-   animation loop). Previous version ran multiple blurred +
-   conic-gradient animations at once which caused real lag on
-   mid-range phones inside Telegram's WebView; replaced with a
-   single static radial-gradient wash, GPU-cheap.
-   ══════════════════════════════════════════════════════════ */
+/* ── FIX: "START QUIZ" button hiding behind the Dashboard/Vault
+   bottom nav. Root cause is Telegram's mini-app viewport being
+   shorter than the CSS 100vh/100dvh it was rendering against, so
+   the last bit of scrollable content (including action buttons)
+   landed underneath the frosted nav bar with no way to scroll
+   further. script.js now measures Telegram's real visible height
+   into --app-vh; this also adds a large guaranteed clearance buffer
+   so the button is never flush with the nav even on short screens. ── */
+body { height: var(--app-vh, 100dvh); }
+#view-container {
+    padding-bottom: calc(120px + var(--safe-area-bottom));
+}
+.action-stack { margin-bottom: calc(24px + var(--safe-area-bottom)); }
+.full-overlay-view {
+    padding-bottom: calc(110px + var(--safe-area-bottom));
+}
+.quiz-footer-centered { margin-bottom: calc(16px + var(--safe-area-bottom)); }
 
-#live-theme-layer {
-    position: fixed; inset: 0;
-    z-index: 0;
-    pointer-events: none;
-    overflow: hidden;
-    background:
-        radial-gradient(ellipse 70% 45% at 15% 0%, rgba(0,242,254,0.10), transparent 55%),
-        radial-gradient(ellipse 55% 40% at 100% 15%, rgba(255,184,0,0.06), transparent 50%),
-        radial-gradient(ellipse 65% 50% at 40% 100%, rgba(168,85,247,0.08), transparent 55%);
-}
-
-/* theme-orb / theme-star markup is still injected by JS (harmless,
-   kept for structural compatibility) but no longer animated —
-   rendered as soft static accents only. */
-.theme-orb {
-    position: absolute;
-    width: 220px; height: 220px;
-    border-radius: 50%;
-    filter: blur(70px);
-    opacity: 0.22;
-}
-.theme-orb:nth-child(1) { top: -8%; left: -10%; background: var(--neon-cyan); }
-.theme-orb:nth-child(2) { top: 40%; right: -14%; background: var(--purple-neon); }
-.theme-orb:nth-child(3) { bottom: -10%; left: 20%; background: var(--gold-premium); }
-.theme-star {
-    position: absolute;
-    background: #fff;
-    border-radius: 50%;
-    opacity: 0.35;
-}
-
-/* ══════════════════════════════════════════════════════════
-   CARD BACKGROUNDS — flat, no per-card animation.
-   Dashboard portal cards and topic cards keep their existing
-   static gradient fills (defined earlier in the file); no
-   extra ::after aura/conic layers are added, keeping paint
-   cost low on every card at once.
-   ══════════════════════════════════════════════════════════ */
-
-/* Respect reduced motion for the one-shot entrance animations below */
-@media (prefers-reduced-motion: reduce) {
-    .app-view, .stagger-in, .option-node, .res-card, .crown-badge-wrapper { animation: none !important; }
-}
-
-/* ══════════════════════════════════════════════════════════
-   PAGE TRANSITIONS (Tier A3)
-   Views slide/fade based on navigation direction instead of
-   the old flat opacity-only swap.
-   ══════════════════════════════════════════════════════════ */
-.app-view {
-    display: none;
-    opacity: 0;
-    transform: translateX(0) translateY(0);
-}
-.app-view.active {
-    display: block;
-    animation: viewEnterForward 0.34s cubic-bezier(0.16,1,0.3,1) forwards;
-}
-.app-view.active.view-back {
-    animation: viewEnterBack 0.34s cubic-bezier(0.16,1,0.3,1) forwards;
-}
-@keyframes viewEnterForward {
-    from { opacity: 0; transform: translateX(24px); }
-    to   { opacity: 1; transform: translateX(0); }
-}
-@keyframes viewEnterBack {
-    from { opacity: 0; transform: translateX(-24px); }
-    to   { opacity: 1; transform: translateX(0); }
-}
-.full-overlay-view.active {
-    animation: overlaySlideUp 0.36s cubic-bezier(0.16,1,0.3,1) forwards;
-}
-@keyframes overlaySlideUp {
-    from { opacity: 0; transform: translateY(28px); }
-    to   { opacity: 1; transform: translateY(0); }
+/* ── FIX: "20 Questions" label on topic-letter set cards looked
+   oversized/cramped inside the small 4-col grid tiles. script.js
+   now writes it as a compact "20Q" pill; this just makes sure the
+   pill itself stays small and tidy no matter the digit count. ── */
+.sets-grid-4col .topic-set-card .set-range-tag {
+    font-size: 0.66rem;
+    padding: 3px 9px;
+    line-height: 1.3;
+    white-space: nowrap;
 }
 
-/* ══════════════════════════════════════════════════════════
-   STAGGERED CARD ENTRANCE (dashboard + topic grid + vault)
-   Each direct card child fades/slides in with incremental delay,
-   driven by inline --stagger-i set by JS on render.
-   ══════════════════════════════════════════════════════════ */
-.stagger-in {
-    opacity: 0;
-    transform: translateY(16px);
-    animation: staggerRise 0.5s cubic-bezier(0.16,1,0.3,1) forwards;
-    animation-delay: calc(var(--stagger-i, 0) * 55ms);
-}
-@keyframes staggerRise {
-    to { opacity: 1; transform: translateY(0); }
-}
-
-/* ══════════════════════════════════════════════════════════
-   ANSWER SELECTION ANIMATION (Tier D1 — highest priority)
-   Applied to .option-node when JS adds data-state="correct" |
-   "wrong" | "selected-pending" on tap.
-   ══════════════════════════════════════════════════════════ */
-.option-node {
-    transition: transform 0.18s cubic-bezier(0.34,1.56,0.64,1),
-                background-color 0.28s ease,
-                border-color 0.28s ease,
-                box-shadow 0.28s ease;
-}
-.option-node.tap-pending {
-    transform: scale(1.03);
-    border-color: var(--neon-cyan-glow);
-    background: rgba(0,242,254,0.08);
-}
-.option-node.correct {
-    animation: optionCorrectPop 0.4s ease;
-    box-shadow: 0 0 18px -2px rgba(16,185,129,0.4);
-}
-.option-node.incorrect {
-    animation: optionWrongShake 0.4s ease;
-    box-shadow: 0 0 18px -2px rgba(239,68,68,0.3);
-}
-@keyframes optionCorrectPop {
-    0%   { transform: scale(1); }
-    40%  { transform: scale(1.045); }
-    100% { transform: scale(1); }
-}
-@keyframes optionWrongShake {
-    0%, 100% { transform: translateX(0); }
-    20%  { transform: translateX(-6px); }
-    40%  { transform: translateX(5px); }
-    60%  { transform: translateX(-3px); }
-    80%  { transform: translateX(2px); }
-}
-.option-indicator::after {
-    display: inline-block;
-    animation: resultIconSpin 0.4s cubic-bezier(0.34,1.56,0.64,1) forwards;
-}
-@keyframes resultIconSpin {
-    from { transform: rotate(-160deg) scale(0); opacity: 0; }
-    to   { transform: rotate(0deg) scale(1); opacity: 1; }
-}
-
-/* ══════════════════════════════════════════════════════════
-   RESULT SCREEN CONFETTI CELEBRATION (Tier D2)
-   Lightweight CSS-driven particles, spawned by JS as fixed-position
-   divs appended to document.body, auto-removed after ~4s.
-   ══════════════════════════════════════════════════════════ */
-/* Confetti now uses the enhanced single definition further up the
-   file (search "Confetti burst for perfect scores") — kept here only
-   as a marker comment so this section isn't accidentally re-added. */
-
-/* Result stat cards cascade in (staggered via .stagger-in reused) */
-.res-card { opacity: 0; transform: translateY(14px) scale(0.94); }
-.res-card.stagger-in { animation: resCardRise 0.45s cubic-bezier(0.16,1,0.3,1) forwards; }
-@keyframes resCardRise {
-    to { opacity: 1; transform: translateY(0) scale(1); }
-}
-
-/* Score counter number pop while animating (JS updates textContent) */
-.res-val.counting { color: var(--neon-cyan); }
-
-/* Crown/trophy gets a stronger celebratory glow pulse on result entry */
-.crown-badge-wrapper {
-    animation: crownBounceGlow 1.1s cubic-bezier(0.34,1.56,0.64,1);
-}
-@keyframes crownBounceGlow {
-    0%   { transform: scale(0.3) translateY(20px); opacity: 0; filter: drop-shadow(0 0 0 transparent); }
-    50%  { transform: scale(1.2) translateY(-6px); opacity: 1; filter: drop-shadow(0 0 24px var(--gold-glow)); }
-    75%  { transform: scale(0.94) translateY(2px); }
-    100% { transform: scale(1) translateY(0); filter: drop-shadow(0 0 14px var(--gold-glow)); }
+/* ── General perf/quality-of-life: avoid layout jitter from
+   backdrop-filter recalculating on every scroll frame on low-end
+   devices by promoting these frosted layers to their own layer. ── */
+.app-header, .bottom-nav-bar, #app {
+    will-change: auto;
+    transform: translateZ(0);
 }
