@@ -843,20 +843,40 @@ class SSCMaxVocabEngine {
         document.querySelectorAll('.nav-tab').forEach(tab => { tab.onclick=()=>this.switchView(tab.getAttribute('data-target')); });
     }
 
+    // Defines back-navigation relationships so switchView knows which
+    // direction to animate (forward = slide from right, back = slide from left)
+    viewHierarchy = { 'dashboard':0, 'topic-letters':1, 'topic-sets':2, 'quiz-details':3, 'quiz':4, 'result':5, 'vault':1, 'ranks':1 };
+
     switchView(viewId) {
         if(appState.isBanned) return;
         if(appState.quiz.active && viewId!=='quiz' && viewId!=='result') {
             if(!confirm('Assessment running. Discard and exit?')) return;
             this.forceTerminateQuiz();
         }
-        document.querySelector('.app-view.active')?.classList.remove('active');
+        const prevViewId = appState.currentView;
+        const prevRank = this.viewHierarchy[prevViewId] ?? 0;
+        const nextRank = this.viewHierarchy[viewId] ?? 0;
+        const goingBack = nextRank < prevRank;
+
+        const prevEl = document.querySelector('.app-view.active');
+        prevEl?.classList.remove('active','view-back');
         const v=document.getElementById(`view-${viewId}`);
-        if(v) { v.classList.add('active'); appState.currentView=viewId; }
+        if(v) {
+            v.classList.remove('view-back');
+            if(goingBack) v.classList.add('view-back');
+            // restart animation reliably
+            void v.offsetWidth;
+            v.classList.add('active');
+            appState.currentView=viewId;
+        }
         document.querySelectorAll('.nav-tab').forEach(t=>t.classList.toggle('active',t.getAttribute('data-target')===viewId));
         if(viewId==='dashboard') this.renderPremiumTopicsGrid();
         if(viewId==='vault')     this.renderVault();
         if(viewId==='ranks')     this.renderLeaderboard();
         if(v) v.scrollTop=0;
+
+        // Keep the settings FAB clear of full-screen quiz/result overlays
+        document.body.classList.toggle('hide-settings-fab', viewId==='quiz' || viewId==='result');
     }
 
     triggerPremiumPaywallGate() {
@@ -871,14 +891,14 @@ class SSCMaxVocabEngine {
     // ══════════════════════════════════════════════════════════════
     renderPremiumTopicsGrid() {
         if(!this.premiumTopicsList) return;
-        this.premiumTopicsList.innerHTML = ALL_TOPICS.map(t => {
+        this.premiumTopicsList.innerHTML = ALL_TOPICS.map((t,i) => {
             if(t.kind==='locked') return `
-                <div class="topic-mega-card coming-soon-mega">
+                <div class="topic-mega-card coming-soon-mega stagger-in" style="--stagger-i:${i}">
                     <span class="coming-soon-ribbon">SOON</span>
                     <div class="topic-mega-name">${t.name}</div>
                 </div>`;
             return `
-                <div class="topic-mega-card" onclick="app.openTopicGroup('${t.name}','${t.kind}')">
+                <div class="topic-mega-card stagger-in" style="--stagger-i:${i}" onclick="app.openTopicGroup('${t.name}','${t.kind}')">
                     <div class="topic-mega-name">${t.name}</div>
                     <i class="fa-solid fa-chevron-right topic-mega-arrow"></i>
                 </div>`;
@@ -1099,6 +1119,17 @@ class SSCMaxVocabEngine {
     lockAnswerSelection(idx) {
         if(appState.quiz.selectedOption!==null) return;
         appState.quiz.selectedOption=idx;
+
+        // Brief "tap-pending" pulse on the tapped option before the
+        // correct/incorrect reveal — gives immediate tactile feedback.
+        const tappedNode = this.optionsContainer.querySelectorAll('.option-node')[idx];
+        if(tappedNode) tappedNode.classList.add('tap-pending');
+        this.triggerHaptic('select');
+
+        setTimeout(() => this.revealAnswerResult(idx), 140);
+    }
+
+    revealAnswerResult(idx) {
         this.optionsContainer.classList.add('locked');
         const q=appState.quiz.questions[appState.quiz.currentIndex];
         const correct=idx===q.correctIndex;
@@ -1106,6 +1137,7 @@ class SSCMaxVocabEngine {
         if(correct) { appState.quiz.correctCount++; this.removeQuestionFromVaultIfPresent(q); }
         else        { appState.quiz.wrongCount++;   this.routeFailedQuestionToVault(q); }
         this.optionsContainer.querySelectorAll('.option-node').forEach((node,i)=>{
+            node.classList.remove('tap-pending');
             if(i===q.correctIndex) {
                 node.classList.add('correct');
                 const ex=document.getElementById(`expl-${i}`); if(ex) ex.classList.remove('hidden');
@@ -1195,7 +1227,10 @@ class SSCMaxVocabEngine {
         document.getElementById('res-time').innerText=`${m}m ${s}s`;
         document.getElementById('res-tier-badge').innerText=parseFloat(acc)>=90?'👑 ELITE ACCURACY':'⚡ STANDARD EVALUATION';
 
-        if(parseFloat(acc)===100) this.launchConfetti();
+        if(parseFloat(acc)===100) this.launchConfetti(45);
+        else if(parseFloat(acc)>=80) this.launchConfetti(18);
+
+        this.staggerResultCards();
 
         if(appState.quiz.type==='free') await this.markFreeQuizStreak();
 
@@ -1214,16 +1249,29 @@ class SSCMaxVocabEngine {
         this.loadResultRankings(); // v8 — rank shown directly now, no toggle click needed
     }
 
-    launchConfetti() {
+    // Staggers the result stat cards (score/accuracy/correct/wrong/time)
+    // in with a rising fade instead of appearing instantly.
+    staggerResultCards() {
+        document.querySelectorAll('.res-card').forEach((card, i) => {
+            card.classList.remove('stagger-in');
+            card.style.setProperty('--stagger-i', i);
+            void card.offsetWidth;
+            card.classList.add('stagger-in');
+        });
+    }
+
+    launchConfetti(count = 40) {
         const colors=['#00f2fe','#ffb800','#a855f7','#10b981','#ef4444'];
-        for(let i=0;i<40;i++) {
+        for(let i=0;i<count;i++) {
             const c=document.createElement('div'); c.className='confetti-piece';
             c.style.left=Math.random()*100+'vw';
             c.style.background=colors[Math.floor(Math.random()*colors.length)];
             c.style.animationDelay=(Math.random()*0.5)+'s';
+            c.style.animationDuration=(2.6+Math.random()*1.2)+'s';
             c.style.borderRadius=Math.random()>0.5?'50%':'2px';
+            c.style.setProperty('--drift', `${(Math.random()*160-80).toFixed(0)}px`);
             document.body.appendChild(c);
-            setTimeout(()=>c.remove(),3500);
+            setTimeout(()=>c.remove(),4200);
         }
     }
 
@@ -1515,7 +1563,7 @@ class SSCMaxVocabEngine {
     // Delegated pointerdown listener — works for elements added
     // dynamically after quiz/topic data loads, no per-element binding needed.
     initRippleEffect() {
-        const rippleSelector = '.btn-primary-gradient, .btn-secondary, .portal-card, .option-node, .topic-mega-card, .vault-set-card, .nav-tab, .settings-trigger-btn, .theme-swatch, .fontsize-btn, .rank-period-btn';
+        const rippleSelector = '.btn-primary-gradient, .btn-secondary, .portal-card, .option-node, .topic-mega-card, .vault-set-card, .nav-tab, .settings-fab, .theme-swatch, .fontsize-btn, .rank-period-btn';
         document.addEventListener('pointerdown', (e) => {
             const target = e.target.closest(rippleSelector);
             if (!target) return;

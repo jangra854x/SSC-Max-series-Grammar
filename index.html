@@ -27,9 +27,6 @@
                 <div class="tier-indicator-badge" id="header-tier-indicator">
                     <i class="fa-solid fa-spinner fa-spin"></i> Loading...
                 </div>
-                <button class="settings-trigger-btn" id="btn-open-settings" onclick="app.openSettingsSheet()" aria-label="Settings">
-                    <i class="fa-solid fa-gear"></i>
-                </button>
             </div>
         </header>
 
@@ -435,6 +432,11 @@
             </section>
 
         </main>
+
+        <!-- Floating settings button — sits clear above bottom nav, hidden during quiz/result via body class -->
+        <button class="settings-fab" id="btn-open-settings" onclick="app.openSettingsSheet()" aria-label="Settings">
+            <i class="fa-solid fa-gear"></i>
+        </button>
 
         <!-- Bottom nav — admin 4th tab injected by JS on admin login.
              "Ranks" tab removed for now (v7) — rank now shows directly

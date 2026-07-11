@@ -1350,10 +1350,10 @@ html { scroll-behavior: smooth; }
     animation: cardRise 0.3s ease both;
 }
 
-/* ── Confetti burst for perfect scores (result page) ───────────── */
+/* ── Confetti burst for result page (100% score = celebration) ── */
 @keyframes confettiFall {
-    0%   { transform: translateY(-20px) rotate(0deg); opacity: 1; }
-    100% { transform: translateY(400px) rotate(720deg); opacity: 0; }
+    0%   { transform: translateY(-20px) translateX(0) rotate(0deg); opacity: 1; }
+    100% { transform: translateY(105vh) translateX(var(--drift, 30px)) rotate(720deg); opacity: 0; }
 }
 .confetti-piece {
     position: fixed;
@@ -2328,18 +2328,7 @@ body, .glass-card, .btn-primary-gradient, .bottom-nav-bar, .app-header {
 .swatch-neon .dot-2 { background: #ff2ea6; }
 .swatch-neon .dot-3 { background: #c026d3; }
 
-/* ── Settings trigger button (header) ────────────────────── */
-.settings-trigger-btn {
-    background: var(--bg-card-solid);
-    border: 1px solid var(--border-glass);
-    color: var(--text-primary);
-    width: 36px; height: 36px;
-    border-radius: 10px;
-    display: flex; align-items: center; justify-content: center;
-    cursor: pointer;
-    font-size: 0.95rem;
-}
-.settings-trigger-btn:active { transform: scale(0.92); }
+/* ── Settings trigger — now a floating action button, see FAB rules below ── */
 
 /* ── Settings Bottom Sheet ───────────────────────────────── */
 .settings-sheet-backdrop {
@@ -2425,7 +2414,7 @@ html[data-fontsize="xlarge"] .opt-text { font-size: 1.14rem; }
    (added broadly below to the interactive classes already used
    across the app, without touching their existing rules above). ── */
 .btn-primary-gradient, .btn-secondary, .portal-card, .option-node,
-.topic-mega-card, .vault-set-card, .nav-tab, .settings-trigger-btn,
+.topic-mega-card, .vault-set-card, .nav-tab, .settings-fab,
 .theme-swatch, .fontsize-btn, .rank-period-btn {
     position: relative;
     overflow: hidden;
@@ -2489,4 +2478,330 @@ html[data-fontsize="xlarge"] .opt-text { font-size: 1.14rem; }
 .settings-toggle-switch input:checked + .settings-toggle-slider::before {
     transform: translateX(18px);
     background: #0a0b12;
+}
+
+/* ═══════════════════════════════════════════════════════════
+   PHASE 2 — REAL VISUAL TRANSFORMATION
+   Floating settings FAB, distinct animated theme backgrounds,
+   living mesh-gradient card backgrounds, answer selection
+   animation, confetti celebration, page transitions.
+   ═══════════════════════════════════════════════════════════ */
+
+/* ── Floating Settings Button (replaces cramped header button) ──
+   Sits above the bottom nav, right-aligned, clear of content. ── */
+.settings-fab {
+    position: fixed;
+    right: 16px;
+    bottom: calc(84px + var(--safe-area-bottom));
+    width: 50px; height: 50px;
+    border-radius: 50%;
+    background: linear-gradient(135deg, var(--neon-cyan), var(--purple-neon));
+    border: none;
+    color: #05060d;
+    font-size: 1.05rem;
+    display: flex; align-items: center; justify-content: center;
+    cursor: pointer;
+    z-index: 85;
+    box-shadow: 0 6px 20px -4px var(--neon-cyan-glow), 0 2px 8px rgba(0,0,0,0.4);
+    transition: transform 0.25s cubic-bezier(0.34,1.56,0.64,1), box-shadow 0.25s ease;
+}
+.settings-fab:active { transform: scale(0.88) rotate(25deg); }
+.settings-fab i { animation: fabGearSpin 8s linear infinite; }
+@keyframes fabGearSpin { to { transform: rotate(360deg); } }
+
+/* Hide FAB while a full-overlay view (quiz/result) is active so it
+   never floats over quiz content — toggled via body class in JS. */
+body.hide-settings-fab .settings-fab { display: none; }
+
+/* ══════════════════════════════════════════════════════════
+   DISTINCT ANIMATED THEME BACKGROUNDS
+   Each theme now has its own moving mesh-gradient identity,
+   not just swapped CSS variables. Applied to #live-theme-layer.
+   ══════════════════════════════════════════════════════════ */
+
+#live-theme-layer {
+    position: fixed; inset: 0;
+    z-index: 0;
+    pointer-events: none;
+    overflow: hidden;
+}
+
+/* Shared mesh blob base */
+.mesh-blob {
+    position: absolute;
+    border-radius: 50%;
+    filter: blur(60px);
+    will-change: transform, opacity;
+}
+
+/* ── AURORA theme: cyan/gold/purple slow drifting mesh ──────── */
+html:not([data-theme]) #live-theme-layer,
+html[data-theme=""] #live-theme-layer {
+    background:
+        radial-gradient(ellipse 80% 50% at 20% 0%, rgba(0,242,254,0.16), transparent 60%),
+        radial-gradient(ellipse 60% 50% at 90% 20%, rgba(255,184,0,0.10), transparent 55%),
+        radial-gradient(ellipse 70% 60% at 50% 100%, rgba(168,85,247,0.14), transparent 60%);
+    animation: auroraDrift 18s ease-in-out infinite alternate;
+}
+@keyframes auroraDrift {
+    0%   { background-position: 0% 0%, 0% 0%, 0% 0%; filter: hue-rotate(0deg); }
+    50%  { filter: hue-rotate(8deg); }
+    100% { background-position: 5% 5%, -5% 5%, 0% -5%; filter: hue-rotate(0deg); }
+}
+
+/* ── MIDNIGHT theme: deep indigo/violet starfield with slow rotation ── */
+html[data-theme="midnight"] #live-theme-layer {
+    background:
+        radial-gradient(ellipse 70% 50% at 15% 10%, rgba(109,139,255,0.20), transparent 55%),
+        radial-gradient(ellipse 55% 45% at 85% 15%, rgba(139,92,246,0.18), transparent 55%),
+        radial-gradient(ellipse 80% 60% at 50% 105%, rgba(30,20,80,0.35), transparent 65%);
+    animation: midnightDrift 22s ease-in-out infinite alternate;
+}
+@keyframes midnightDrift {
+    0%   { background-position: 0% 0%, 0% 0%, 0% 0%; }
+    100% { background-position: -8% 6%, 8% -4%, 0% -6%; }
+}
+html[data-theme="midnight"] .theme-star {
+    background: #cdd6ff !important;
+    box-shadow: 0 0 6px rgba(205,214,255,0.8);
+}
+
+/* ── NEON theme: hot pink/cyan cyberpunk pulse mesh ──────────── */
+html[data-theme="neon"] #live-theme-layer {
+    background:
+        radial-gradient(ellipse 65% 45% at 10% 5%, rgba(0,229,255,0.22), transparent 55%),
+        radial-gradient(ellipse 60% 50% at 95% 25%, rgba(255,46,166,0.20), transparent 55%),
+        radial-gradient(ellipse 75% 55% at 50% 105%, rgba(192,38,211,0.20), transparent 60%);
+    animation: neonPulseDrift 9s ease-in-out infinite alternate;
+}
+@keyframes neonPulseDrift {
+    0%   { background-position: 0% 0%, 0% 0%, 0% 0%; opacity: 0.85; }
+    50%  { opacity: 1; }
+    100% { background-position: 6% -4%, -6% 4%, 0% -5%; opacity: 0.9; }
+}
+html[data-theme="neon"] .theme-star {
+    background: #ff2ea6 !important;
+    box-shadow: 0 0 8px rgba(255,46,166,0.9);
+}
+
+/* theme-orb repurposed as moving mesh-blob accents (JS keeps markup) */
+.theme-orb {
+    position: absolute;
+    width: 260px; height: 260px;
+    border-radius: 50%;
+    filter: blur(90px);
+    opacity: 0.5;
+    animation: themeOrbFloat 14s ease-in-out infinite alternate;
+}
+.theme-orb:nth-child(1) { top: -8%; left: -10%; background: var(--neon-cyan); animation-delay: 0s; }
+.theme-orb:nth-child(2) { top: 40%; right: -14%; background: var(--purple-neon); animation-delay: -5s; }
+.theme-orb:nth-child(3) { bottom: -10%; left: 20%; background: var(--gold-premium); animation-delay: -9s; }
+@keyframes themeOrbFloat {
+    0%   { transform: translate(0,0) scale(1); }
+    50%  { transform: translate(20px,-25px) scale(1.15); }
+    100% { transform: translate(-15px,15px) scale(0.95); }
+}
+.theme-star {
+    position: absolute;
+    background: #fff;
+    border-radius: 50%;
+    animation: themeStarTwinkle 3s ease-in-out infinite;
+}
+@keyframes themeStarTwinkle {
+    0%, 100% { opacity: 0.15; }
+    50% { opacity: 0.9; }
+}
+
+/* ══════════════════════════════════════════════════════════
+   LIVING CARD BACKGROUNDS
+   Dashboard portal cards + topic mega cards get an animated
+   internal mesh-gradient "aura" layer that slowly shifts —
+   gives depth/motion without any external images (copyright-safe).
+   ══════════════════════════════════════════════════════════ */
+
+.portal-card {
+    position: relative;
+    isolation: isolate;
+}
+.portal-card::after {
+    content: '';
+    position: absolute; inset: 0;
+    z-index: -1;
+    background:
+        radial-gradient(circle at 15% 20%, rgba(255,255,255,0.10), transparent 40%),
+        radial-gradient(circle at 85% 80%, rgba(255,255,255,0.06), transparent 45%);
+    background-size: 180% 180%;
+    animation: cardAuraShift 10s ease-in-out infinite alternate;
+    border-radius: inherit;
+}
+.cyan-gradient-card::after {
+    background:
+        radial-gradient(circle at 15% 15%, rgba(0,242,254,0.22), transparent 42%),
+        radial-gradient(circle at 90% 85%, rgba(0,100,254,0.14), transparent 48%);
+    background-size: 200% 200%;
+}
+.gold-gradient-card::after {
+    background:
+        radial-gradient(circle at 15% 15%, rgba(255,184,0,0.24), transparent 42%),
+        radial-gradient(circle at 90% 85%, rgba(255,100,0,0.14), transparent 48%);
+    background-size: 200% 200%;
+}
+@keyframes cardAuraShift {
+    0%   { background-position: 0% 0%; }
+    100% { background-position: 100% 100%; }
+}
+
+/* Topic mega cards — subtle rotating conic sheen sweep */
+.topic-mega-card {
+    isolation: isolate;
+}
+.topic-mega-card::after {
+    content: '';
+    position: absolute; inset: -40%;
+    z-index: -1;
+    background: conic-gradient(from 0deg,
+        transparent 0deg,
+        rgba(0,242,254,0.10) 60deg,
+        transparent 130deg,
+        rgba(168,85,247,0.08) 220deg,
+        transparent 300deg,
+        rgba(0,242,254,0.10) 360deg);
+    animation: meshRotate 16s linear infinite;
+}
+@keyframes meshRotate {
+    to { transform: rotate(360deg); }
+}
+
+/* Vault set cards + glass cards get a gentler breathing glow */
+.vault-set-card, .glass-card {
+    position: relative;
+}
+
+/* Respect reduced motion */
+@media (prefers-reduced-motion: reduce) {
+    .theme-orb, .topic-mega-card::after, .portal-card::after,
+    #live-theme-layer, .theme-star { animation: none !important; }
+}
+
+/* ══════════════════════════════════════════════════════════
+   PAGE TRANSITIONS (Tier A3)
+   Views slide/fade based on navigation direction instead of
+   the old flat opacity-only swap.
+   ══════════════════════════════════════════════════════════ */
+.app-view {
+    display: none;
+    opacity: 0;
+    transform: translateX(0) translateY(0);
+}
+.app-view.active {
+    display: block;
+    animation: viewEnterForward 0.34s cubic-bezier(0.16,1,0.3,1) forwards;
+}
+.app-view.active.view-back {
+    animation: viewEnterBack 0.34s cubic-bezier(0.16,1,0.3,1) forwards;
+}
+@keyframes viewEnterForward {
+    from { opacity: 0; transform: translateX(24px); }
+    to   { opacity: 1; transform: translateX(0); }
+}
+@keyframes viewEnterBack {
+    from { opacity: 0; transform: translateX(-24px); }
+    to   { opacity: 1; transform: translateX(0); }
+}
+.full-overlay-view.active {
+    animation: overlaySlideUp 0.36s cubic-bezier(0.16,1,0.3,1) forwards;
+}
+@keyframes overlaySlideUp {
+    from { opacity: 0; transform: translateY(28px); }
+    to   { opacity: 1; transform: translateY(0); }
+}
+
+/* ══════════════════════════════════════════════════════════
+   STAGGERED CARD ENTRANCE (dashboard + topic grid + vault)
+   Each direct card child fades/slides in with incremental delay,
+   driven by inline --stagger-i set by JS on render.
+   ══════════════════════════════════════════════════════════ */
+.stagger-in {
+    opacity: 0;
+    transform: translateY(16px);
+    animation: staggerRise 0.5s cubic-bezier(0.16,1,0.3,1) forwards;
+    animation-delay: calc(var(--stagger-i, 0) * 55ms);
+}
+@keyframes staggerRise {
+    to { opacity: 1; transform: translateY(0); }
+}
+
+/* ══════════════════════════════════════════════════════════
+   ANSWER SELECTION ANIMATION (Tier D1 — highest priority)
+   Applied to .option-node when JS adds data-state="correct" |
+   "wrong" | "selected-pending" on tap.
+   ══════════════════════════════════════════════════════════ */
+.option-node {
+    transition: transform 0.18s cubic-bezier(0.34,1.56,0.64,1),
+                background-color 0.28s ease,
+                border-color 0.28s ease,
+                box-shadow 0.28s ease;
+}
+.option-node.tap-pending {
+    transform: scale(1.03);
+    border-color: var(--neon-cyan-glow);
+    background: rgba(0,242,254,0.08);
+}
+.option-node.correct {
+    animation: optionCorrectPop 0.4s ease;
+    box-shadow: 0 0 18px -2px rgba(16,185,129,0.4);
+}
+.option-node.incorrect {
+    animation: optionWrongShake 0.4s ease;
+    box-shadow: 0 0 18px -2px rgba(239,68,68,0.3);
+}
+@keyframes optionCorrectPop {
+    0%   { transform: scale(1); }
+    40%  { transform: scale(1.045); }
+    100% { transform: scale(1); }
+}
+@keyframes optionWrongShake {
+    0%, 100% { transform: translateX(0); }
+    20%  { transform: translateX(-6px); }
+    40%  { transform: translateX(5px); }
+    60%  { transform: translateX(-3px); }
+    80%  { transform: translateX(2px); }
+}
+.option-indicator::after {
+    display: inline-block;
+    animation: resultIconSpin 0.4s cubic-bezier(0.34,1.56,0.64,1) forwards;
+}
+@keyframes resultIconSpin {
+    from { transform: rotate(-160deg) scale(0); opacity: 0; }
+    to   { transform: rotate(0deg) scale(1); opacity: 1; }
+}
+
+/* ══════════════════════════════════════════════════════════
+   RESULT SCREEN CONFETTI CELEBRATION (Tier D2)
+   Lightweight CSS-driven particles, spawned by JS as fixed-position
+   divs appended to document.body, auto-removed after ~4s.
+   ══════════════════════════════════════════════════════════ */
+/* Confetti now uses the enhanced single definition further up the
+   file (search "Confetti burst for perfect scores") — kept here only
+   as a marker comment so this section isn't accidentally re-added. */
+
+/* Result stat cards cascade in (staggered via .stagger-in reused) */
+.res-card { opacity: 0; transform: translateY(14px) scale(0.94); }
+.res-card.stagger-in { animation: resCardRise 0.45s cubic-bezier(0.16,1,0.3,1) forwards; }
+@keyframes resCardRise {
+    to { opacity: 1; transform: translateY(0) scale(1); }
+}
+
+/* Score counter number pop while animating (JS updates textContent) */
+.res-val.counting { color: var(--neon-cyan); }
+
+/* Crown/trophy gets a stronger celebratory glow pulse on result entry */
+.crown-badge-wrapper {
+    animation: crownBounceGlow 1.1s cubic-bezier(0.34,1.56,0.64,1);
+}
+@keyframes crownBounceGlow {
+    0%   { transform: scale(0.3) translateY(20px); opacity: 0; filter: drop-shadow(0 0 0 transparent); }
+    50%  { transform: scale(1.2) translateY(-6px); opacity: 1; filter: drop-shadow(0 0 24px var(--gold-glow)); }
+    75%  { transform: scale(0.94) translateY(2px); }
+    100% { transform: scale(1) translateY(0); filter: drop-shadow(0 0 14px var(--gold-glow)); }
 }
