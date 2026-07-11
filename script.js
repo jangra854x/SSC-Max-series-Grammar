@@ -94,7 +94,7 @@ let appState = {
     quiz:{ active:false, type:'free', title:'', quizCategory:null, questions:[], currentIndex:0, selectedOption:null, correctCount:0, wrongCount:0, timeSeconds:0, stopwatchInterval:null, vaultTopic:null, vaultSetId:null },
     cache:{ activeFreeDate:null, leaderboard:null, resultRankLoaded:false },
     // Phase 1 preferences (localStorage-backed, see initPreferences())
-    currentTheme:'aurora', currentFontSize:'normal', hapticEnabled:true
+    currentFontSize:'normal', hapticEnabled:true
 };
 
 class SSCMaxVocabEngine {
@@ -1480,15 +1480,11 @@ class SSCMaxVocabEngine {
     }
 
     // ══════════════════════════════════════════════════════════════
-    // PHASE 1 — THEME SYSTEM, FONT SIZE ADJUSTER, RIPPLE, SETTINGS SHEET
+    // PHASE 1 — FONT SIZE ADJUSTER, RIPPLE, SETTINGS SHEET
     // Pure client-side, localStorage-backed, no Supabase changes.
     // ══════════════════════════════════════════════════════════════
 
     initPreferences() {
-        // Theme
-        const savedTheme = localStorage.getItem('ssc_theme') || 'aurora';
-        this.applyTheme(savedTheme, false);
-
         // Font size
         const savedFontSize = localStorage.getItem('ssc_fontsize') || 'normal';
         this.applyFontSize(savedFontSize, false);
@@ -1500,21 +1496,6 @@ class SSCMaxVocabEngine {
         if (hapticToggle) hapticToggle.checked = appState.hapticEnabled;
 
         this.initRippleEffect();
-    }
-
-    // ── Theme ────────────────────────────────────────────────────
-    applyTheme(themeName, animate = true) {
-        document.documentElement.setAttribute('data-theme', themeName === 'aurora' ? '' : themeName);
-        document.querySelectorAll('.theme-swatch').forEach(sw => {
-            sw.classList.toggle('active-theme', sw.getAttribute('data-theme-choice') === themeName);
-        });
-        appState.currentTheme = themeName;
-        if (animate) this.triggerHaptic('select');
-    }
-
-    setTheme(themeName) {
-        this.applyTheme(themeName, true);
-        localStorage.setItem('ssc_theme', themeName);
     }
 
     // ── Font Size ────────────────────────────────────────────────
@@ -1563,7 +1544,7 @@ class SSCMaxVocabEngine {
     // Delegated pointerdown listener — works for elements added
     // dynamically after quiz/topic data loads, no per-element binding needed.
     initRippleEffect() {
-        const rippleSelector = '.btn-primary-gradient, .btn-secondary, .portal-card, .option-node, .topic-mega-card, .vault-set-card, .nav-tab, .settings-fab, .theme-swatch, .fontsize-btn, .rank-period-btn';
+        const rippleSelector = '.btn-primary-gradient, .btn-secondary, .portal-card, .option-node, .topic-mega-card, .vault-set-card, .nav-tab, .settings-fab, .fontsize-btn, .rank-period-btn';
         document.addEventListener('pointerdown', (e) => {
             const target = e.target.closest(rippleSelector);
             if (!target) return;

@@ -2252,82 +2252,6 @@ body { height: 100dvh; }
    Font Size Adjuster. Pure additive, nothing above is removed.
    ═══════════════════════════════════════════════════════════ */
 
-/* ── Theme System ──────────────────────────────────────────
-   Default (no attribute) = Aurora (existing cyan/gold/purple).
-   Switch via: document.documentElement.setAttribute('data-theme','midnight'|'neon')
-   Stored in localStorage by script.js (key: ssc_theme). ── */
-
-html[data-theme="midnight"] {
-    --bg-dark: #05060d;
-    --bg-card: rgba(20, 20, 42, 0.75);
-    --bg-card-solid: #14142a;
-    --bg-explanation: #10101f;
-    --neon-cyan: #6d8bff;
-    --neon-cyan-glow: rgba(109, 139, 255, 0.35);
-    --gold-premium: #ffb800;
-    --gold-glow: rgba(255, 184, 0, 0.35);
-    --purple-neon: #8b5cf6;
-    --purple-glow: rgba(139, 92, 246, 0.55);
-    --text-primary: #eef0fb;
-    --text-muted: #8286a8;
-    --border-glass: rgba(255, 255, 255, 0.09);
-    --border-glass-focus: rgba(109, 139, 255, 0.45);
-}
-
-html[data-theme="neon"] {
-    --bg-dark: #08060c;
-    --bg-card: rgba(28, 16, 34, 0.75);
-    --bg-card-solid: #1c1022;
-    --bg-explanation: #150c1a;
-    --neon-cyan: #00e5ff;
-    --neon-cyan-glow: rgba(0, 229, 255, 0.4);
-    --gold-premium: #ff2ea6;
-    --gold-glow: rgba(255, 46, 166, 0.4);
-    --purple-neon: #c026d3;
-    --purple-glow: rgba(192, 38, 211, 0.55);
-    --text-primary: #fbeeff;
-    --text-muted: #9b8aa6;
-    --border-glass: rgba(255, 255, 255, 0.1);
-    --border-glass-focus: rgba(0, 229, 255, 0.5);
-}
-
-/* Smooth theme-swap transition on the properties that change */
-body, .glass-card, .btn-primary-gradient, .bottom-nav-bar, .app-header {
-    transition: background-color 0.35s ease, border-color 0.35s ease;
-}
-
-/* ── Theme Picker UI (settings sheet) ────────────────────── */
-.theme-picker-row {
-    display: flex;
-    gap: 12px;
-    margin-top: 12px;
-}
-.theme-swatch {
-    flex: 1;
-    border-radius: 14px;
-    padding: 12px 10px;
-    border: 2px solid var(--border-glass);
-    background: var(--bg-card-solid);
-    text-align: center;
-    cursor: pointer;
-    transition: border-color 0.2s ease, transform 0.15s ease;
-}
-.theme-swatch:active { transform: scale(0.96); }
-.theme-swatch.active-theme { border-color: var(--neon-cyan); box-shadow: 0 0 0 3px var(--neon-cyan-glow); }
-.theme-swatch-dots { display: flex; justify-content: center; gap: 5px; margin-bottom: 8px; }
-.theme-swatch-dot { width: 14px; height: 14px; border-radius: 50%; }
-.theme-swatch-label { font-size: 0.72rem; font-weight: 700; color: var(--text-primary); }
-
-.swatch-aurora .dot-1 { background: #00f2fe; }
-.swatch-aurora .dot-2 { background: #ffb800; }
-.swatch-aurora .dot-3 { background: #a855f7; }
-.swatch-midnight .dot-1 { background: #6d8bff; }
-.swatch-midnight .dot-2 { background: #ffb800; }
-.swatch-midnight .dot-3 { background: #8b5cf6; }
-.swatch-neon .dot-1 { background: #00e5ff; }
-.swatch-neon .dot-2 { background: #ff2ea6; }
-.swatch-neon .dot-3 { background: #c026d3; }
-
 /* ── Settings trigger — now a floating action button, see FAB rules below ── */
 
 /* ── Settings Bottom Sheet ───────────────────────────────── */
@@ -2415,7 +2339,7 @@ html[data-fontsize="xlarge"] .opt-text { font-size: 1.14rem; }
    across the app, without touching their existing rules above). ── */
 .btn-primary-gradient, .btn-secondary, .portal-card, .option-node,
 .topic-mega-card, .vault-set-card, .nav-tab, .settings-fab,
-.theme-swatch, .fontsize-btn, .rank-period-btn {
+.fontsize-btn, .rank-period-btn {
     position: relative;
     overflow: hidden;
 }
@@ -2514,9 +2438,11 @@ html[data-fontsize="xlarge"] .opt-text { font-size: 1.14rem; }
 body.hide-settings-fab .settings-fab { display: none; }
 
 /* ══════════════════════════════════════════════════════════
-   DISTINCT ANIMATED THEME BACKGROUNDS
-   Each theme now has its own moving mesh-gradient identity,
-   not just swapped CSS variables. Applied to #live-theme-layer.
+   AMBIENT BACKGROUND — lightweight, static (no continuous
+   animation loop). Previous version ran multiple blurred +
+   conic-gradient animations at once which caused real lag on
+   mid-range phones inside Telegram's WebView; replaced with a
+   single static radial-gradient wash, GPU-cheap.
    ══════════════════════════════════════════════════════════ */
 
 #live-theme-layer {
@@ -2524,163 +2450,43 @@ body.hide-settings-fab .settings-fab { display: none; }
     z-index: 0;
     pointer-events: none;
     overflow: hidden;
-}
-
-/* Shared mesh blob base */
-.mesh-blob {
-    position: absolute;
-    border-radius: 50%;
-    filter: blur(60px);
-    will-change: transform, opacity;
-}
-
-/* ── AURORA theme: cyan/gold/purple slow drifting mesh ──────── */
-html:not([data-theme]) #live-theme-layer,
-html[data-theme=""] #live-theme-layer {
     background:
-        radial-gradient(ellipse 80% 50% at 20% 0%, rgba(0,242,254,0.16), transparent 60%),
-        radial-gradient(ellipse 60% 50% at 90% 20%, rgba(255,184,0,0.10), transparent 55%),
-        radial-gradient(ellipse 70% 60% at 50% 100%, rgba(168,85,247,0.14), transparent 60%);
-    animation: auroraDrift 18s ease-in-out infinite alternate;
-}
-@keyframes auroraDrift {
-    0%   { background-position: 0% 0%, 0% 0%, 0% 0%; filter: hue-rotate(0deg); }
-    50%  { filter: hue-rotate(8deg); }
-    100% { background-position: 5% 5%, -5% 5%, 0% -5%; filter: hue-rotate(0deg); }
+        radial-gradient(ellipse 70% 45% at 15% 0%, rgba(0,242,254,0.10), transparent 55%),
+        radial-gradient(ellipse 55% 40% at 100% 15%, rgba(255,184,0,0.06), transparent 50%),
+        radial-gradient(ellipse 65% 50% at 40% 100%, rgba(168,85,247,0.08), transparent 55%);
 }
 
-/* ── MIDNIGHT theme: deep indigo/violet starfield with slow rotation ── */
-html[data-theme="midnight"] #live-theme-layer {
-    background:
-        radial-gradient(ellipse 70% 50% at 15% 10%, rgba(109,139,255,0.20), transparent 55%),
-        radial-gradient(ellipse 55% 45% at 85% 15%, rgba(139,92,246,0.18), transparent 55%),
-        radial-gradient(ellipse 80% 60% at 50% 105%, rgba(30,20,80,0.35), transparent 65%);
-    animation: midnightDrift 22s ease-in-out infinite alternate;
-}
-@keyframes midnightDrift {
-    0%   { background-position: 0% 0%, 0% 0%, 0% 0%; }
-    100% { background-position: -8% 6%, 8% -4%, 0% -6%; }
-}
-html[data-theme="midnight"] .theme-star {
-    background: #cdd6ff !important;
-    box-shadow: 0 0 6px rgba(205,214,255,0.8);
-}
-
-/* ── NEON theme: hot pink/cyan cyberpunk pulse mesh ──────────── */
-html[data-theme="neon"] #live-theme-layer {
-    background:
-        radial-gradient(ellipse 65% 45% at 10% 5%, rgba(0,229,255,0.22), transparent 55%),
-        radial-gradient(ellipse 60% 50% at 95% 25%, rgba(255,46,166,0.20), transparent 55%),
-        radial-gradient(ellipse 75% 55% at 50% 105%, rgba(192,38,211,0.20), transparent 60%);
-    animation: neonPulseDrift 9s ease-in-out infinite alternate;
-}
-@keyframes neonPulseDrift {
-    0%   { background-position: 0% 0%, 0% 0%, 0% 0%; opacity: 0.85; }
-    50%  { opacity: 1; }
-    100% { background-position: 6% -4%, -6% 4%, 0% -5%; opacity: 0.9; }
-}
-html[data-theme="neon"] .theme-star {
-    background: #ff2ea6 !important;
-    box-shadow: 0 0 8px rgba(255,46,166,0.9);
-}
-
-/* theme-orb repurposed as moving mesh-blob accents (JS keeps markup) */
+/* theme-orb / theme-star markup is still injected by JS (harmless,
+   kept for structural compatibility) but no longer animated —
+   rendered as soft static accents only. */
 .theme-orb {
     position: absolute;
-    width: 260px; height: 260px;
+    width: 220px; height: 220px;
     border-radius: 50%;
-    filter: blur(90px);
-    opacity: 0.5;
-    animation: themeOrbFloat 14s ease-in-out infinite alternate;
+    filter: blur(70px);
+    opacity: 0.22;
 }
-.theme-orb:nth-child(1) { top: -8%; left: -10%; background: var(--neon-cyan); animation-delay: 0s; }
-.theme-orb:nth-child(2) { top: 40%; right: -14%; background: var(--purple-neon); animation-delay: -5s; }
-.theme-orb:nth-child(3) { bottom: -10%; left: 20%; background: var(--gold-premium); animation-delay: -9s; }
-@keyframes themeOrbFloat {
-    0%   { transform: translate(0,0) scale(1); }
-    50%  { transform: translate(20px,-25px) scale(1.15); }
-    100% { transform: translate(-15px,15px) scale(0.95); }
-}
+.theme-orb:nth-child(1) { top: -8%; left: -10%; background: var(--neon-cyan); }
+.theme-orb:nth-child(2) { top: 40%; right: -14%; background: var(--purple-neon); }
+.theme-orb:nth-child(3) { bottom: -10%; left: 20%; background: var(--gold-premium); }
 .theme-star {
     position: absolute;
     background: #fff;
     border-radius: 50%;
-    animation: themeStarTwinkle 3s ease-in-out infinite;
-}
-@keyframes themeStarTwinkle {
-    0%, 100% { opacity: 0.15; }
-    50% { opacity: 0.9; }
+    opacity: 0.35;
 }
 
 /* ══════════════════════════════════════════════════════════
-   LIVING CARD BACKGROUNDS
-   Dashboard portal cards + topic mega cards get an animated
-   internal mesh-gradient "aura" layer that slowly shifts —
-   gives depth/motion without any external images (copyright-safe).
+   CARD BACKGROUNDS — flat, no per-card animation.
+   Dashboard portal cards and topic cards keep their existing
+   static gradient fills (defined earlier in the file); no
+   extra ::after aura/conic layers are added, keeping paint
+   cost low on every card at once.
    ══════════════════════════════════════════════════════════ */
 
-.portal-card {
-    position: relative;
-    isolation: isolate;
-}
-.portal-card::after {
-    content: '';
-    position: absolute; inset: 0;
-    z-index: -1;
-    background:
-        radial-gradient(circle at 15% 20%, rgba(255,255,255,0.10), transparent 40%),
-        radial-gradient(circle at 85% 80%, rgba(255,255,255,0.06), transparent 45%);
-    background-size: 180% 180%;
-    animation: cardAuraShift 10s ease-in-out infinite alternate;
-    border-radius: inherit;
-}
-.cyan-gradient-card::after {
-    background:
-        radial-gradient(circle at 15% 15%, rgba(0,242,254,0.22), transparent 42%),
-        radial-gradient(circle at 90% 85%, rgba(0,100,254,0.14), transparent 48%);
-    background-size: 200% 200%;
-}
-.gold-gradient-card::after {
-    background:
-        radial-gradient(circle at 15% 15%, rgba(255,184,0,0.24), transparent 42%),
-        radial-gradient(circle at 90% 85%, rgba(255,100,0,0.14), transparent 48%);
-    background-size: 200% 200%;
-}
-@keyframes cardAuraShift {
-    0%   { background-position: 0% 0%; }
-    100% { background-position: 100% 100%; }
-}
-
-/* Topic mega cards — subtle rotating conic sheen sweep */
-.topic-mega-card {
-    isolation: isolate;
-}
-.topic-mega-card::after {
-    content: '';
-    position: absolute; inset: -40%;
-    z-index: -1;
-    background: conic-gradient(from 0deg,
-        transparent 0deg,
-        rgba(0,242,254,0.10) 60deg,
-        transparent 130deg,
-        rgba(168,85,247,0.08) 220deg,
-        transparent 300deg,
-        rgba(0,242,254,0.10) 360deg);
-    animation: meshRotate 16s linear infinite;
-}
-@keyframes meshRotate {
-    to { transform: rotate(360deg); }
-}
-
-/* Vault set cards + glass cards get a gentler breathing glow */
-.vault-set-card, .glass-card {
-    position: relative;
-}
-
-/* Respect reduced motion */
+/* Respect reduced motion for the one-shot entrance animations below */
 @media (prefers-reduced-motion: reduce) {
-    .theme-orb, .topic-mega-card::after, .portal-card::after,
-    #live-theme-layer, .theme-star { animation: none !important; }
+    .app-view, .stagger-in, .option-node, .res-card, .crown-badge-wrapper { animation: none !important; }
 }
 
 /* ══════════════════════════════════════════════════════════
