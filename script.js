@@ -92,7 +92,9 @@ let appState = {
     searchQuery:'', activeVaultTopic:null, streak:0,
     activeTopicGroup:null, activeTopicLetter:null,
     quiz:{ active:false, type:'free', title:'', quizCategory:null, questions:[], currentIndex:0, selectedOption:null, correctCount:0, wrongCount:0, timeSeconds:0, stopwatchInterval:null, vaultTopic:null, vaultSetId:null },
-    cache:{ activeFreeDate:null, leaderboard:null, resultRankLoaded:false }
+    cache:{ activeFreeDate:null, leaderboard:null, resultRankLoaded:false },
+    // Phase 1 preferences (localStorage-backed, see initPreferences())
+    currentTheme:'aurora', currentFontSize:'normal', hapticEnabled:true
 };
 
 class SSCMaxVocabEngine {
@@ -100,6 +102,7 @@ class SSCMaxVocabEngine {
         this.initDOMNodes();
         this.bindNavigationEvents();
         this.injectLiveThemeLayer();
+        this.initPreferences();
         this.renderPremiumTopicsGrid(); // topics render immediately on dashboard, no click needed
         this.initTelegramContext();
     }
@@ -825,6 +828,7 @@ class SSCMaxVocabEngine {
     }
 
     triggerHaptic(type) {
+        if (appState.hapticEnabled === false) return;
         const h=window.Telegram?.WebApp?.HapticFeedback; if(!h) return;
         try {
             if(type==='select')  h.selectionChanged();
@@ -1425,6 +1429,106 @@ class SSCMaxVocabEngine {
         const t=document.createElement('div'); t.id='app-toast-alert';
         Object.assign(t.style,{position:'fixed',bottom:'95px',left:'50%',transform:'translateX(-50%)',background:'rgba(18,22,39,0.97)',border:'1px solid var(--neon-cyan)',color:'#fff',padding:'12px 24px',borderRadius:'30px',fontSize:'0.8rem',fontWeight:'700',zIndex:'9999',boxShadow:'0 0 18px var(--neon-cyan-glow)',whiteSpace:'nowrap',pointerEvents:'none'});
         t.innerText=msg; document.body.appendChild(t); setTimeout(()=>t.remove(),2600);
+    }
+
+    // ══════════════════════════════════════════════════════════════
+    // PHASE 1 — THEME SYSTEM, FONT SIZE ADJUSTER, RIPPLE, SETTINGS SHEET
+    // Pure client-side, localStorage-backed, no Supabase changes.
+    // ══════════════════════════════════════════════════════════════
+
+    initPreferences() {
+        // Theme
+        const savedTheme = localStorage.getItem('ssc_theme') || 'aurora';
+        this.applyTheme(savedTheme, false);
+
+        // Font size
+        const savedFontSize = localStorage.getItem('ssc_fontsize') || 'normal';
+        this.applyFontSize(savedFontSize, false);
+
+        // Haptic toggle
+        const hapticOn = localStorage.getItem('ssc_haptic_enabled');
+        appState.hapticEnabled = hapticOn === null ? true : hapticOn === 'true';
+        const hapticToggle = document.getElementById('toggle-haptic');
+        if (hapticToggle) hapticToggle.checked = appState.hapticEnabled;
+
+        this.initRippleEffect();
+    }
+
+    // ── Theme ────────────────────────────────────────────────────
+    applyTheme(themeName, animate = true) {
+        document.documentElement.setAttribute('data-theme', themeName === 'aurora' ? '' : themeName);
+        document.querySelectorAll('.theme-swatch').forEach(sw => {
+            sw.classList.toggle('active-theme', sw.getAttribute('data-theme-choice') === themeName);
+        });
+        appState.currentTheme = themeName;
+        if (animate) this.triggerHaptic('select');
+    }
+
+    setTheme(themeName) {
+        this.applyTheme(themeName, true);
+        localStorage.setItem('ssc_theme', themeName);
+    }
+
+    // ── Font Size ────────────────────────────────────────────────
+    applyFontSize(sizeName, animate = true) {
+        document.documentElement.setAttribute('data-fontsize', sizeName);
+        const labels = { small: 'Small', normal: 'Normal', large: 'Large', xlarge: 'Extra Large' };
+        const lbl = document.getElementById('fontsize-current-label');
+        if (lbl) lbl.innerText = labels[sizeName] || 'Normal';
+        appState.currentFontSize = sizeName;
+        if (animate) this.triggerHaptic('select');
+    }
+
+    adjustFontSize(direction) {
+        const steps = ['small', 'normal', 'large', 'xlarge'];
+        const current = appState.currentFontSize || 'normal';
+        let idx = steps.indexOf(current);
+        idx = Math.min(steps.length - 1, Math.max(0, idx + direction));
+        const next = steps[idx];
+        this.applyFontSize(next, true);
+        localStorage.setItem('ssc_fontsize', next);
+    }
+
+    // ── Settings toggle (haptic on/off, extensible later) ───────
+    toggleSetting(key, value) {
+        if (key === 'haptic') {
+            appState.hapticEnabled = value;
+            localStorage.setItem('ssc_haptic_enabled', value ? 'true' : 'false');
+        }
+    }
+
+    // ── Settings Sheet open/close ────────────────────────────────
+    openSettingsSheet() {
+        const bd = document.getElementById('settings-sheet-backdrop');
+        if (bd) bd.classList.add('open');
+        this.triggerHaptic('select');
+    }
+    closeSettingsSheet() {
+        const bd = document.getElementById('settings-sheet-backdrop');
+        if (bd) bd.classList.remove('open');
+    }
+    closeSettingsSheetIfBackdrop(e) {
+        if (e.target && e.target.id === 'settings-sheet-backdrop') this.closeSettingsSheet();
+    }
+
+    // ── Ripple Effect ────────────────────────────────────────────
+    // Delegated pointerdown listener — works for elements added
+    // dynamically after quiz/topic data loads, no per-element binding needed.
+    initRippleEffect() {
+        const rippleSelector = '.btn-primary-gradient, .btn-secondary, .portal-card, .option-node, .topic-mega-card, .vault-set-card, .nav-tab, .settings-trigger-btn, .theme-swatch, .fontsize-btn, .rank-period-btn';
+        document.addEventListener('pointerdown', (e) => {
+            const target = e.target.closest(rippleSelector);
+            if (!target) return;
+            const rect = target.getBoundingClientRect();
+            const size = Math.max(rect.width, rect.height) * 1.4;
+            const dot = document.createElement('span');
+            dot.className = 'ripple-dot';
+            dot.style.width = dot.style.height = `${size}px`;
+            dot.style.left = `${e.clientX - rect.left - size / 2}px`;
+            dot.style.top = `${e.clientY - rect.top - size / 2}px`;
+            target.appendChild(dot);
+            setTimeout(() => dot.remove(), 650);
+        }, { passive: true });
     }
 }
 

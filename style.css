@@ -159,7 +159,7 @@ body.premium-enhanced .bg-glow {
     width: 100%; height: 100%;
     background: var(--bg-dark);
     z-index: 100;
-    padding: 24px 20px;
+    padding: 24px 20px calc(100px + var(--safe-area-bottom)) 20px;
     overflow-y: auto;
 }
 
@@ -2246,4 +2246,247 @@ body { height: 100dvh; }
 }
 .portal-card:active, .vault-set-card:active {
     box-shadow: 0 0 20px -4px rgba(0,242,254,0.25);
+}
+/* ═══════════════════════════════════════════════════════════
+   PHASE 1 ADDITIONS — Theme System, Ripple, Shimmer Boost,
+   Font Size Adjuster. Pure additive, nothing above is removed.
+   ═══════════════════════════════════════════════════════════ */
+
+/* ── Theme System ──────────────────────────────────────────
+   Default (no attribute) = Aurora (existing cyan/gold/purple).
+   Switch via: document.documentElement.setAttribute('data-theme','midnight'|'neon')
+   Stored in localStorage by script.js (key: ssc_theme). ── */
+
+html[data-theme="midnight"] {
+    --bg-dark: #05060d;
+    --bg-card: rgba(20, 20, 42, 0.75);
+    --bg-card-solid: #14142a;
+    --bg-explanation: #10101f;
+    --neon-cyan: #6d8bff;
+    --neon-cyan-glow: rgba(109, 139, 255, 0.35);
+    --gold-premium: #ffb800;
+    --gold-glow: rgba(255, 184, 0, 0.35);
+    --purple-neon: #8b5cf6;
+    --purple-glow: rgba(139, 92, 246, 0.55);
+    --text-primary: #eef0fb;
+    --text-muted: #8286a8;
+    --border-glass: rgba(255, 255, 255, 0.09);
+    --border-glass-focus: rgba(109, 139, 255, 0.45);
+}
+
+html[data-theme="neon"] {
+    --bg-dark: #08060c;
+    --bg-card: rgba(28, 16, 34, 0.75);
+    --bg-card-solid: #1c1022;
+    --bg-explanation: #150c1a;
+    --neon-cyan: #00e5ff;
+    --neon-cyan-glow: rgba(0, 229, 255, 0.4);
+    --gold-premium: #ff2ea6;
+    --gold-glow: rgba(255, 46, 166, 0.4);
+    --purple-neon: #c026d3;
+    --purple-glow: rgba(192, 38, 211, 0.55);
+    --text-primary: #fbeeff;
+    --text-muted: #9b8aa6;
+    --border-glass: rgba(255, 255, 255, 0.1);
+    --border-glass-focus: rgba(0, 229, 255, 0.5);
+}
+
+/* Smooth theme-swap transition on the properties that change */
+body, .glass-card, .btn-primary-gradient, .bottom-nav-bar, .app-header {
+    transition: background-color 0.35s ease, border-color 0.35s ease;
+}
+
+/* ── Theme Picker UI (settings sheet) ────────────────────── */
+.theme-picker-row {
+    display: flex;
+    gap: 12px;
+    margin-top: 12px;
+}
+.theme-swatch {
+    flex: 1;
+    border-radius: 14px;
+    padding: 12px 10px;
+    border: 2px solid var(--border-glass);
+    background: var(--bg-card-solid);
+    text-align: center;
+    cursor: pointer;
+    transition: border-color 0.2s ease, transform 0.15s ease;
+}
+.theme-swatch:active { transform: scale(0.96); }
+.theme-swatch.active-theme { border-color: var(--neon-cyan); box-shadow: 0 0 0 3px var(--neon-cyan-glow); }
+.theme-swatch-dots { display: flex; justify-content: center; gap: 5px; margin-bottom: 8px; }
+.theme-swatch-dot { width: 14px; height: 14px; border-radius: 50%; }
+.theme-swatch-label { font-size: 0.72rem; font-weight: 700; color: var(--text-primary); }
+
+.swatch-aurora .dot-1 { background: #00f2fe; }
+.swatch-aurora .dot-2 { background: #ffb800; }
+.swatch-aurora .dot-3 { background: #a855f7; }
+.swatch-midnight .dot-1 { background: #6d8bff; }
+.swatch-midnight .dot-2 { background: #ffb800; }
+.swatch-midnight .dot-3 { background: #8b5cf6; }
+.swatch-neon .dot-1 { background: #00e5ff; }
+.swatch-neon .dot-2 { background: #ff2ea6; }
+.swatch-neon .dot-3 { background: #c026d3; }
+
+/* ── Settings trigger button (header) ────────────────────── */
+.settings-trigger-btn {
+    background: var(--bg-card-solid);
+    border: 1px solid var(--border-glass);
+    color: var(--text-primary);
+    width: 36px; height: 36px;
+    border-radius: 10px;
+    display: flex; align-items: center; justify-content: center;
+    cursor: pointer;
+    font-size: 0.95rem;
+}
+.settings-trigger-btn:active { transform: scale(0.92); }
+
+/* ── Settings Bottom Sheet ───────────────────────────────── */
+.settings-sheet-backdrop {
+    position: fixed; inset: 0;
+    background: rgba(0,0,0,0.6);
+    z-index: 200;
+    display: none;
+    opacity: 0;
+    transition: opacity 0.25s ease;
+}
+.settings-sheet-backdrop.open { display: block; opacity: 1; }
+.settings-sheet {
+    position: fixed;
+    left: 0; right: 0; bottom: 0;
+    background: var(--bg-card-solid);
+    border-top: 1px solid var(--border-glass);
+    border-radius: 22px 22px 0 0;
+    z-index: 201;
+    padding: 20px 20px calc(24px + var(--safe-area-bottom)) 20px;
+    transform: translateY(100%);
+    transition: transform 0.32s cubic-bezier(0.16, 1, 0.3, 1);
+    max-height: 80vh;
+    overflow-y: auto;
+}
+.settings-sheet-backdrop.open .settings-sheet { transform: translateY(0); }
+.settings-sheet-handle {
+    width: 40px; height: 4px; border-radius: 2px;
+    background: var(--border-glass);
+    margin: 0 auto 16px auto;
+}
+.settings-sheet-title { font-size: 1.05rem; font-weight: 800; margin-bottom: 4px; }
+.settings-sheet-section { margin-top: 20px; }
+.settings-sheet-label { font-size: 0.78rem; font-weight: 700; color: var(--text-muted); text-transform: uppercase; letter-spacing: 0.04em; margin-bottom: 10px; }
+
+/* ── Font Size Adjuster ──────────────────────────────────── */
+.fontsize-adjust-row {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    background: var(--bg-dark);
+    border: 1px solid var(--border-glass);
+    border-radius: 12px;
+    padding: 10px 14px;
+}
+.fontsize-btn {
+    width: 32px; height: 32px;
+    border-radius: 8px;
+    border: 1px solid var(--border-glass);
+    background: var(--bg-card-solid);
+    color: var(--text-primary);
+    font-weight: 800;
+    display: flex; align-items: center; justify-content: center;
+    cursor: pointer;
+}
+.fontsize-btn:active { transform: scale(0.92); }
+.fontsize-btn.a-minus { font-size: 0.75rem; }
+.fontsize-btn.a-plus { font-size: 1.05rem; }
+.fontsize-label { flex: 1; text-align: center; font-size: 0.82rem; color: var(--text-muted); font-weight: 600; }
+
+/* Font-size scale classes applied to <html> by script.js (key: ssc_fontsize) */
+html[data-fontsize="small"] .question-text { font-size: 0.98rem; }
+html[data-fontsize="small"] .opt-text { font-size: 0.82rem; }
+html[data-fontsize="normal"] .question-text { font-size: 1.1rem; }
+html[data-fontsize="normal"] .opt-text { font-size: 0.9rem; }
+html[data-fontsize="large"] .question-text { font-size: 1.28rem; }
+html[data-fontsize="large"] .opt-text { font-size: 1.02rem; }
+html[data-fontsize="xlarge"] .question-text { font-size: 1.46rem; }
+html[data-fontsize="xlarge"] .opt-text { font-size: 1.14rem; }
+
+/* Quick in-quiz A+/A- toggle (top-right of question card) */
+.quiz-fontsize-toggle {
+    position: absolute;
+    top: 14px; right: 14px;
+    display: flex; gap: 6px;
+    z-index: 2;
+}
+.quiz-fontsize-toggle .fontsize-btn { width: 26px; height: 26px; font-size: 0.68rem; }
+.question-wrapper { position: relative; }
+
+/* ── Button Ripple Effect ─────────────────────────────────
+   JS spawns a .ripple-dot span inside the clicked element on
+   pointerdown; element needs position:relative + overflow:hidden
+   (added broadly below to the interactive classes already used
+   across the app, without touching their existing rules above). ── */
+.btn-primary-gradient, .btn-secondary, .portal-card, .option-node,
+.topic-mega-card, .vault-set-card, .nav-tab, .settings-trigger-btn,
+.theme-swatch, .fontsize-btn, .rank-period-btn {
+    position: relative;
+    overflow: hidden;
+}
+.ripple-dot {
+    position: absolute;
+    border-radius: 50%;
+    background: rgba(255, 255, 255, 0.35);
+    transform: scale(0);
+    animation: rippleExpand 0.6s ease-out forwards;
+    pointer-events: none;
+}
+@keyframes rippleExpand {
+    to { transform: scale(2.8); opacity: 0; }
+}
+
+/* ── Skeleton Shimmer Boost (stronger, more visible sweep) ── */
+.skeleton-card, .skeleton-row, .skeleton-card-lg {
+    animation-duration: 1.4s;
+    background: linear-gradient(100deg,
+        rgba(255,255,255,0.03) 30%,
+        rgba(255,255,255,0.10) 50%,
+        rgba(255,255,255,0.03) 70%);
+    background-size: 250% 100%;
+}
+
+/* ── Safe-area top padding for header (notch/dynamic island) ── */
+.app-header {
+    padding-top: calc(14px + env(safe-area-inset-top, 0px));
+}
+
+/* ── Settings Toggle Switch (haptic on/off etc.) ─────────── */
+.settings-toggle-switch {
+    position: relative;
+    display: inline-block;
+    width: 44px; height: 26px;
+    flex-shrink: 0;
+}
+.settings-toggle-switch input { opacity: 0; width: 0; height: 0; }
+.settings-toggle-slider {
+    position: absolute; cursor: pointer;
+    top: 0; left: 0; right: 0; bottom: 0;
+    background: var(--border-glass);
+    border: 1px solid var(--border-glass);
+    border-radius: 26px;
+    transition: background-color 0.25s ease;
+}
+.settings-toggle-slider::before {
+    content: "";
+    position: absolute;
+    height: 20px; width: 20px;
+    left: 2px; bottom: 2px;
+    background: var(--text-primary);
+    border-radius: 50%;
+    transition: transform 0.25s ease;
+}
+.settings-toggle-switch input:checked + .settings-toggle-slider {
+    background: var(--neon-cyan);
+    border-color: var(--neon-cyan);
+}
+.settings-toggle-switch input:checked + .settings-toggle-slider::before {
+    transform: translateX(18px);
+    background: #0a0b12;
 }

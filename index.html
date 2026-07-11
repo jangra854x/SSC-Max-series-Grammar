@@ -27,8 +27,74 @@
                 <div class="tier-indicator-badge" id="header-tier-indicator">
                     <i class="fa-solid fa-spinner fa-spin"></i> Loading...
                 </div>
+                <button class="settings-trigger-btn" id="btn-open-settings" onclick="app.openSettingsSheet()" aria-label="Settings">
+                    <i class="fa-solid fa-gear"></i>
+                </button>
             </div>
         </header>
+
+        <!-- ══════════════════════════════════ -->
+        <!-- SETTINGS BOTTOM SHEET             -->
+        <!-- Theme picker + font size adjuster -->
+        <!-- Pure client-side (localStorage).  -->
+        <!-- ══════════════════════════════════ -->
+        <div class="settings-sheet-backdrop" id="settings-sheet-backdrop" onclick="app.closeSettingsSheetIfBackdrop(event)">
+            <div class="settings-sheet" id="settings-sheet">
+                <div class="settings-sheet-handle"></div>
+                <div class="settings-sheet-title">Settings</div>
+                <p class="text-muted" style="font-size:0.78rem;">Personalize how the app looks and feels</p>
+
+                <div class="settings-sheet-section">
+                    <div class="settings-sheet-label">Theme</div>
+                    <div class="theme-picker-row" id="theme-picker-row">
+                        <div class="theme-swatch swatch-aurora" data-theme-choice="aurora" onclick="app.setTheme('aurora')">
+                            <div class="theme-swatch-dots">
+                                <span class="theme-swatch-dot dot-1"></span>
+                                <span class="theme-swatch-dot dot-2"></span>
+                                <span class="theme-swatch-dot dot-3"></span>
+                            </div>
+                            <div class="theme-swatch-label">Aurora</div>
+                        </div>
+                        <div class="theme-swatch swatch-midnight" data-theme-choice="midnight" onclick="app.setTheme('midnight')">
+                            <div class="theme-swatch-dots">
+                                <span class="theme-swatch-dot dot-1"></span>
+                                <span class="theme-swatch-dot dot-2"></span>
+                                <span class="theme-swatch-dot dot-3"></span>
+                            </div>
+                            <div class="theme-swatch-label">Midnight</div>
+                        </div>
+                        <div class="theme-swatch swatch-neon" data-theme-choice="neon" onclick="app.setTheme('neon')">
+                            <div class="theme-swatch-dots">
+                                <span class="theme-swatch-dot dot-1"></span>
+                                <span class="theme-swatch-dot dot-2"></span>
+                                <span class="theme-swatch-dot dot-3"></span>
+                            </div>
+                            <div class="theme-swatch-label">Neon</div>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="settings-sheet-section">
+                    <div class="settings-sheet-label">Question Text Size</div>
+                    <div class="fontsize-adjust-row">
+                        <button class="fontsize-btn a-minus" onclick="app.adjustFontSize(-1)">A-</button>
+                        <span class="fontsize-label" id="fontsize-current-label">Normal</span>
+                        <button class="fontsize-btn a-plus" onclick="app.adjustFontSize(1)">A+</button>
+                    </div>
+                </div>
+
+                <div class="settings-sheet-section">
+                    <div class="settings-sheet-label">Feedback</div>
+                    <div class="fontsize-adjust-row" style="justify-content:space-between;">
+                        <span class="fontsize-label" style="flex:none;">Haptic Feedback</span>
+                        <label class="settings-toggle-switch">
+                            <input type="checkbox" id="toggle-haptic" checked onchange="app.toggleSetting('haptic', this.checked)">
+                            <span class="settings-toggle-slider"></span>
+                        </label>
+                    </div>
+                </div>
+            </div>
+        </div>
 
         <main id="view-container">
 
@@ -217,6 +283,10 @@
                     </div>
                 </div>
                 <div class="question-wrapper card-animation-swap" id="question-card-frame">
+                    <div class="quiz-fontsize-toggle">
+                        <button class="fontsize-btn a-minus" onclick="app.adjustFontSize(-1)">A-</button>
+                        <button class="fontsize-btn a-plus" onclick="app.adjustFontSize(1)">A+</button>
+                    </div>
                     <div class="question-tags">
                         <span class="q-tag" id="question-category-tag">Vocabulary</span>
                     </div>
