@@ -203,6 +203,26 @@ class SSCMaxVocabEngine {
                 <button class="adm-btn-gold w-100 mt-3" onclick="app.createTopicSet()"><i class="fa-solid fa-folder-plus"></i> CREATE EMPTY SET</button>
             </div>
 
+            <!-- ══════ BULK PUBLISH (auto-split into multiple 20-Q sets) ══════ -->
+            <div class="glass-card mb-3">
+                <h4 style="color:var(--gold-premium);margin-bottom:10px;"><i class="fa-solid fa-layer-group"></i> Bulk Publish (Auto-Split Sets)</h4>
+                <p style="font-size:0.72rem;color:var(--text-muted);margin-bottom:12px;">Paste a big combined batch of questions (same format as normal publish). This will automatically create new sets of 20 questions each, continuing numbering after your existing sets — nothing existing is overwritten.</p>
+                <label class="adm-label">Topic Group</label>
+                <select id="adm-bulk-group" class="adm-input" onchange="app.onBulkGroupChange()">
+                    ${ALPHABET_TOPICS.concat(DIRECT_TOPICS).map(t=>`<option value="${t}">${t}</option>`).join('')}
+                </select>
+                <div id="adm-bulk-letter-wrap">
+                    <label class="adm-label">Letter</label>
+                    <select id="adm-bulk-letter" class="adm-input">
+                        ${LETTERS.map(l=>`<option value="${l}">${l}</option>`).join('')}
+                    </select>
+                </div>
+                <label class="adm-label">Questions (combined — as many sets worth as you like)</label>
+                <textarea id="adm-bulk-txt" class="adm-textarea" rows="12" placeholder="1. Question text&#10;A. Option&#10;B. Option&#10;C. Option&#10;D. Option&#10;Answer: A&#10;Explanation: Meaning here&#10;&#10;2. Next question...&#10;(paste as many as you like — will auto-split into sets of 20)"></textarea>
+                <div id="adm-bulk-count" style="font-size:0.72rem;color:var(--text-muted);margin-top:6px;"></div>
+                <button class="adm-btn-gold w-100 mt-3" onclick="app.bulkPublishTopicSets()"><i class="fa-solid fa-rocket"></i> BULK PUBLISH (AUTO-SPLIT)</button>
+            </div>
+
             <div class="glass-card">
                 <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:12px;flex-wrap:wrap;gap:8px;">
                     <h4 style="color:var(--neon-cyan);">All Sets</h4>
@@ -256,10 +276,15 @@ class SSCMaxVocabEngine {
                 </div>
                 <div id="adm-stats-container"><div class="text-center text-muted p-3"><i class="fa-solid fa-spinner fa-spin"></i></div></div>
             </div>
-            <div class="glass-card">
+            <div class="glass-card mb-3">
                 <h4 style="color:var(--danger-red);margin-bottom:10px;">Database Cleanup</h4>
                 <p style="font-size:0.75rem;color:var(--text-muted);margin-bottom:12px;">Free quiz keeps no archive — old dated questions auto-delete on every publish.</p>
                 <button class="adm-btn-red w-100" onclick="app.cleanupPastFreeQuestions(true)"><i class="fa-solid fa-broom"></i> Clean Old Free Quiz Questions</button>
+            </div>
+            <div class="glass-card">
+                <h4 style="color:var(--gold-premium);margin-bottom:10px;">Maintenance</h4>
+                <p style="font-size:0.75rem;color:var(--text-muted);margin-bottom:12px;">One-time fix for existing Topic Bank questions whose correct answer is skewed toward one option letter. Randomly reshuffles each question's A/B/C/D option order (text + explanation move together, correct option stays matched to its text). Order/text of questions is untouched. This only affects questions already in the DB right now — it does not run automatically and never touches future publishes.</p>
+                <button class="adm-btn-gold w-100" onclick="app.shuffleExistingTopicOptions()"><i class="fa-solid fa-shuffle"></i> 🔀 Shuffle Existing Options</button>
             </div>
         </div>`;
         document.getElementById('view-container').appendChild(av);
@@ -268,7 +293,14 @@ class SSCMaxVocabEngine {
             const n = this.parseAdminQuestions(e.target.value).length;
             document.getElementById('adm-free-count').innerText = `${n} question(s) detected`;
         });
+        document.getElementById('adm-bulk-txt')?.addEventListener('input', e => {
+            const n = this.parseAdminQuestions(e.target.value).length;
+            const full = Math.floor(n/20), rem = n%20;
+            const setsInfo = n ? ` → ${full} set(s) of 20${rem?` + 1 set of ${rem}`:''}` : '';
+            document.getElementById('adm-bulk-count').innerText = n ? `${n} question(s) detected${setsInfo}` : '';
+        });
         this.onBankGroupChange();
+        this.onBulkGroupChange();
     }
 
     onBankGroupChange() {
@@ -277,6 +309,13 @@ class SSCMaxVocabEngine {
         if(!wrap) return;
         wrap.style.display = ALPHABET_TOPICS.includes(group) ? 'block' : 'none';
         this.refreshBankSetOptions();
+    }
+
+    onBulkGroupChange() {
+        const group = document.getElementById('adm-bulk-group')?.value;
+        const wrap = document.getElementById('adm-bulk-letter-wrap');
+        if(!wrap) return;
+        wrap.style.display = ALPHABET_TOPICS.includes(group) ? 'block' : 'none';
     }
 
     // ── Inline Set selector (Topic Bank) — lists every set that already
@@ -367,6 +406,62 @@ class SSCMaxVocabEngine {
             this.refreshBankSetOptions();
             if(autoOpen) this.openManageSetModal(fullKey);
         } catch(e) { alert('Error creating set: '+e.message+this.permissionHint(e)); }
+    }
+
+    // ── TOPIC BANK: Bulk Publish — auto-splits one big pasted batch
+    // into multiple 20-question sets, continuing set numbering after
+    // whatever already exists for that Topic+Letter. Never touches or
+    // overwrites existing sets — only ever inserts brand new ones. ──
+    async bulkPublishTopicSets() {
+        if(!supabaseClient) return;
+        const group = document.getElementById('adm-bulk-group')?.value;
+        const isAlpha = ALPHABET_TOPICS.includes(group);
+        const letter = isAlpha ? document.getElementById('adm-bulk-letter')?.value : null;
+        const txt = document.getElementById('adm-bulk-txt')?.value || '';
+
+        const parsed = this.parseAdminQuestions(txt);
+        if(!parsed.length) { alert('Could not parse any questions. Check the format (Answer: A / Explanation: ...).'); return; }
+
+        try {
+            // Find the current highest set_number already used for this Topic+Letter
+            let q = supabaseClient.from('topic_sets').select('set_number').eq('group_name', group);
+            q = isAlpha ? q.eq('letter', letter) : q.is('letter', null);
+            const { data: existing, error: selErr } = await q;
+            if(selErr) throw selErr;
+            const startNumber = (existing?.length ? Math.max(...existing.map(s => s.set_number)) : 0) + 1;
+
+            // Split into chunks of exactly 20
+            const chunks = [];
+            for(let i = 0; i < parsed.length; i += 20) chunks.push(parsed.slice(i, i + 20));
+            const endNumber = startNumber + chunks.length - 1;
+
+            const confirmMsg = `${chunks.length} naye sets banenge (Set ${startNumber} se Set ${endNumber} tak), total ${parsed.length} questions.\n\nContinue?`;
+            if(!confirm(confirmMsg)) return;
+
+            let totalInserted = 0;
+            for(let i = 0; i < chunks.length; i++) {
+                const setNumber = startNumber + i;
+                const fullKey = isAlpha ? `${group} - ${letter} - Set ${setNumber}` : `${group} - Set ${setNumber}`;
+                const chunk = chunks[i];
+
+                const { error: setErr } = await supabaseClient.from('topic_sets').insert({
+                    group_name: group, letter, set_number: setNumber, full_key: fullKey, question_count: chunk.length
+                });
+                if(setErr) throw setErr;
+
+                const rows = chunk.map(p => ({ ...p, quiz_type: 'topic', topic: fullKey }));
+                const { error: qErr } = await supabaseClient.from('questions').insert(rows);
+                if(qErr) throw qErr;
+
+                totalInserted += chunk.length;
+            }
+
+            document.getElementById('adm-bulk-txt').value = '';
+            document.getElementById('adm-bulk-count').innerText = '';
+            alert(`✅ Bulk Publish complete! ${chunks.length} set(s) created (Set ${startNumber}–${endNumber}), ${totalInserted} questions uploaded.`);
+            this.loadAllTopicSets();
+            this.refreshBankSetOptions();
+        } catch(e) { alert('Bulk publish error: ' + e.message + this.permissionHint(e)); }
     }
 
     async loadAllTopicSets() {
@@ -570,6 +665,68 @@ class SSCMaxVocabEngine {
             await supabaseClient.from('questions').delete().eq('quiz_type','free').lt('topic',today);
             if(showAlert) this.triggerToast(`Cleaned up old free quiz questions.`);
         } catch(e) { if(showAlert) alert('Cleanup error: '+e.message); }
+    }
+
+    // ── ONE-TIME MAINTENANCE: shuffle A/B/C/D option order on every
+    // existing topic question, so previously-skewed correct-answer
+    // patterns (e.g. "C is never correct") get broken up. Option
+    // text + its matching explanation move together as a pair, and
+    // correct_option is updated to whichever letter that pair lands
+    // on — so the correct option's text always matches its label.
+    // Question text/order and quiz_type/topic are never touched.
+    // This is a manual one-off — never runs automatically. ──
+    async shuffleExistingTopicOptions() {
+        if(!supabaseClient) return;
+        if(!confirm('This will permanently reshuffle the A/B/C/D option order for EVERY existing Topic Bank question in the database (question text and order are not affected). This cannot be undone. Continue?')) return;
+        if(!confirm('Really sure? This is a one-time destructive operation on live data.')) return;
+
+        try {
+            const { data: rows, error } = await supabaseClient.from('questions').select('id,option_a,option_b,option_c,option_d,correct_option,explanation_a,explanation_b,explanation_c,explanation_d').eq('quiz_type','topic');
+            if(error) throw error;
+            if(!rows?.length) { alert('No topic questions found to shuffle.'); return; }
+
+            const letters = ['A','B','C','D'];
+            let processed = 0;
+            const BATCH_SIZE = 50;
+
+            for(let i = 0; i < rows.length; i += BATCH_SIZE) {
+                const batch = rows.slice(i, i + BATCH_SIZE);
+                const updates = batch.map(q => {
+                    // Build the 4 (option, explanation, wasCorrect) pairs
+                    const pairs = letters.map(l => ({
+                        letter: l,
+                        option: q[`option_${l.toLowerCase()}`],
+                        explanation: q[`explanation_${l.toLowerCase()}`] || '',
+                        wasCorrect: q.correct_option === l
+                    }));
+                    // Fisher-Yates shuffle the 4 pairs
+                    for(let j = pairs.length - 1; j > 0; j--) {
+                        const k = Math.floor(Math.random() * (j + 1));
+                        [pairs[j], pairs[k]] = [pairs[k], pairs[j]];
+                    }
+                    const newRow = { id: q.id };
+                    let newCorrect = q.correct_option;
+                    pairs.forEach((p, idx) => {
+                        const newLetter = letters[idx];
+                        newRow[`option_${newLetter.toLowerCase()}`] = p.option;
+                        newRow[`explanation_${newLetter.toLowerCase()}`] = p.explanation;
+                        if(p.wasCorrect) newCorrect = newLetter;
+                    });
+                    newRow.correct_option = newCorrect;
+                    return newRow;
+                });
+
+                for(const u of updates) {
+                    const { id, ...fields } = u;
+                    const { error: updErr } = await supabaseClient.from('questions').update(fields).eq('id', id);
+                    if(updErr) throw updErr;
+                    processed++;
+                }
+            }
+
+            alert(`✅ ${processed} questions shuffled successfully`);
+            this.loadAdminStats();
+        } catch(e) { alert('Shuffle error: ' + e.message + this.permissionHint(e)); }
     }
 
     async loadAdminStats() {
