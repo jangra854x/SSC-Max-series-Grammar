@@ -2204,11 +2204,13 @@ html { scroll-behavior: auto; }
    and the original 100vh above still applies as the fallback ── */
 body { height: 100dvh; }
 
-/* ── FIX: bottom nav had empty space on the right — it was
-   still built for the old 3-tab / 4-tab (with Ranks) layout.
-   Now: 2 tabs for normal users, 3 for admin (Dashboard/Vault/Admin) ── */
-.bottom-nav-bar { grid-template-columns: repeat(2, 1fr); }
-.bottom-nav-bar.admin-nav { grid-template-columns: repeat(3, 1fr); }
+/* ── FIX: bottom nav column count now matches the CURRENT tab set —
+   Dashboard / Vault / Chat (3 tabs) for everyone, plus Admin (4 tabs)
+   appended at the end for admin only. (Older comment above referenced
+   a stale 2-tab/3-tab layout from before Chat was in the bottom nav —
+   that override was wrapping Chat/Admin onto a new line.) ── */
+.bottom-nav-bar { grid-template-columns: repeat(3, 1fr); }
+.bottom-nav-bar.admin-nav { grid-template-columns: repeat(4, 1fr); }
 
 /* ── FIX: quiz/result full-screen views — replacing width/height:100%
    with real inset anchoring stops it from being recalculated (and

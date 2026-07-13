@@ -1755,7 +1755,10 @@ class SSCMaxVocabEngine {
             const wasNearBottom = list.scrollHeight - list.scrollTop - list.clientHeight < 80;
             list.innerHTML = this.renderChatBubbles(data||[]);
             if(wasNearBottom || list.dataset.firstLoad !== '1') { list.scrollTop = list.scrollHeight; list.dataset.firstLoad='1'; }
-        } catch(e) { list.innerHTML = `<div class="text-center text-muted p-3">Could not load messages.${this.permissionHint(e)}</div>`; }
+        } catch(e) {
+            console.error('Group chat load failed:', e);
+            list.innerHTML = `<div class="text-center text-muted p-3">Could not load messages.${this.permissionHint(e)}</div>`;
+        }
     }
 
     async sendGroupChatMessage() {
