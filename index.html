@@ -98,6 +98,20 @@
                 </div>
                 <!-- /dash-hero-wrap -->
 
+                <!-- Topic-Wise completion progress — auto-scales as new sets are
+                     added by admin, fills as the user finishes sets. Free Quiz is
+                     intentionally excluded from this count. -->
+                <div class="progress-track-card glass-card mt-4" id="progress-track-card">
+                    <div class="progress-track-head">
+                        <span><i class="fa-solid fa-chart-line"></i> Topic-Wise Progress</span>
+                        <span id="progress-track-pct">0%</span>
+                    </div>
+                    <div class="progress-track-bar-wrapper">
+                        <div class="progress-track-bar-fill" id="progress-track-bar-fill" style="width:0%;"></div>
+                    </div>
+                    <p class="progress-track-sub" id="progress-track-sub">Loading progress...</p>
+                </div>
+
                 <!-- Topic Wise Vocabulary — directly embedded, no card wrapper needed -->
                 <div class="topic-wise-section mt-4">
                     <span class="portal-tag gold-tag"><i class="fa-solid fa-crown"></i> ELITE PREMIUM</span>
@@ -214,6 +228,9 @@
                 <div class="quiz-meta-indices mb-2">
                     <span id="quiz-question-counter">Loading...</span>
                     <div class="meta-right-actions">
+                        <button class="btn-bookmark-q" id="btn-report-current" onclick="app.reportCurrentQuestion()" title="Report an issue with this question">
+                            <i class="fa-solid fa-flag"></i>
+                        </button>
                         <button class="btn-bookmark-q" id="btn-bookmark-current" onclick="app.toggleBookmarkCurrentQuestion()">
                             <i class="fa-regular fa-bookmark"></i> Bookmark
                         </button>
@@ -345,6 +362,22 @@
             </section>
 
             <!-- ══════════════════════════════════ -->
+            <!-- CHAT — Premium 1:1 support chat.   -->
+            <!-- Free users see a locked paywall     -->
+            <!-- card. Admin sees a conversation      -->
+            <!-- list instead of a single thread.     -->
+            <!-- ══════════════════════════════════ -->
+            <section id="view-chat" class="app-view">
+                <div class="screen-header">
+                    <h2>Chat</h2>
+                    <p id="chat-subtitle">Talk directly with the SSC MAX VOCAB team</p>
+                </div>
+                <div id="chat-container">
+                    <div class="text-center text-muted p-3"><i class="fa-solid fa-spinner fa-spin"></i></div>
+                </div>
+            </section>
+
+            <!-- ══════════════════════════════════ -->
             <!-- RANKS                             -->
             <!-- v7 — No longer reachable from the   -->
             <!-- bottom nav (that tab is removed for -->
@@ -378,6 +411,9 @@
             </button>
             <button class="nav-tab" data-target="vault">
                 <i class="fa-solid fa-bookmark"></i><span>Vault</span>
+            </button>
+            <button class="nav-tab" data-target="chat">
+                <i class="fa-solid fa-comment-dots"></i><span>Chat</span>
             </button>
         </nav>
 

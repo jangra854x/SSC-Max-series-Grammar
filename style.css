@@ -3,60 +3,63 @@
    Dark mode (opt-in via toggle) lives in the [data-theme="dark"]
    block further down and simply swaps these same variables. */
 :root {
-    --bg-dark: #eef1f6;
-    --bg-app-gradient: linear-gradient(160deg, #f7f9fc 0%, #eaeef6 55%, #e7ecf5 100%);
-    --bg-card: rgba(255, 255, 255, 0.62);
-    --bg-card-solid: #ffffff;
-    --bg-explanation: #f3f6fb;
+    --bg-dark: #e7f0fb;
+    --bg-app-gradient: linear-gradient(160deg, #f0f7ff 0%, #e3edfb 45%, #eaf3ff 100%);
+    --bg-card: rgba(255, 255, 255, 0.58);
+    --bg-card-solid: #f6faff;
+    --bg-explanation: #eef6fd;
     --neon-cyan: #0a84ff;
-    --neon-cyan-glow: rgba(10, 132, 255, 0.22);
+    --neon-cyan-glow: rgba(10, 132, 255, 0.2);
     --gold-premium: #ff9f0a;
-    --gold-glow: rgba(255, 159, 10, 0.25);
+    --gold-glow: rgba(255, 159, 10, 0.22);
     --purple-neon: #af52de;
-    --purple-glow: rgba(175, 82, 222, 0.28);
+    --purple-glow: rgba(175, 82, 222, 0.25);
     --text-primary: #1c1c1e;
     --text-secondary: #48484a;
-    --text-muted: #8a8a8e;
+    --text-muted: #7c8698;
     --success-green: #34c759;
     --danger-red: #ff3b30;
-    --border-glass: rgba(0, 0, 0, 0.08);
+    --border-glass: rgba(20, 40, 80, 0.08);
     --border-glass-focus: rgba(10, 132, 255, 0.35);
-    --overlay-soft: rgba(0, 0, 0, 0.04);
-    --overlay-soft-strong: rgba(0, 0, 0, 0.07);
-    --header-bg: rgba(255, 255, 255, 0.72);
-    --nav-bg: rgba(255, 255, 255, 0.78);
-    --app-shell-bg: rgba(255, 255, 255, 0.55);
-    --shadow-elevated: 0 8px 28px -14px rgba(30, 41, 70, 0.18);
+    --overlay-soft: rgba(10, 60, 130, 0.045);
+    --overlay-soft-strong: rgba(10, 60, 130, 0.08);
+    --header-bg: rgba(244, 249, 255, 0.72);
+    --nav-bg: rgba(244, 249, 255, 0.8);
+    --app-shell-bg: rgba(244, 249, 255, 0.5);
+    --shadow-elevated: 0 8px 28px -14px rgba(20, 50, 100, 0.2);
     --font-stack: 'Plus Jakarta Sans', system-ui, -apple-system, sans-serif;
     --safe-area-bottom: env(safe-area-inset-bottom, 0px);
 }
 
-/* ── DARK MODE — toggled on demand, everything below just swaps tokens ── */
+/* ── DARK MODE — toggled on demand, everything below just swaps tokens ──
+   Rebuilt to feel like a calm, premium Apple-style dark mode: near-black
+   surfaces, a single clear accent blue, and much softer glows instead of
+   the old high-saturation neon-teal look. ── */
 [data-theme="dark"] {
-    --bg-dark: #07080e;
-    --bg-app-gradient: linear-gradient(160deg, #0b0d16 0%, #07080e 60%, #05060b 100%);
-    --bg-card: rgba(22, 25, 38, 0.72);
-    --bg-card-solid: #14161f;
-    --bg-explanation: #12141f;
-    --neon-cyan: #22a3ff;
-    --neon-cyan-glow: rgba(34, 163, 255, 0.35);
-    --gold-premium: #ffb800;
-    --gold-glow: rgba(255, 184, 0, 0.3);
-    --purple-neon: #bf5af2;
-    --purple-glow: rgba(191, 90, 242, 0.35);
-    --text-primary: #f2f3f7;
-    --text-secondary: #cbd0da;
-    --text-muted: #8b93a4;
-    --success-green: #30d158;
+    --bg-dark: #000000;
+    --bg-app-gradient: linear-gradient(160deg, #08090d 0%, #000000 55%, #030304 100%);
+    --bg-card: rgba(30, 31, 36, 0.62);
+    --bg-card-solid: #1c1c1e;
+    --bg-explanation: #18191e;
+    --neon-cyan: #3e9bff;
+    --neon-cyan-glow: rgba(62, 155, 255, 0.25);
+    --gold-premium: #ffb340;
+    --gold-glow: rgba(255, 179, 64, 0.22);
+    --purple-neon: #c48bff;
+    --purple-glow: rgba(196, 139, 255, 0.25);
+    --text-primary: #f5f5f7;
+    --text-secondary: #c7c7cc;
+    --text-muted: #8e8e93;
+    --success-green: #32d74b;
     --danger-red: #ff453a;
-    --border-glass: rgba(255, 255, 255, 0.09);
-    --border-glass-focus: rgba(34, 163, 255, 0.4);
-    --overlay-soft: rgba(255, 255, 255, 0.04);
-    --overlay-soft-strong: rgba(255, 255, 255, 0.07);
-    --header-bg: rgba(10, 11, 18, 0.72);
-    --nav-bg: rgba(10, 11, 18, 0.82);
-    --app-shell-bg: rgba(9, 10, 16, 0.9);
-    --shadow-elevated: 0 8px 28px -14px rgba(0, 0, 0, 0.6);
+    --border-glass: rgba(255, 255, 255, 0.08);
+    --border-glass-focus: rgba(62, 155, 255, 0.4);
+    --overlay-soft: rgba(255, 255, 255, 0.045);
+    --overlay-soft-strong: rgba(255, 255, 255, 0.08);
+    --header-bg: rgba(0, 0, 0, 0.6);
+    --nav-bg: rgba(10, 10, 12, 0.78);
+    --app-shell-bg: rgba(0, 0, 0, 0.86);
+    --shadow-elevated: 0 8px 28px -14px rgba(0, 0, 0, 0.7);
 }
 
 /* Hardware Acceleration & Global Resets */
@@ -2453,4 +2456,122 @@ body { height: var(--app-vh, 100dvh); }
 .app-header, .bottom-nav-bar, #app {
     will-change: auto;
     transform: translateZ(0);
+}
+
+/* ═══════════════════════════════════════════════════════════════
+   v10 UPDATE — remove the "card inside a card" dashboard wrapper,
+   calmer light-mode text glow. Additive/override only.
+   ═══════════════════════════════════════════════════════════════ */
+
+/* ── FIX: the profile card + Free Quiz card were sitting inside an
+   extra outer "hero wrap" box (its own background/border), so it
+   visually read as a card nested inside another card. The wrap is
+   now just an invisible layout container — children keep their own
+   spacing and their own card styling, nothing else changes. ── */
+.dash-hero-wrap {
+    background: none;
+    border: none;
+    padding: 0;
+    box-shadow: none;
+}
+.dash-hero-decor { opacity: 0.7; }
+
+/* ── Text glow behind headings (text-cyan/text-gold) was tuned for
+   a dark background; on the new bright glass theme a colored blur
+   under the text just looked like a smudge. Keep it crisp in light
+   mode and bring the soft glow back only in dark mode. ── */
+.text-cyan, .text-gold { text-shadow: none; }
+[data-theme="dark"] .text-cyan { text-shadow: 0 0 10px var(--neon-cyan-glow); }
+[data-theme="dark"] .text-gold { text-shadow: 0 0 10px var(--gold-glow); }
+
+
+/* ═══════════════════════════════════════════════════════════════
+   v11 UPDATE — Progress bar, Chat UI, Set Manager selector,
+   Reports/Messages admin badges, "Completed" tag. Additive only.
+   ═══════════════════════════════════════════════════════════════ */
+
+/* ── Dashboard progress bar (topic-wise completion) ─────────────── */
+.progress-track-card { padding: 18px; }
+.progress-track-head {
+    display: flex; justify-content: space-between; align-items: center;
+    font-size: 0.82rem; font-weight: 800; color: var(--text-primary);
+    margin-bottom: 12px;
+}
+.progress-track-head i { color: var(--neon-cyan); margin-right: 6px; }
+#progress-track-pct { color: var(--neon-cyan); font-size: 0.9rem; }
+.progress-track-bar-wrapper {
+    width: 100%; height: 10px; border-radius: 6px;
+    background: var(--overlay-soft-strong);
+    border: 1px solid var(--border-glass);
+    overflow: hidden;
+}
+.progress-track-bar-fill {
+    height: 100%; border-radius: 6px;
+    background: linear-gradient(90deg, var(--neon-cyan), var(--purple-neon));
+    transition: width 0.5s ease;
+}
+.progress-track-sub {
+    font-size: 0.72rem; color: var(--text-muted); margin-top: 8px;
+}
+
+/* ── "Completed" tag replacing the "XQ" pill on finished sets ───── */
+.set-completed-tag {
+    background: rgba(255, 59, 48, 0.12) !important;
+    color: var(--danger-red) !important;
+    border: 1px solid rgba(255, 59, 48, 0.3);
+    font-weight: 800;
+}
+
+/* ── Admin pill notification badges (Reports / Messages) ────────── */
+.adm-pill-badge {
+    display: inline-block; min-width: 16px; padding: 1px 5px;
+    border-radius: 10px; background: var(--danger-red); color: #fff;
+    font-size: 0.62rem; font-weight: 800; margin-left: 4px;
+}
+
+/* ── Chat thread UI (user + admin share this) ────────────────────── */
+.chat-thread-wrapper {
+    display: flex; flex-direction: column;
+    height: calc(100dvh - 260px);
+    min-height: 320px;
+}
+.chat-messages-list {
+    flex: 1; overflow-y: auto; padding: 6px 2px 14px;
+    display: flex; flex-direction: column; gap: 8px;
+}
+.chat-bubble-row { display: flex; justify-content: flex-start; }
+.chat-bubble-row.chat-bubble-mine { justify-content: flex-end; }
+.chat-bubble {
+    max-width: 78%; padding: 9px 13px; border-radius: 16px;
+    background: var(--bg-card-solid); border: 1px solid var(--border-glass);
+    font-size: 0.85rem; color: var(--text-primary); line-height: 1.4;
+    position: relative; word-break: break-word;
+}
+.chat-bubble-mine .chat-bubble {
+    background: linear-gradient(135deg, var(--neon-cyan), var(--purple-neon));
+    color: #fff; border: none;
+}
+.chat-bubble-time {
+    display: block; font-size: 0.6rem; opacity: 0.65; margin-top: 4px; text-align: right;
+}
+.chat-input-row {
+    display: flex; gap: 8px; align-items: center;
+    padding-top: 10px; border-top: 1px solid var(--border-glass);
+}
+.chat-input-row input {
+    flex: 1; padding: 11px 14px; border-radius: 22px;
+    border: 1px solid var(--border-glass); background: var(--overlay-soft);
+    color: var(--text-primary); font-size: 0.85rem; font-family: var(--font-stack);
+}
+.chat-input-row input:focus { outline: none; border-color: var(--border-glass-focus); }
+.chat-send-btn {
+    width: 40px; height: 40px; border-radius: 50%; border: none;
+    background: linear-gradient(135deg, var(--neon-cyan), var(--purple-neon));
+    color: #fff; display: flex; align-items: center; justify-content: center;
+    cursor: pointer; flex-shrink: 0;
+}
+.chat-send-btn:active { transform: scale(0.94); }
+.chat-banned-note {
+    flex: 1; text-align: center; font-size: 0.78rem; font-weight: 700;
+    color: var(--danger-red); padding: 10px;
 }

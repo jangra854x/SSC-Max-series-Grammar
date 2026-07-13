@@ -1,68 +1,11 @@
 /**
- * SSC MAX VOCAB — Client Engine v6 (FINAL)
- * Topics now embedded directly on Dashboard (no separate premium screen).
- * Explanation shown ONLY under the correct option.
- * Topic cards simplified — name + arrow only.
- * Admin Topic Bank: create/edit/delete sets & questions, recalc counts,
- * free-quiz question editor, global search.
+ * SSC MAX VOCAB — Client Engine
+ * Topics embedded on Dashboard, Vault (wrong-answer revision sets),
+ * Admin Topic Bank (create/edit/delete sets & questions, Set Manager,
+ * Reports queue, Chat), Topic-Wise completion progress tracking.
  *
- * ═══════════════════════════════════════════════════════════════
- * REQUIRED SUPABASE SETUP — run in SQL Editor (fixes "permission
- * denied for table topic_sets" seen in the admin panel):
- * ═══════════════════════════════════════════════════════════════
- * ALTER TABLE users ADD COLUMN IF NOT EXISTS streak integer DEFAULT 0;
- * ALTER TABLE users ADD COLUMN IF NOT EXISTS last_active_date date;
- * ALTER TABLE users ADD COLUMN IF NOT EXISTS last_grace_date date;
- * ALTER TABLE users ADD COLUMN IF NOT EXISTS banned boolean DEFAULT false;
- *
- * CREATE TABLE IF NOT EXISTS topic_sets (
- *   id bigserial primary key,
- *   group_name text not null,
- *   letter text,
- *   set_number integer not null,
- *   full_key text unique not null,
- *   question_count integer default 0,
- *   created_at timestamptz default now()
- * );
- *
- * -- THE PERMISSION FIX (run both lines, harmless if already applied):
- * ALTER TABLE topic_sets DISABLE ROW LEVEL SECURITY;
- * GRANT ALL ON TABLE topic_sets TO anon, authenticated;
- * GRANT USAGE, SELECT ON ALL SEQUENCES IN SCHEMA public TO anon, authenticated;
- *
- * ═══════════════════════════════════════════════════════════════
- * v7 UPDATE — NEW TABLES REQUIRED FOR THE REBUILT VAULT (run once):
- * The old flat "vault" table (word/category) is no longer written to.
- * It is NOT deleted by this app — your existing data stays safe —
- * but the new Vault UI runs entirely on these two new tables instead:
- * ═══════════════════════════════════════════════════════════════
- * CREATE TABLE IF NOT EXISTS vault_sets (
- *   id bigserial primary key,
- *   telegram_id bigint not null,
- *   topic text not null,               -- 'Free Quiz' or a premium topic name
- *   set_number integer not null,
- *   question_count integer default 0,
- *   created_at timestamptz default now(),
- *   unique(telegram_id, topic, set_number)
- * );
- *
- * CREATE TABLE IF NOT EXISTS vault_questions (
- *   id bigserial primary key,
- *   telegram_id bigint not null,
- *   vault_set_id bigint references vault_sets(id) on delete cascade,
- *   topic text not null,
- *   question text not null,
- *   option_a text, option_b text, option_c text, option_d text,
- *   correct_option text,
- *   explanation_a text, explanation_b text, explanation_c text, explanation_d text,
- *   added_at timestamptz default now()
- * );
- *
- * ALTER TABLE vault_sets DISABLE ROW LEVEL SECURITY;
- * ALTER TABLE vault_questions DISABLE ROW LEVEL SECURITY;
- * GRANT ALL ON TABLE vault_sets TO anon, authenticated;
- * GRANT ALL ON TABLE vault_questions TO anon, authenticated;
- * GRANT USAGE, SELECT ON ALL SEQUENCES IN SCHEMA public TO anon, authenticated;
+ * Any Supabase SQL this build needs is sent separately in chat —
+ * intentionally not stored in this file.
  */
 
 const SUPABASE_URL = 'https://tbiktjhwdlwzrhwursxk.supabase.co';
@@ -86,13 +29,14 @@ const LETTERS = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ'.split('');
 const VAULT_TOPICS = ALL_TOPICS.filter(t => t.kind !== 'locked').map(t => t.name);
 
 let appState = {
-    isPremium:false, isAdmin:false, isBanned:false,
+    isPremium:false, isAdmin:false, isBanned:false, chatBanned:false,
     currentUser:{ id:null, name:'', username:'', photo_url:'' },
     currentView:'dashboard', activeRankPeriod:'daily',
     searchQuery:'', activeVaultTopic:null, streak:0,
     activeTopicGroup:null, activeTopicLetter:null,
     quiz:{ active:false, type:'free', title:'', quizCategory:null, questions:[], currentIndex:0, selectedOption:null, correctCount:0, wrongCount:0, timeSeconds:0, stopwatchInterval:null, vaultTopic:null, vaultSetId:null },
-    cache:{ activeFreeDate:null, leaderboard:null, resultRankLoaded:false }
+    cache:{ activeFreeDate:null, leaderboard:null, resultRankLoaded:false },
+    chat:{ pollInterval:null, activeAdminThreadId:null }
 };
 
 class SSCMaxVocabEngine {
@@ -202,10 +146,12 @@ class SSCMaxVocabEngine {
         av.innerHTML = `
         <div class="screen-header"><h2>Admin Panel</h2><p>Full Control Center</p></div>
         <div style="display:flex;gap:8px;overflow-x:auto;padding-bottom:10px;margin-bottom:16px;scrollbar-width:none;">
-            <button class="adm-pill active" onclick="app.switchAdminTab('free',this)">Free Quiz</button>
-            <button class="adm-pill" onclick="app.switchAdminTab('bank',this)">Topic Bank</button>
-            <button class="adm-pill" onclick="app.switchAdminTab('users',this)">Users</button>
-            <button class="adm-pill" onclick="app.switchAdminTab('stats',this)">Stats</button>
+            <button class="adm-pill active" data-tab="free" onclick="app.switchAdminTab('free',this)">Free Quiz</button>
+            <button class="adm-pill" data-tab="bank" onclick="app.switchAdminTab('bank',this)">Topic Bank</button>
+            <button class="adm-pill" data-tab="users" onclick="app.switchAdminTab('users',this)">Users</button>
+            <button class="adm-pill" data-tab="reports" onclick="app.switchAdminTab('reports',this)">Reports <span class="adm-pill-badge hidden" id="adm-reports-badge">0</span></button>
+            <button class="adm-pill" data-tab="messages" onclick="app.switchAdminTab('messages',this)">Messages <span class="adm-pill-badge hidden" id="adm-messages-badge">0</span></button>
+            <button class="adm-pill" data-tab="stats" onclick="app.switchAdminTab('stats',this)">Stats</button>
         </div>
 
         <div id="adm-sec-free" class="adm-sec">
@@ -246,11 +192,15 @@ class SSCMaxVocabEngine {
                 </select>
                 <div id="adm-bank-letter-wrap">
                     <label class="adm-label">Letter</label>
-                    <select id="adm-bank-letter" class="adm-input">
+                    <select id="adm-bank-letter" class="adm-input" onchange="app.refreshBankSetOptions()">
                         ${LETTERS.map(l=>`<option value="${l}">${l}</option>`).join('')}
                     </select>
                 </div>
-                <p style="font-size:0.72rem;color:var(--text-muted);margin-top:10px;">Set number is auto-assigned (next available for this group/letter).</p>
+                <label class="adm-label">Set</label>
+                <select id="adm-bank-set" class="adm-input" onchange="app.onBankSetSelectChange()">
+                    <option value="">Loading sets...</option>
+                </select>
+                <p style="font-size:0.72rem;color:var(--text-muted);margin-top:10px;">Pick an existing set above to open it directly, or choose "+ Create New Set" to make one and start adding questions right away.</p>
                 <button class="adm-btn-gold w-100 mt-3" onclick="app.createTopicSet()"><i class="fa-solid fa-folder-plus"></i> CREATE EMPTY SET</button>
             </div>
 
@@ -289,6 +239,26 @@ class SSCMaxVocabEngine {
             </div>
         </div>
 
+        <div id="adm-sec-reports" class="adm-sec" style="display:none;">
+            <div class="glass-card">
+                <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:14px;">
+                    <h4 style="color:var(--danger-red);">Reported Questions</h4>
+                    <button class="adm-btn-cyan" style="padding:6px 12px;font-size:0.72rem;" onclick="app.loadAdminReports()">↻ Refresh</button>
+                </div>
+                <div id="adm-reports-list"><div class="text-center text-muted p-3"><i class="fa-solid fa-spinner fa-spin"></i></div></div>
+            </div>
+        </div>
+
+        <div id="adm-sec-messages" class="adm-sec" style="display:none;">
+            <div class="glass-card">
+                <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:14px;">
+                    <h4 style="color:var(--neon-cyan);">Chat Conversations</h4>
+                    <button class="adm-btn-cyan" style="padding:6px 12px;font-size:0.72rem;" onclick="app.loadAdminConversations()">↻ Refresh</button>
+                </div>
+                <div id="adm-conversations-list"><div class="text-center text-muted p-3"><i class="fa-solid fa-spinner fa-spin"></i></div></div>
+            </div>
+        </div>
+
         <div id="adm-sec-stats" class="adm-sec" style="display:none;">
             <div class="glass-card mb-3">
                 <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:14px;">
@@ -317,6 +287,37 @@ class SSCMaxVocabEngine {
         const wrap = document.getElementById('adm-bank-letter-wrap');
         if(!wrap) return;
         wrap.style.display = ALPHABET_TOPICS.includes(group) ? 'block' : 'none';
+        this.refreshBankSetOptions();
+    }
+
+    // ── Inline Set selector (Topic Bank) — lists every set that already
+    // exists for the chosen Topic(+Letter), plus a "+ Create New Set"
+    // option, so admin can jump straight into adding questions instead
+    // of creating an empty set and then hunting for it in the list below. ──
+    async refreshBankSetOptions() {
+        const sel = document.getElementById('adm-bank-set');
+        if(!sel || !supabaseClient) return;
+        sel.innerHTML = `<option value="">Loading sets...</option>`;
+        const group = document.getElementById('adm-bank-group')?.value;
+        const isAlpha = ALPHABET_TOPICS.includes(group);
+        const letter = isAlpha ? document.getElementById('adm-bank-letter')?.value : null;
+        try {
+            let q = supabaseClient.from('topic_sets').select('*').eq('group_name',group).order('set_number');
+            q = isAlpha ? q.eq('letter',letter) : q.is('letter',null);
+            const { data, error } = await q;
+            if(error) throw error;
+            const opts = (data||[]).map(s => `<option value="${s.full_key}">Set ${s.set_number} — ${s.question_count} question(s)${s.question_count===0?' (empty)':''}</option>`).join('');
+            sel.innerHTML = `<option value="">— Select a set —</option>${opts}<option value="__new__">➕ Create New Set</option>`;
+        } catch(e) { sel.innerHTML = `<option value="">Error loading sets</option>`; }
+    }
+
+    onBankSetSelectChange() {
+        const sel = document.getElementById('adm-bank-set');
+        const val = sel?.value;
+        if(!val) return;
+        if(val === '__new__') this.createTopicSet(true);
+        else this.openManageSetModal(val);
+        sel.value = ''; // reset so it can be picked again later
     }
 
     switchAdminTab(secId, btn) {
@@ -326,9 +327,12 @@ class SSCMaxVocabEngine {
         if(btn) btn.classList.add('active');
         this.triggerHaptic('select');
         if(secId==='users') this.loadPremiumUsersList();
+        if(secId==='reports') this.loadAdminReports();
+        if(secId==='messages') this.loadAdminConversations();
         if(secId==='stats') this.loadAdminStats();
-        if(secId==='bank')  this.loadAllTopicSets();
+        if(secId==='bank')  { this.loadAllTopicSets(); this.refreshBankSetOptions(); }
     }
+    jumpAdminTab(secId) { this.switchAdminTab(secId, document.querySelector(`.adm-pill[data-tab="${secId}"]`)); }
 
     // ── GLOBAL QUESTION SEARCH ────────────────────────────────────
     async searchAllQuestions() {
@@ -356,7 +360,7 @@ class SSCMaxVocabEngine {
     }
 
     // ── TOPIC BANK: Create / List / Manage Sets ─────────────────
-    async createTopicSet() {
+    async createTopicSet(autoOpen) {
         if(!supabaseClient) return;
         const group = document.getElementById('adm-bank-group').value;
         const isAlpha = ALPHABET_TOPICS.includes(group);
@@ -372,6 +376,8 @@ class SSCMaxVocabEngine {
             if(error) throw error;
             this.triggerToast(`✅ Created: ${fullKey}`);
             this.loadAllTopicSets();
+            this.refreshBankSetOptions();
+            if(autoOpen) this.openManageSetModal(fullKey);
         } catch(e) { alert('Error creating set: '+e.message+this.permissionHint(e)); }
     }
 
@@ -419,7 +425,10 @@ class SSCMaxVocabEngine {
                     <h3 style="font-size:0.9rem;flex:1;">${fullKey}</h3>
                     <button class="admin-modal-close" onclick="document.getElementById('manage-set-modal').remove()"><i class="fa-solid fa-xmark"></i></button>
                 </div>
-                <button class="adm-btn-red w-100 mb-3" onclick="app.deleteEntireSet('${fullKey}')"><i class="fa-solid fa-trash"></i> Delete Entire Set</button>
+                <div style="display:flex;gap:8px;margin-bottom:12px;">
+                    <button class="adm-btn-cyan" style="flex:1;" onclick="app.renameTopicSet('${fullKey}')"><i class="fa-solid fa-pen"></i> Rename Set</button>
+                    <button class="adm-btn-red" style="flex:1;" onclick="app.deleteEntireSet('${fullKey}')"><i class="fa-solid fa-trash"></i> Delete Set</button>
+                </div>
                 <div class="glass-card mb-3">
                     <label class="adm-label" style="margin-top:0;">Add More Questions</label>
                     <textarea id="manage-set-add-txt" class="adm-textarea" rows="6" placeholder="1. Question text&#10;A. Option&#10;B. Option&#10;C. Option&#10;D. Option&#10;Answer: A&#10;Explanation: Meaning"></textarea>
@@ -431,12 +440,31 @@ class SSCMaxVocabEngine {
         this.loadQuestionsIntoContainer('manage-set-questions-list', 'topic', fullKey, fullKey);
     }
 
+    async renameTopicSet(fullKey) {
+        const newName = prompt('New name for this set:', fullKey);
+        if(!newName || newName.trim()===fullKey || !newName.trim()) return;
+        const cleanName = newName.trim();
+        try {
+            const { data:clash } = await supabaseClient.from('topic_sets').select('id').eq('full_key',cleanName).maybeSingle();
+            if(clash) { alert('A set with that exact name already exists. Pick a different name.'); return; }
+            await supabaseClient.from('topic_sets').update({ full_key:cleanName }).eq('full_key', fullKey);
+            await supabaseClient.from('questions').update({ topic:cleanName }).eq('quiz_type','topic').eq('topic', fullKey);
+            // keep any users' saved progress on this set pointed at the new name
+            await supabaseClient.from('user_completed_sets').update({ full_key:cleanName }).eq('full_key', fullKey).then(()=>{}, ()=>{});
+            document.getElementById('manage-set-modal')?.remove();
+            this.triggerToast(`✅ Renamed to: ${cleanName}`);
+            this.loadAllTopicSets();
+            this.refreshBankSetOptions();
+        } catch(e) { alert('Rename error: '+e.message+this.permissionHint(e)); }
+    }
+
     async deleteEntireSet(fullKey) {
         if(!confirm(`Delete ENTIRE set "${fullKey}" and ALL its questions? This cannot be undone.`)) return;
         if(!confirm('Really sure? This is permanent.')) return;
         try {
             await supabaseClient.from('questions').delete().eq('quiz_type','topic').eq('topic', fullKey);
             await supabaseClient.from('topic_sets').delete().eq('full_key', fullKey);
+            await supabaseClient.from('user_completed_sets').delete().eq('full_key', fullKey).then(()=>{}, ()=>{});
             document.getElementById('manage-set-modal')?.remove();
             this.triggerToast('Set deleted.');
             this.loadAllTopicSets();
@@ -563,15 +591,24 @@ class SSCMaxVocabEngine {
         try {
             const today = new Date().toISOString().split('T')[0];
             const todayStart = `${today}T00:00:00`;
+            const weekAgo = new Date(Date.now() - 7*86400000).toISOString();
 
             const { count: totalUsers }   = await supabaseClient.from('users').select('*',{count:'exact',head:true});
             const { count: premiumCount } = await supabaseClient.from('premium_users').select('*',{count:'exact',head:true});
-            let bannedCount = 0, newUsersToday = 0;
+            let bannedCount = 0, newUsersToday = 0, chatBannedCount = 0;
             try { const r = await supabaseClient.from('users').select('*',{count:'exact',head:true}).eq('banned',true); bannedCount = r.count||0; } catch(e){}
             try { const r = await supabaseClient.from('users').select('*',{count:'exact',head:true}).gte('joined_at',todayStart); newUsersToday = r.count||0; } catch(e){}
+            try { const r = await supabaseClient.from('users').select('*',{count:'exact',head:true}).eq('chat_banned',true); chatBannedCount = r.count||0; } catch(e){}
 
             const { count: todayAttempts } = await supabaseClient.from('leaderboard').select('*',{count:'exact',head:true}).eq('date',today);
             const { count: totalAttempts } = await supabaseClient.from('leaderboard').select('*',{count:'exact',head:true});
+
+            let weeklyActiveUsers = 0, weeklyAttempts = 0;
+            try {
+                const { data: wk } = await supabaseClient.from('leaderboard').select('telegram_id').gte('date', weekAgo.split('T')[0]);
+                weeklyAttempts = wk?.length||0;
+                weeklyActiveUsers = new Set((wk||[]).map(r=>r.telegram_id)).size;
+            } catch(e){}
 
             const { count: totalFreeQ }  = await supabaseClient.from('questions').select('*',{count:'exact',head:true}).eq('quiz_type','free');
             const { count: totalTopicQ } = await supabaseClient.from('questions').select('*',{count:'exact',head:true}).eq('quiz_type','topic');
@@ -583,6 +620,27 @@ class SSCMaxVocabEngine {
             try { const r = await supabaseClient.from('vault_sets').select('*',{count:'exact',head:true}); vaultSets = r.count||0; } catch(e){}
             try { const r = await supabaseClient.from('vault_questions').select('*',{count:'exact',head:true}); vaultQuestions = r.count||0; } catch(e){}
 
+            // Progress tracking — total sets completed across everyone,
+            // and which topic group gets finished the most.
+            let totalCompletions = 0, topTopicLabel = '—';
+            try {
+                const { data: completions } = await supabaseClient.from('user_completed_sets').select('full_key');
+                totalCompletions = completions?.length||0;
+                if(totalCompletions) {
+                    const { data: setsMap } = await supabaseClient.from('topic_sets').select('full_key,group_name');
+                    const groupOf = {}; (setsMap||[]).forEach(s=>groupOf[s.full_key]=s.group_name);
+                    const tally = {};
+                    completions.forEach(c => { const g=groupOf[c.full_key]; if(g) tally[g]=(tally[g]||0)+1; });
+                    const top = Object.entries(tally).sort((a,b)=>b[1]-a[1])[0];
+                    if(top) topTopicLabel = `${top[0]} (${top[1]})`;
+                }
+            } catch(e){}
+
+            // Reports + Chat pending counts
+            let pendingReports = 0, unreadMessages = 0;
+            try { const r = await supabaseClient.from('question_reports').select('*',{count:'exact',head:true}).eq('status','pending'); pendingReports = r.count||0; } catch(e){}
+            try { const r = await supabaseClient.from('chat_messages').select('*',{count:'exact',head:true}).eq('sender','user').eq('read_by_admin',false); unreadMessages = r.count||0; } catch(e){}
+
             const statBlock = (val,label,color='',onclick='') => `<div class="res-card glass-card ${onclick?'stat-clickable':''}" ${onclick?`onclick="${onclick}"`:''}><span class="res-val ${color}">${val}</span><span class="res-lbl">${label}</span></div>`;
             el.innerHTML = `
                 <div style="font-size:0.72rem;font-weight:800;color:var(--text-muted);letter-spacing:0.03em;margin-bottom:8px;">👥 Users</div>
@@ -591,11 +649,15 @@ class SSCMaxVocabEngine {
                     ${statBlock(premiumCount??0,'Premium Users','text-gold')}
                     ${statBlock(newUsersToday,'New Users Today','text-success')}
                     ${statBlock(bannedCount,'Banned Users','text-danger')}
+                    ${statBlock(weeklyActiveUsers,'Active Users (7d)','text-cyan')}
+                    ${statBlock(chatBannedCount,'Chat-Banned Users','text-danger')}
                 </div>
                 <div style="font-size:0.72rem;font-weight:800;color:var(--text-muted);letter-spacing:0.03em;margin-bottom:8px;">📊 Activity</div>
                 <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-bottom:16px;">
                     ${statBlock(todayAttempts??0,'Attempts Today','text-success')}
+                    ${statBlock(weeklyAttempts,'Attempts (7d)','text-cyan')}
                     ${statBlock(totalAttempts??0,'Attempts All-Time','')}
+                    ${statBlock(totalCompletions,'Topic Sets Completed (all users)','text-gold')}
                 </div>
                 <div style="font-size:0.72rem;font-weight:800;color:var(--text-muted);letter-spacing:0.03em;margin-bottom:8px;">📚 Content</div>
                 <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-bottom:16px;">
@@ -603,6 +665,15 @@ class SSCMaxVocabEngine {
                     ${statBlock(totalTopicQ??0,'Topic Questions in DB','')}
                     ${statBlock(totalSets,'Total Sets Created','')}
                     ${statBlock(emptySets,'Empty Sets (need Qs)', emptySets>0?'text-danger':'text-success')}
+                </div>
+                <div style="font-size:0.72rem;font-weight:800;color:var(--text-muted);letter-spacing:0.03em;margin-bottom:8px;">🏆 Most Completed Topic</div>
+                <div style="display:grid;grid-template-columns:1fr;gap:12px;margin-bottom:16px;">
+                    ${statBlock(topTopicLabel,'Top Topic by Completions','text-gold')}
+                </div>
+                <div style="font-size:0.72rem;font-weight:800;color:var(--text-muted);letter-spacing:0.03em;margin-bottom:8px;">🚩 Needs Attention</div>
+                <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-bottom:16px;">
+                    ${statBlock(pendingReports,'Pending Reports', pendingReports>0?'text-danger':'text-success', "app.jumpAdminTab('reports')")}
+                    ${statBlock(unreadMessages,'Unread Messages', unreadMessages>0?'text-danger':'text-success', "app.jumpAdminTab('messages')")}
                 </div>
                 <div style="font-size:0.72rem;font-weight:800;color:var(--text-muted);letter-spacing:0.03em;margin-bottom:8px;">🗂️ Vault Engagement</div>
                 <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;">
@@ -799,7 +870,7 @@ class SSCMaxVocabEngine {
                 joined_at:new Date().toISOString()
             },{onConflict:'telegram_id'});
 
-            const { data:userRow } = await supabaseClient.from('users').select('premium,banned,streak').eq('telegram_id',appState.currentUser.id).maybeSingle();
+            const { data:userRow } = await supabaseClient.from('users').select('premium,banned,streak,chat_banned').eq('telegram_id',appState.currentUser.id).maybeSingle();
 
             if(userRow?.banned) {
                 appState.isBanned = true;
@@ -812,9 +883,45 @@ class SSCMaxVocabEngine {
             }
             appState.isPremium = !!userRow?.premium;
             appState.streak = userRow?.streak || 0;
+            appState.chatBanned = !!userRow?.chat_banned;
             this.updateHeaderBadge(appState.isPremium);
             this.renderStreakUI();
+            this.loadUserProgress();
         } catch(e) { console.error('Sync:',e); this.updateHeaderBadge(false); }
+    }
+
+    // ── TOPIC-WISE COMPLETION PROGRESS BAR ──────────────────────────
+    // Denominator = every topic_sets row that actually has questions
+    // (Free Quiz is a different table entirely, so it's naturally
+    // excluded). Numerator = distinct sets THIS user has ever finished,
+    // stored permanently so nothing is lost and it auto-scales the
+    // moment admin adds/removes a set.
+    async loadUserProgress() {
+        const fillEl = document.getElementById('progress-track-bar-fill');
+        const pctEl  = document.getElementById('progress-track-pct');
+        const subEl  = document.getElementById('progress-track-sub');
+        if(!fillEl || !supabaseClient || !appState.currentUser.id) return;
+        try {
+            const { count: totalSets } = await supabaseClient.from('topic_sets').select('*',{count:'exact',head:true}).gt('question_count',0);
+            const { count: doneSetsRaw } = await supabaseClient.from('user_completed_sets').select('*',{count:'exact',head:true}).eq('telegram_id', appState.currentUser.id);
+            const total = totalSets || 0;
+            const done = Math.min(doneSetsRaw || 0, total);
+            const pct = total > 0 ? Math.round((done/total)*100) : 0;
+            fillEl.style.width = `${pct}%`;
+            if(pctEl) pctEl.innerText = `${pct}%`;
+            if(subEl) subEl.innerText = total > 0 ? `${done} of ${total} topic-wise sets completed` : 'No topic-wise sets available yet';
+        } catch(e) {
+            console.error('Progress load:', e, this.permissionHint(e));
+            if(subEl) subEl.innerText = 'Unable to load progress right now.';
+        }
+    }
+
+    async markTopicSetCompleted(fullKey) {
+        if(!supabaseClient || !appState.currentUser.id || !fullKey) return;
+        try {
+            await supabaseClient.from('user_completed_sets')
+                .upsert({ telegram_id: appState.currentUser.id, full_key: fullKey }, { onConflict:'telegram_id,full_key', ignoreDuplicates:true });
+        } catch(e) { console.error('Mark set completed failed:', e, this.permissionHint(e)); }
     }
 
     // Called ONLY when a Free Quiz is completed
@@ -871,6 +978,7 @@ class SSCMaxVocabEngine {
 
     switchView(viewId) {
         if(appState.isBanned) return;
+        if(viewId!=='chat') this.stopChatPolling();
         if(appState.quiz.active && viewId!=='quiz' && viewId!=='result') {
             if(!confirm('Assessment running. Discard and exit?')) return;
             this.forceTerminateQuiz();
@@ -879,8 +987,9 @@ class SSCMaxVocabEngine {
         const v=document.getElementById(`view-${viewId}`);
         if(v) { v.classList.add('active'); appState.currentView=viewId; }
         document.querySelectorAll('.nav-tab').forEach(t=>t.classList.toggle('active',t.getAttribute('data-target')===viewId));
-        if(viewId==='dashboard') this.renderPremiumTopicsGrid();
+        if(viewId==='dashboard') { this.renderPremiumTopicsGrid(); this.loadUserProgress(); }
         if(viewId==='vault')     this.renderVault();
+        if(viewId==='chat')      this.renderChatView();
         if(viewId==='ranks')     this.renderLeaderboard();
         if(v) v.scrollTop=0;
     }
@@ -960,6 +1069,16 @@ class SSCMaxVocabEngine {
             if(error) throw error;
             const sets = data||[];
 
+            // Which of these sets has this user already finished? Shows a
+            // red "Completed" tag instead of the question-count pill.
+            let completedKeys = new Set();
+            if(supabaseClient && appState.currentUser.id && sets.length) {
+                try {
+                    const { data: doneRows } = await supabaseClient.from('user_completed_sets').select('full_key').eq('telegram_id', appState.currentUser.id).in('full_key', sets.map(s=>s.full_key));
+                    completedKeys = new Set((doneRows||[]).map(r=>r.full_key));
+                } catch(e) { /* table may not exist yet — fall back silently */ }
+            }
+
             if(sets.length === 1) {
                 const s = sets[0];
                 const title = letter ? `${groupName} • Letter ${letter} • Set ${s.set_number}` : `${groupName} • Set ${s.set_number}`;
@@ -972,10 +1091,14 @@ class SSCMaxVocabEngine {
             const container = document.getElementById('topic-sets-list');
             this.switchView('topic-sets');
             if(!sets.length) { container.innerHTML = `<div class="glass-card text-center p-4"><p class="text-muted">No sets available yet.</p></div>`; return; }
-            container.innerHTML = sets.map(s => `
+            container.innerHTML = sets.map(s => {
+                const isDone = completedKeys.has(s.full_key);
+                const tag = isDone ? `<span class="set-range-tag set-completed-tag">Completed</span>` : `<span class="set-range-tag">${s.question_count}Q</span>`;
+                return `
                 <div class="topic-set-card glass-card" onclick="app.showSetConfirmPopup('${s.full_key}',${s.question_count},'${s.full_key.replace(/'/g,"\\'")}')">
-                    <div class="set-info"><span class="set-label">Set ${s.set_number}</span><span class="set-range-tag">${s.question_count}Q</span></div>
-                </div>`).join('');
+                    <div class="set-info"><span class="set-label">Set ${s.set_number}</span>${tag}</div>
+                </div>`;
+            }).join('');
         } catch(e) {
             document.getElementById('topic-sets-title').innerText = letter ? `Letter ${letter}` : groupName;
             document.getElementById('topic-sets-subtitle').innerText = subtitleText;
@@ -1224,6 +1347,10 @@ class SSCMaxVocabEngine {
         if(parseFloat(acc)===100) this.launchConfetti();
 
         if(appState.quiz.type==='free') await this.markFreeQuizStreak();
+        if(appState.quiz.type==='topic' && appState.quiz.quizCategory) {
+            await this.markTopicSetCompleted(appState.quiz.quizCategory);
+            this.loadUserProgress();
+        }
 
         // v8 FIX — free quiz completions never posted to the leaderboard
         // before, so free-quiz-only users never had a rank to show.
@@ -1280,6 +1407,26 @@ class SSCMaxVocabEngine {
                 <div class="leader-scores"><div class="leader-score-pts">${u.score} Correct</div><div class="leader-score-time">${Math.floor(u.time_seconds/60)}m ${u.time_seconds%60}s</div></div>
             </div>`;
         }).join('');
+    }
+
+    async reportCurrentQuestion() {
+        if(!appState.quiz.active) return;
+        const q = appState.quiz.questions[appState.quiz.currentIndex];
+        if(!q) return;
+        const reason = prompt("What's wrong with this question? (e.g. wrong answer, typo, unclear)");
+        if(reason===null) return; // cancelled
+        if(!supabaseClient || !appState.currentUser.id) { alert('Could not submit the report — try again in a moment.'); return; }
+        try {
+            await supabaseClient.from('question_reports').insert({
+                telegram_id: appState.currentUser.id,
+                reporter_name: appState.currentUser.name,
+                quiz_type: appState.quiz.type,
+                topic: appState.quiz.quizCategory,
+                question_text: q.text,
+                reason: (reason||'').trim() || 'No reason given'
+            });
+            this.triggerToast('🚩 Reported — thanks for the heads up!');
+        } catch(e) { console.error('Report failed:', e, this.permissionHint(e)); alert('Could not submit the report right now.'); }
     }
 
     confirmAbandonQuiz() { if(confirm('Abandon assessment? Progress will be lost.')) this.forceTerminateQuiz(); }
@@ -1447,6 +1594,234 @@ class SSCMaxVocabEngine {
             if(myIndex===-1 && appState.currentUser.id) myRankHTML=`<div class="leader-row glass-card user-pinned-rank" style="margin-top:14px;"><div class="leader-meta"><span class="leader-num">#—</span><span class="leader-name">You (Not in Top 10)</span></div><div class="leader-scores"><div class="leader-score-pts" style="font-size:0.78rem;">Complete quiz to rank</div></div></div>`;
             this.leaderboardEl.innerHTML=`<div class="leaderboard-list">${this.renderLeaderboardRows(lb)}</div>${myRankHTML}`;
         } catch(e) { console.error('LB error:',e); this.leaderboardEl.innerHTML=`<div class="text-center text-muted p-3">Failed to load rankings.</div>`; }
+    }
+
+    // ── small helper: escape user-typed text before it goes into innerHTML ──
+    escapeHtml(str) {
+        return String(str??'').replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+    }
+
+    // ══════════════════════════════════════════════════════════════
+    // QUESTION REPORTS (admin queue)
+    // ══════════════════════════════════════════════════════════════
+    async loadAdminReports() {
+        const el = document.getElementById('adm-reports-list');
+        if(!el || !supabaseClient) return;
+        el.innerHTML = `<div class="text-center text-muted p-3"><i class="fa-solid fa-spinner fa-spin"></i></div>`;
+        try {
+            const { data, error } = await supabaseClient.from('question_reports').select('*').eq('status','pending').order('created_at',{ascending:false}).limit(100);
+            if(error) throw error;
+            const badge = document.getElementById('adm-reports-badge');
+            if(badge) { badge.innerText = data?.length||0; badge.classList.toggle('hidden', !data?.length); }
+            if(!data?.length) { el.innerHTML = `<p class="text-muted text-center p-3">No open reports. 🎉</p>`; return; }
+            el.innerHTML = data.map(r => `
+                <div class="admin-scheduled-row" style="flex-direction:column;align-items:stretch;gap:8px;">
+                    <div>
+                        <div style="font-size:0.68rem;color:var(--text-muted);text-transform:uppercase;letter-spacing:0.03em;">${this.escapeHtml(r.quiz_type||'')} ${r.topic?'· '+this.escapeHtml(r.topic):''}</div>
+                        <div style="font-size:0.85rem;font-weight:700;margin:4px 0;">${this.escapeHtml(r.question_text)}</div>
+                        <div style="font-size:0.78rem;color:var(--danger-red);">Reason: ${this.escapeHtml(r.reason)}</div>
+                        <div style="font-size:0.68rem;color:var(--text-muted);margin-top:4px;">By ${this.escapeHtml(r.reporter_name||'Unknown')} · ${new Date(r.created_at).toLocaleString('en-IN')}</div>
+                    </div>
+                    <div style="display:flex;gap:8px;">
+                        <button class="adm-btn-cyan" style="flex:1;padding:7px;font-size:0.72rem;" onclick="app.resolveReport(${r.id})"><i class="fa-solid fa-check"></i> Mark Resolved</button>
+                        <button class="adm-btn-red" style="flex:1;padding:7px;font-size:0.72rem;" onclick="app.deleteReportRow(${r.id})"><i class="fa-solid fa-trash"></i> Discard</button>
+                    </div>
+                </div>`).join('');
+        } catch(e) { el.innerHTML = `<p style="color:var(--danger-red);text-align:center;">Error: ${e.message}${this.permissionHint(e)}</p>`; }
+    }
+    async resolveReport(id) {
+        try { await supabaseClient.from('question_reports').update({status:'resolved'}).eq('id',id); this.triggerToast('Marked resolved'); this.loadAdminReports(); }
+        catch(e) { alert('Error: '+e.message); }
+    }
+    async deleteReportRow(id) {
+        try { await supabaseClient.from('question_reports').delete().eq('id',id); this.triggerToast('Report discarded'); this.loadAdminReports(); }
+        catch(e) { alert('Error: '+e.message); }
+    }
+
+    // ══════════════════════════════════════════════════════════════
+    // CHAT — premium 1:1 support chat with the admin.
+    // Free users see a paywall CTA. Premium users get a live thread.
+    // Admin sees a conversation list instead, and can reply to / ban
+    // any single user from chat without touching their app access.
+    // ══════════════════════════════════════════════════════════════
+    async renderChatView() {
+        const container = document.getElementById('chat-container');
+        if(!container) return;
+        if(appState.isAdmin) { this.renderAdminChatHome(container); return; }
+
+        if(!appState.isPremium) {
+            container.innerHTML = `
+                <div class="glass-card text-center p-4">
+                    <i class="fa-solid fa-lock" style="font-size:2rem;color:var(--gold-premium);margin-bottom:12px;"></i>
+                    <h3 style="margin-bottom:8px;">Chat is a Premium Feature</h3>
+                    <p style="color:var(--text-muted);font-size:0.85rem;margin-bottom:16px;">Get direct access to the SSC MAX VOCAB team. Contact us on Telegram to unlock Premium and start chatting.</p>
+                    <button class="btn-primary-gradient w-100" onclick="app.triggerPremiumPaywallGate()"><i class="fa-brands fa-telegram"></i> Contact @jangra854x</button>
+                </div>`;
+            return;
+        }
+
+        container.innerHTML = `
+            <div class="chat-thread-wrapper">
+                <div id="chat-messages-list" class="chat-messages-list"><div class="text-center text-muted p-3"><i class="fa-solid fa-spinner fa-spin"></i></div></div>
+                <div class="chat-input-row" id="chat-input-row">
+                    <input type="text" id="chat-input-box" placeholder="Type a message..." onkeydown="if(event.key==='Enter') app.sendChatMessage()">
+                    <button class="chat-send-btn" onclick="app.sendChatMessage()"><i class="fa-solid fa-paper-plane"></i></button>
+                </div>
+            </div>`;
+        await this.loadMyChatMessages();
+        this.startChatPolling(() => this.loadMyChatMessages());
+    }
+
+    renderChatBubbles(msgs, mineIs) {
+        if(!msgs.length) return `<div class="text-center text-muted p-4">No messages yet. Say hello 👋</div>`;
+        return msgs.map(m => {
+            const mine = m.sender === mineIs;
+            const time = new Date(m.created_at).toLocaleTimeString('en-IN',{hour:'2-digit',minute:'2-digit'});
+            return `<div class="chat-bubble-row ${mine?'chat-bubble-mine':''}">
+                <div class="chat-bubble">${this.escapeHtml(m.message)}<span class="chat-bubble-time">${time}</span></div>
+            </div>`;
+        }).join('');
+    }
+
+    async loadMyChatMessages() {
+        const list = document.getElementById('chat-messages-list');
+        if(!list || !supabaseClient || !appState.currentUser.id) return;
+        try {
+            const { data, error } = await supabaseClient.from('chat_messages').select('*').eq('telegram_id', appState.currentUser.id).order('created_at',{ascending:true}).limit(300);
+            if(error) throw error;
+            list.innerHTML = this.renderChatBubbles(data||[], 'user');
+            list.scrollTop = list.scrollHeight;
+            supabaseClient.from('chat_messages').update({read_by_user:true}).eq('telegram_id',appState.currentUser.id).eq('sender','admin').eq('read_by_user',false).then(()=>{}, ()=>{});
+        } catch(e) { list.innerHTML = `<div class="text-center text-muted p-3">Could not load messages.</div>`; }
+
+        const inputRow = document.getElementById('chat-input-row');
+        if(inputRow) {
+            inputRow.innerHTML = appState.chatBanned
+                ? `<div class="chat-banned-note"><i class="fa-solid fa-ban"></i> You've been restricted from chat.</div>`
+                : `<input type="text" id="chat-input-box" placeholder="Type a message..." onkeydown="if(event.key==='Enter') app.sendChatMessage()"><button class="chat-send-btn" onclick="app.sendChatMessage()"><i class="fa-solid fa-paper-plane"></i></button>`;
+        }
+    }
+
+    async sendChatMessage() {
+        const input = document.getElementById('chat-input-box');
+        const msg = input?.value.trim();
+        if(!msg || appState.chatBanned) return;
+        if(!supabaseClient || !appState.currentUser.id) return;
+        input.value='';
+        try {
+            await supabaseClient.from('chat_messages').insert({ telegram_id: appState.currentUser.id, sender:'user', message: msg });
+            this.loadMyChatMessages();
+        } catch(e) { console.error('Send failed:', e, this.permissionHint(e)); alert('Message failed to send.'); }
+    }
+
+    startChatPolling(fn) {
+        this.stopChatPolling();
+        appState.chat.pollInterval = setInterval(fn, 4000);
+    }
+    stopChatPolling() {
+        if(appState.chat.pollInterval) { clearInterval(appState.chat.pollInterval); appState.chat.pollInterval=null; }
+    }
+
+    // ── ADMIN SIDE — conversation list + per-user thread ───────────
+    async renderAdminChatHome(container) {
+        container.innerHTML = `<div id="adm-chat-list"><div class="text-center text-muted p-3"><i class="fa-solid fa-spinner fa-spin"></i></div></div>`;
+        await this.loadAdminConversations('adm-chat-list');
+        this.startChatPolling(() => this.loadAdminConversations('adm-chat-list'));
+    }
+
+    async loadAdminConversations(targetId) {
+        const el = document.getElementById(targetId || 'adm-conversations-list');
+        if(!el || !supabaseClient) return;
+        try {
+            const { data, error } = await supabaseClient.from('chat_messages').select('*').order('created_at',{ascending:false}).limit(500);
+            if(error) throw error;
+            const byUser = {};
+            (data||[]).forEach(m => { if(!byUser[m.telegram_id]) byUser[m.telegram_id]=[]; byUser[m.telegram_id].push(m); });
+            const ids = Object.keys(byUser);
+            if(!ids.length) { el.innerHTML = `<p class="text-muted text-center p-3">No conversations yet.</p>`; return; }
+            const { data: users } = await supabaseClient.from('users').select('telegram_id,first_name,username,chat_banned').in('telegram_id', ids);
+            const uMap = {}; (users||[]).forEach(u => uMap[u.telegram_id]=u);
+            let totalUnread = 0;
+            el.innerHTML = ids.map(id => {
+                const msgs = byUser[id];
+                const last = msgs[0];
+                const unread = msgs.filter(m => m.sender==='user' && !m.read_by_admin).length;
+                totalUnread += unread;
+                const u = uMap[id]; const nm = u ? (u.first_name||u.username||'Unknown') : 'Unknown';
+                return `<div class="admin-scheduled-row" style="cursor:pointer;" onclick="app.openAdminChatThread(${id})">
+                    <div>
+                        <div class="admin-scheduled-date">${this.escapeHtml(nm)} ${u?.chat_banned?'<span class="set-completed-tag" style="margin-left:6px;">CHAT BANNED</span>':''} ${unread?`<span class="adm-pill-badge" style="margin-left:6px;">${unread}</span>`:''}</div>
+                        <div class="admin-scheduled-count">${this.escapeHtml((last.message||'').slice(0,50))}</div>
+                    </div>
+                    <i class="fa-solid fa-chevron-right text-muted"></i>
+                </div>`;
+            }).join('');
+            const badge = document.getElementById('adm-messages-badge');
+            if(badge) { badge.innerText = totalUnread; badge.classList.toggle('hidden', !totalUnread); }
+        } catch(e) { el.innerHTML = `<p style="color:var(--danger-red);text-align:center;">Error: ${e.message}${this.permissionHint(e)}</p>`; }
+    }
+
+    async openAdminChatThread(telegramId) {
+        appState.chat.activeAdminThreadId = telegramId;
+        const { data: u } = await supabaseClient.from('users').select('first_name,username,chat_banned').eq('telegram_id',telegramId).maybeSingle();
+        const nm = u ? (u.first_name||u.username||'Unknown') : 'Unknown';
+        const overlay = document.createElement('div');
+        overlay.className = 'admin-modal-overlay'; overlay.id = 'admin-chat-modal';
+        overlay.onclick = (e) => { if(e.target===overlay) { this.stopChatPolling(); overlay.remove(); } };
+        overlay.innerHTML = `
+            <div class="admin-modal-sheet">
+                <div class="admin-modal-header">
+                    <h3 style="font-size:0.9rem;flex:1;">${this.escapeHtml(nm)} · ID ${telegramId}</h3>
+                    <button class="admin-modal-close" onclick="app.stopChatPolling(); document.getElementById('admin-chat-modal').remove()"><i class="fa-solid fa-xmark"></i></button>
+                </div>
+                <button class="adm-btn-red w-100 mb-3" id="adm-chat-ban-btn" onclick="app.toggleChatBan(${telegramId})">
+                    <i class="fa-solid fa-ban"></i> ${u?.chat_banned?'Unban from Chat':'Ban from Chat'}
+                </button>
+                <div class="chat-thread-wrapper" style="height:50vh;">
+                    <div id="adm-chat-messages-list" class="chat-messages-list"><div class="text-center text-muted p-3"><i class="fa-solid fa-spinner fa-spin"></i></div></div>
+                    <div class="chat-input-row">
+                        <input type="text" id="adm-chat-input-box" placeholder="Reply as admin..." onkeydown="if(event.key==='Enter') app.sendAdminChatMessage(${telegramId})">
+                        <button class="chat-send-btn" onclick="app.sendAdminChatMessage(${telegramId})"><i class="fa-solid fa-paper-plane"></i></button>
+                    </div>
+                </div>
+            </div>`;
+        document.body.appendChild(overlay);
+        await this.loadAdminThreadMessages(telegramId);
+        this.startChatPolling(() => this.loadAdminThreadMessages(telegramId));
+    }
+
+    async loadAdminThreadMessages(telegramId) {
+        const list = document.getElementById('adm-chat-messages-list');
+        if(!list || !supabaseClient) return;
+        try {
+            const { data, error } = await supabaseClient.from('chat_messages').select('*').eq('telegram_id', telegramId).order('created_at',{ascending:true}).limit(300);
+            if(error) throw error;
+            list.innerHTML = this.renderChatBubbles(data||[], 'admin');
+            list.scrollTop = list.scrollHeight;
+            supabaseClient.from('chat_messages').update({read_by_admin:true}).eq('telegram_id',telegramId).eq('sender','user').eq('read_by_admin',false).then(()=>{}, ()=>{});
+        } catch(e) { list.innerHTML = `<div class="text-center text-muted p-3">Could not load messages.</div>`; }
+    }
+
+    async sendAdminChatMessage(telegramId) {
+        const input = document.getElementById('adm-chat-input-box');
+        const msg = input?.value.trim();
+        if(!msg) return;
+        input.value='';
+        try {
+            await supabaseClient.from('chat_messages').insert({ telegram_id: telegramId, sender:'admin', message: msg });
+            this.loadAdminThreadMessages(telegramId);
+        } catch(e) { console.error('Admin send failed:', e, this.permissionHint(e)); alert('Message failed to send.'); }
+    }
+
+    async toggleChatBan(telegramId) {
+        try {
+            const { data: u } = await supabaseClient.from('users').select('chat_banned').eq('telegram_id',telegramId).maybeSingle();
+            const next = !u?.chat_banned;
+            await supabaseClient.from('users').update({ chat_banned: next }).eq('telegram_id', telegramId);
+            this.triggerToast(next ? '🚫 User restricted from chat' : '✅ Chat access restored');
+            const btn = document.getElementById('adm-chat-ban-btn');
+            if(btn) btn.innerHTML = `<i class="fa-solid fa-ban"></i> ${next?'Unban from Chat':'Ban from Chat'}`;
+        } catch(e) { alert('Error (check "chat_banned" column exists): '+e.message); }
     }
 
     // ── TOAST ────────────────────────────────────────────────────
