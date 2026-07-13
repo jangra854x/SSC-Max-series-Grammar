@@ -150,7 +150,6 @@ class SSCMaxVocabEngine {
             <button class="adm-pill" data-tab="bank" onclick="app.switchAdminTab('bank',this)">Topic Bank</button>
             <button class="adm-pill" data-tab="users" onclick="app.switchAdminTab('users',this)">Users</button>
             <button class="adm-pill" data-tab="reports" onclick="app.switchAdminTab('reports',this)">Reports <span class="adm-pill-badge hidden" id="adm-reports-badge">0</span></button>
-            <button class="adm-pill" data-tab="messages" onclick="app.switchAdminTab('messages',this)">Messages <span class="adm-pill-badge hidden" id="adm-messages-badge">0</span></button>
             <button class="adm-pill" data-tab="stats" onclick="app.switchAdminTab('stats',this)">Stats</button>
         </div>
 
@@ -249,16 +248,6 @@ class SSCMaxVocabEngine {
             </div>
         </div>
 
-        <div id="adm-sec-messages" class="adm-sec" style="display:none;">
-            <div class="glass-card">
-                <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:14px;">
-                    <h4 style="color:var(--neon-cyan);">Chat Conversations</h4>
-                    <button class="adm-btn-cyan" style="padding:6px 12px;font-size:0.72rem;" onclick="app.loadAdminConversations()">↻ Refresh</button>
-                </div>
-                <div id="adm-conversations-list"><div class="text-center text-muted p-3"><i class="fa-solid fa-spinner fa-spin"></i></div></div>
-            </div>
-        </div>
-
         <div id="adm-sec-stats" class="adm-sec" style="display:none;">
             <div class="glass-card mb-3">
                 <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:14px;">
@@ -328,7 +317,6 @@ class SSCMaxVocabEngine {
         this.triggerHaptic('select');
         if(secId==='users') this.loadPremiumUsersList();
         if(secId==='reports') this.loadAdminReports();
-        if(secId==='messages') this.loadAdminConversations();
         if(secId==='stats') this.loadAdminStats();
         if(secId==='bank')  { this.loadAllTopicSets(); this.refreshBankSetOptions(); }
     }
@@ -636,10 +624,10 @@ class SSCMaxVocabEngine {
                 }
             } catch(e){}
 
-            // Reports + Chat pending counts
-            let pendingReports = 0, unreadMessages = 0;
+            // Reports + Chat message counts
+            let pendingReports = 0, groupChatMsgCount = 0;
             try { const r = await supabaseClient.from('question_reports').select('*',{count:'exact',head:true}).eq('status','pending'); pendingReports = r.count||0; } catch(e){}
-            try { const r = await supabaseClient.from('chat_messages').select('*',{count:'exact',head:true}).eq('sender','user').eq('read_by_admin',false); unreadMessages = r.count||0; } catch(e){}
+            try { const r = await supabaseClient.from('group_chat_messages').select('*',{count:'exact',head:true}); groupChatMsgCount = r.count||0; } catch(e){}
 
             const statBlock = (val,label,color='',onclick='') => `<div class="res-card glass-card ${onclick?'stat-clickable':''}" ${onclick?`onclick="${onclick}"`:''}><span class="res-val ${color}">${val}</span><span class="res-lbl">${label}</span></div>`;
             el.innerHTML = `
@@ -673,7 +661,7 @@ class SSCMaxVocabEngine {
                 <div style="font-size:0.72rem;font-weight:800;color:var(--text-muted);letter-spacing:0.03em;margin-bottom:8px;">🚩 Needs Attention</div>
                 <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-bottom:16px;">
                     ${statBlock(pendingReports,'Pending Reports', pendingReports>0?'text-danger':'text-success', "app.jumpAdminTab('reports')")}
-                    ${statBlock(unreadMessages,'Unread Messages', unreadMessages>0?'text-danger':'text-success', "app.jumpAdminTab('messages')")}
+                    ${statBlock(groupChatMsgCount,'Elite Chat Messages','text-cyan',"app.switchView('chat')")}
                 </div>
                 <div style="font-size:0.72rem;font-weight:800;color:var(--text-muted);letter-spacing:0.03em;margin-bottom:8px;">🗂️ Vault Engagement</div>
                 <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;">
@@ -995,8 +983,65 @@ class SSCMaxVocabEngine {
     }
 
     triggerPremiumPaywallGate() {
-        const msg=encodeURIComponent('Hi! I want to unlock Premium Membership for SSC MAX VOCAB.');
+        this.showPricingPopup();
+    }
+
+    // ── PREMIUM PRICING POPUP (shown before redirecting to admin) ──
+    showPricingPopup() {
+        document.getElementById('pricing-modal')?.remove();
+        const plans = [
+            { key:'1m', label:'1 Month',  price:'₹99',  note:'Billed monthly' },
+            { key:'3m', label:'3 Months', price:'₹249', note:'Save vs monthly' },
+            { key:'6m', label:'6 Months', price:'₹499', note:'Most popular', best:true },
+            { key:'12m',label:'1 Year',   price:'₹899', note:'Best value' }
+        ];
+        let selected = '6m';
+        const overlay = document.createElement('div');
+        overlay.className = 'pricing-modal-overlay'; overlay.id = 'pricing-modal';
+        overlay.onclick = (e) => { if(e.target===overlay) overlay.remove(); };
+        const renderPlans = () => plans.map(p => `
+            <div class="pricing-plan-row ${p.best?'pricing-plan-best':''} ${selected===p.key?'pricing-plan-selected':''}" data-plan="${p.key}" onclick="app.selectPricingPlan('${p.key}')">
+                ${p.best?'<span class="pricing-plan-best-tag">POPULAR</span>':''}
+                <div class="pricing-plan-left">
+                    <div class="pricing-plan-name">${p.label}</div>
+                    <div class="pricing-plan-note">${p.note}</div>
+                </div>
+                <div class="pricing-plan-price">${p.price}</div>
+            </div>`).join('');
+        overlay.innerHTML = `
+            <div class="pricing-modal-box">
+                <div class="pricing-modal-icon"><i class="fa-solid fa-crown"></i></div>
+                <div class="pricing-modal-title">Unlock Elite Premium</div>
+                <div class="pricing-modal-sub">Get full access to Topic-Wise Vocabulary, the Elite Group Chat, and more.</div>
+                <div class="pricing-plans-list" id="pricing-plans-list">${renderPlans()}</div>
+                <div class="pricing-modal-actions">
+                    <button class="pricing-buy-btn" onclick="app.buyPremiumRedirect()"><i class="fa-solid fa-bolt"></i> Buy Now</button>
+                    <button class="pricing-cancel-btn" onclick="document.getElementById('pricing-modal').remove()">Maybe Later</button>
+                </div>
+            </div>`;
+        document.body.appendChild(overlay);
+        this._pricingPlans = plans; this._pricingSelected = selected;
+    }
+    selectPricingPlan(key) {
+        this._pricingSelected = key;
+        const list = document.getElementById('pricing-plans-list');
+        if(list) list.innerHTML = this._pricingPlans.map(p => `
+            <div class="pricing-plan-row ${p.best?'pricing-plan-best':''} ${this._pricingSelected===p.key?'pricing-plan-selected':''}" data-plan="${p.key}" onclick="app.selectPricingPlan('${p.key}')">
+                ${p.best?'<span class="pricing-plan-best-tag">POPULAR</span>':''}
+                <div class="pricing-plan-left">
+                    <div class="pricing-plan-name">${p.label}</div>
+                    <div class="pricing-plan-note">${p.note}</div>
+                </div>
+                <div class="pricing-plan-price">${p.price}</div>
+            </div>`).join('');
+        this.triggerHaptic('select');
+    }
+    buyPremiumRedirect() {
+        const plan = (this._pricingPlans||[]).find(p => p.key===this._pricingSelected);
+        const planLabel = plan ? `${plan.label} (${plan.price})` : '';
+        const msg=encodeURIComponent(`Hi! I want to unlock Premium Membership for SSC MAX VOCAB — ${planLabel} plan.`);
         const link=`https://t.me/jangra854x?text=${msg}`;
+        document.getElementById('pricing-modal')?.remove();
         if(window.Telegram?.WebApp?.openTelegramLink) window.Telegram.WebApp.openTelegramLink(link);
         else window.open(link,'_blank');
     }
@@ -1639,79 +1684,121 @@ class SSCMaxVocabEngine {
     }
 
     // ══════════════════════════════════════════════════════════════
-    // CHAT — premium 1:1 support chat with the admin.
-    // Free users see a paywall CTA. Premium users get a live thread.
-    // Admin sees a conversation list instead, and can reply to / ban
-    // any single user from chat without touching their app access.
+    // CHAT — Elite Group Chat (all Premium members chat together).
+    // Free users can VIEW messages but cannot send (paywall CTA to
+    // send). Admin messages carry an "ADMIN" tag. Admin gets a full
+    // moderation toolbar: mute/unmute a user, ban/unban a user from
+    // chat, delete any single message, and clear the entire chat.
+    // Messages persist forever unless an admin deletes them.
     // ══════════════════════════════════════════════════════════════
     async renderChatView() {
         const container = document.getElementById('chat-container');
         if(!container) return;
-        if(appState.isAdmin) { this.renderAdminChatHome(container); return; }
 
-        if(!appState.isPremium) {
-            container.innerHTML = `
-                <div class="glass-card text-center p-4">
-                    <i class="fa-solid fa-lock" style="font-size:2rem;color:var(--gold-premium);margin-bottom:12px;"></i>
-                    <h3 style="margin-bottom:8px;">Chat is a Premium Feature</h3>
-                    <p style="color:var(--text-muted);font-size:0.85rem;margin-bottom:16px;">Get direct access to the SSC MAX VOCAB team. Contact us on Telegram to unlock Premium and start chatting.</p>
-                    <button class="btn-primary-gradient w-100" onclick="app.triggerPremiumPaywallGate()"><i class="fa-brands fa-telegram"></i> Contact @jangra854x</button>
-                </div>`;
-            return;
-        }
+        const canSend = appState.isAdmin || (appState.isPremium && !appState.chatBanned);
+        const isReadOnly = !appState.isAdmin && !appState.isPremium;
 
         container.innerHTML = `
             <div class="chat-thread-wrapper">
+                ${appState.isAdmin ? `
+                <div class="chat-admin-toolbar">
+                    <button class="adm-btn-gold" onclick="app.openChatMuteModal()"><i class="fa-solid fa-user-slash"></i> Mute / Ban User</button>
+                    <button class="adm-btn-red" onclick="app.confirmClearGroupChat()"><i class="fa-solid fa-trash"></i> Clear Chat</button>
+                </div>` : ''}
                 <div id="chat-messages-list" class="chat-messages-list"><div class="text-center text-muted p-3"><i class="fa-solid fa-spinner fa-spin"></i></div></div>
+                ${isReadOnly ? `
+                <div class="chat-readonly-note">
+                    <i class="fa-solid fa-lock"></i>
+                    <span>Only Premium members can send messages here.</span>
+                    <button class="chat-readonly-btn" onclick="app.triggerPremiumPaywallGate()">Upgrade</button>
+                </div>` : `
                 <div class="chat-input-row" id="chat-input-row">
-                    <input type="text" id="chat-input-box" placeholder="Type a message..." onkeydown="if(event.key==='Enter') app.sendChatMessage()">
-                    <button class="chat-send-btn" onclick="app.sendChatMessage()"><i class="fa-solid fa-paper-plane"></i></button>
-                </div>
+                    ${canSend
+                        ? `<input type="text" id="chat-input-box" placeholder="Message the Elite Chat..." onkeydown="if(event.key==='Enter') app.sendGroupChatMessage()"><button class="chat-send-btn" onclick="app.sendGroupChatMessage()"><i class="fa-solid fa-paper-plane"></i></button>`
+                        : `<div class="chat-banned-note"><i class="fa-solid fa-ban"></i> You've been restricted from chat.</div>`}
+                </div>`}
             </div>`;
-        await this.loadMyChatMessages();
-        this.startChatPolling(() => this.loadMyChatMessages());
+        await this.loadGroupChatMessages();
+        this.startChatPolling(() => this.loadGroupChatMessages());
     }
 
-    renderChatBubbles(msgs, mineIs) {
+    renderChatBubbles(msgs) {
         if(!msgs.length) return `<div class="text-center text-muted p-4">No messages yet. Say hello 👋</div>`;
+        const myId = appState.currentUser.id;
         return msgs.map(m => {
-            const mine = m.sender === mineIs;
+            const mine = !appState.isAdmin && m.telegram_id === myId;
             const time = new Date(m.created_at).toLocaleTimeString('en-IN',{hour:'2-digit',minute:'2-digit'});
+            const avatar = m.sender_photo || 'https://placehold.co/60x60/121627/00f2fe?text=U';
+            const name = this.escapeHtml(m.sender_name || 'Member');
             return `<div class="chat-bubble-row ${mine?'chat-bubble-mine':''}">
-                <div class="chat-bubble">${this.escapeHtml(m.message)}<span class="chat-bubble-time">${time}</span></div>
+                <img class="chat-sender-avatar" src="${avatar}" alt="">
+                <div class="chat-bubble-col">
+                    <div class="chat-sender-name-row">
+                        <span>${name}</span>
+                        ${m.is_admin ? '<span class="chat-admin-tag">Admin</span>' : ''}
+                    </div>
+                    <div class="chat-bubble-wrap">
+                        <div class="chat-bubble">${this.escapeHtml(m.message)}<span class="chat-bubble-time">${time}</span></div>
+                        ${appState.isAdmin ? `<div class="chat-msg-actions"><button class="chat-msg-action-btn" onclick="app.deleteGroupChatMessage(${m.id})"><i class="fa-solid fa-trash"></i> Delete</button></div>` : ''}
+                    </div>
+                </div>
             </div>`;
         }).join('');
     }
 
-    async loadMyChatMessages() {
+    async loadGroupChatMessages() {
         const list = document.getElementById('chat-messages-list');
-        if(!list || !supabaseClient || !appState.currentUser.id) return;
+        if(!list || !supabaseClient) return;
         try {
-            const { data, error } = await supabaseClient.from('chat_messages').select('*').eq('telegram_id', appState.currentUser.id).order('created_at',{ascending:true}).limit(300);
+            const { data, error } = await supabaseClient.from('group_chat_messages').select('*').order('created_at',{ascending:true}).limit(300);
             if(error) throw error;
-            list.innerHTML = this.renderChatBubbles(data||[], 'user');
-            list.scrollTop = list.scrollHeight;
-            supabaseClient.from('chat_messages').update({read_by_user:true}).eq('telegram_id',appState.currentUser.id).eq('sender','admin').eq('read_by_user',false).then(()=>{}, ()=>{});
-        } catch(e) { list.innerHTML = `<div class="text-center text-muted p-3">Could not load messages.</div>`; }
-
-        const inputRow = document.getElementById('chat-input-row');
-        if(inputRow) {
-            inputRow.innerHTML = appState.chatBanned
-                ? `<div class="chat-banned-note"><i class="fa-solid fa-ban"></i> You've been restricted from chat.</div>`
-                : `<input type="text" id="chat-input-box" placeholder="Type a message..." onkeydown="if(event.key==='Enter') app.sendChatMessage()"><button class="chat-send-btn" onclick="app.sendChatMessage()"><i class="fa-solid fa-paper-plane"></i></button>`;
-        }
+            const wasNearBottom = list.scrollHeight - list.scrollTop - list.clientHeight < 80;
+            list.innerHTML = this.renderChatBubbles(data||[]);
+            if(wasNearBottom || list.dataset.firstLoad !== '1') { list.scrollTop = list.scrollHeight; list.dataset.firstLoad='1'; }
+        } catch(e) { list.innerHTML = `<div class="text-center text-muted p-3">Could not load messages.${this.permissionHint(e)}</div>`; }
     }
 
-    async sendChatMessage() {
+    async sendGroupChatMessage() {
         const input = document.getElementById('chat-input-box');
         const msg = input?.value.trim();
-        if(!msg || appState.chatBanned) return;
+        if(!msg) return;
+        if(!appState.isAdmin && (!appState.isPremium || appState.chatBanned)) return;
         if(!supabaseClient || !appState.currentUser.id) return;
         input.value='';
         try {
-            await supabaseClient.from('chat_messages').insert({ telegram_id: appState.currentUser.id, sender:'user', message: msg });
-            this.loadMyChatMessages();
+            await supabaseClient.from('group_chat_messages').insert({
+                telegram_id: appState.currentUser.id,
+                sender_name: appState.currentUser.name,
+                sender_username: appState.currentUser.username,
+                sender_photo: appState.currentUser.photo_url,
+                is_admin: appState.isAdmin,
+                message: msg
+            });
+            this.loadGroupChatMessages();
         } catch(e) { console.error('Send failed:', e, this.permissionHint(e)); alert('Message failed to send.'); }
+    }
+
+    async deleteGroupChatMessage(id) {
+        if(!appState.isAdmin) return;
+        if(!confirm('Delete this message?')) return;
+        try {
+            await supabaseClient.from('group_chat_messages').delete().eq('id', id);
+            this.loadGroupChatMessages();
+            this.triggerToast('🗑️ Message deleted');
+        } catch(e) { alert('Error: '+e.message); }
+    }
+
+    confirmClearGroupChat() {
+        if(!appState.isAdmin) return;
+        if(!confirm('Clear the ENTIRE group chat for everyone? This cannot be undone.')) return;
+        this.clearGroupChat();
+    }
+    async clearGroupChat() {
+        try {
+            await supabaseClient.from('group_chat_messages').delete().neq('id', 0);
+            this.loadGroupChatMessages();
+            this.triggerToast('🧹 Chat cleared');
+        } catch(e) { alert('Error: '+e.message); }
     }
 
     startChatPolling(fn) {
@@ -1722,106 +1809,61 @@ class SSCMaxVocabEngine {
         if(appState.chat.pollInterval) { clearInterval(appState.chat.pollInterval); appState.chat.pollInterval=null; }
     }
 
-    // ── ADMIN SIDE — conversation list + per-user thread ───────────
-    async renderAdminChatHome(container) {
-        container.innerHTML = `<div id="adm-chat-list"><div class="text-center text-muted p-3"><i class="fa-solid fa-spinner fa-spin"></i></div></div>`;
-        await this.loadAdminConversations('adm-chat-list');
-        this.startChatPolling(() => this.loadAdminConversations('adm-chat-list'));
-    }
-
-    async loadAdminConversations(targetId) {
-        const el = document.getElementById(targetId || 'adm-conversations-list');
-        if(!el || !supabaseClient) return;
-        try {
-            const { data, error } = await supabaseClient.from('chat_messages').select('*').order('created_at',{ascending:false}).limit(500);
-            if(error) throw error;
-            const byUser = {};
-            (data||[]).forEach(m => { if(!byUser[m.telegram_id]) byUser[m.telegram_id]=[]; byUser[m.telegram_id].push(m); });
-            const ids = Object.keys(byUser);
-            if(!ids.length) { el.innerHTML = `<p class="text-muted text-center p-3">No conversations yet.</p>`; return; }
-            const { data: users } = await supabaseClient.from('users').select('telegram_id,first_name,username,chat_banned').in('telegram_id', ids);
-            const uMap = {}; (users||[]).forEach(u => uMap[u.telegram_id]=u);
-            let totalUnread = 0;
-            el.innerHTML = ids.map(id => {
-                const msgs = byUser[id];
-                const last = msgs[0];
-                const unread = msgs.filter(m => m.sender==='user' && !m.read_by_admin).length;
-                totalUnread += unread;
-                const u = uMap[id]; const nm = u ? (u.first_name||u.username||'Unknown') : 'Unknown';
-                return `<div class="admin-scheduled-row" style="cursor:pointer;" onclick="app.openAdminChatThread(${id})">
-                    <div>
-                        <div class="admin-scheduled-date">${this.escapeHtml(nm)} ${u?.chat_banned?'<span class="set-completed-tag" style="margin-left:6px;">CHAT BANNED</span>':''} ${unread?`<span class="adm-pill-badge" style="margin-left:6px;">${unread}</span>`:''}</div>
-                        <div class="admin-scheduled-count">${this.escapeHtml((last.message||'').slice(0,50))}</div>
-                    </div>
-                    <i class="fa-solid fa-chevron-right text-muted"></i>
-                </div>`;
-            }).join('');
-            const badge = document.getElementById('adm-messages-badge');
-            if(badge) { badge.innerText = totalUnread; badge.classList.toggle('hidden', !totalUnread); }
-        } catch(e) { el.innerHTML = `<p style="color:var(--danger-red);text-align:center;">Error: ${e.message}${this.permissionHint(e)}</p>`; }
-    }
-
-    async openAdminChatThread(telegramId) {
-        appState.chat.activeAdminThreadId = telegramId;
-        const { data: u } = await supabaseClient.from('users').select('first_name,username,chat_banned').eq('telegram_id',telegramId).maybeSingle();
-        const nm = u ? (u.first_name||u.username||'Unknown') : 'Unknown';
+    // ── ADMIN — Mute / Ban a chat member ────────────────────────────
+    async openChatMuteModal() {
+        document.getElementById('chat-mute-modal')?.remove();
         const overlay = document.createElement('div');
-        overlay.className = 'admin-modal-overlay'; overlay.id = 'admin-chat-modal';
-        overlay.onclick = (e) => { if(e.target===overlay) { this.stopChatPolling(); overlay.remove(); } };
+        overlay.className = 'admin-modal-overlay'; overlay.id = 'chat-mute-modal';
+        overlay.onclick = (e) => { if(e.target===overlay) overlay.remove(); };
         overlay.innerHTML = `
             <div class="admin-modal-sheet">
                 <div class="admin-modal-header">
-                    <h3 style="font-size:0.9rem;flex:1;">${this.escapeHtml(nm)} · ID ${telegramId}</h3>
-                    <button class="admin-modal-close" onclick="app.stopChatPolling(); document.getElementById('admin-chat-modal').remove()"><i class="fa-solid fa-xmark"></i></button>
+                    <h3 style="font-size:0.9rem;flex:1;">Mute / Ban Chat Member</h3>
+                    <button class="admin-modal-close" onclick="document.getElementById('chat-mute-modal').remove()"><i class="fa-solid fa-xmark"></i></button>
                 </div>
-                <button class="adm-btn-red w-100 mb-3" id="adm-chat-ban-btn" onclick="app.toggleChatBan(${telegramId})">
-                    <i class="fa-solid fa-ban"></i> ${u?.chat_banned?'Unban from Chat':'Ban from Chat'}
-                </button>
-                <div class="chat-thread-wrapper" style="height:50vh;">
-                    <div id="adm-chat-messages-list" class="chat-messages-list"><div class="text-center text-muted p-3"><i class="fa-solid fa-spinner fa-spin"></i></div></div>
-                    <div class="chat-input-row">
-                        <input type="text" id="adm-chat-input-box" placeholder="Reply as admin..." onkeydown="if(event.key==='Enter') app.sendAdminChatMessage(${telegramId})">
-                        <button class="chat-send-btn" onclick="app.sendAdminChatMessage(${telegramId})"><i class="fa-solid fa-paper-plane"></i></button>
+                <label class="adm-label">Telegram ID</label>
+                <input type="number" id="adm-chat-mute-tgid" class="adm-input" placeholder="e.g. 123456789">
+                <div style="display:flex;gap:10px;margin-top:12px;">
+                    <button class="adm-btn-gold" style="flex:1;" onclick="app.setChatBanForId(true)"><i class="fa-solid fa-ban"></i> Restrict</button>
+                    <button class="adm-btn-cyan" style="flex:1;" onclick="app.setChatBanForId(false)"><i class="fa-solid fa-check"></i> Unrestrict</button>
+                </div>
+                <p style="font-size:0.72rem;color:var(--text-muted);margin-top:10px;">Restricted members can still read the chat but cannot send messages. This does not affect their app/quiz access.</p>
+                <div style="margin-top:16px;">
+                    <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:10px;">
+                        <span style="font-size:0.78rem;font-weight:700;color:var(--text-muted);">RESTRICTED MEMBERS</span>
+                        <button class="adm-btn-cyan" style="padding:5px 12px;font-size:0.68rem;" onclick="app.loadChatBannedList()">↻ Load</button>
                     </div>
+                    <div id="adm-chat-banned-list"><p style="font-size:0.8rem;color:var(--text-muted);text-align:center;">Click Load to view</p></div>
                 </div>
             </div>`;
         document.body.appendChild(overlay);
-        await this.loadAdminThreadMessages(telegramId);
-        this.startChatPolling(() => this.loadAdminThreadMessages(telegramId));
     }
 
-    async loadAdminThreadMessages(telegramId) {
-        const list = document.getElementById('adm-chat-messages-list');
-        if(!list || !supabaseClient) return;
+    async setChatBanForId(banned) {
+        const idInput = document.getElementById('adm-chat-mute-tgid');
+        const id = parseInt(idInput?.value);
+        if(!id) { alert('Enter a valid Telegram ID'); return; }
         try {
-            const { data, error } = await supabaseClient.from('chat_messages').select('*').eq('telegram_id', telegramId).order('created_at',{ascending:true}).limit(300);
-            if(error) throw error;
-            list.innerHTML = this.renderChatBubbles(data||[], 'admin');
-            list.scrollTop = list.scrollHeight;
-            supabaseClient.from('chat_messages').update({read_by_admin:true}).eq('telegram_id',telegramId).eq('sender','user').eq('read_by_admin',false).then(()=>{}, ()=>{});
-        } catch(e) { list.innerHTML = `<div class="text-center text-muted p-3">Could not load messages.</div>`; }
-    }
-
-    async sendAdminChatMessage(telegramId) {
-        const input = document.getElementById('adm-chat-input-box');
-        const msg = input?.value.trim();
-        if(!msg) return;
-        input.value='';
-        try {
-            await supabaseClient.from('chat_messages').insert({ telegram_id: telegramId, sender:'admin', message: msg });
-            this.loadAdminThreadMessages(telegramId);
-        } catch(e) { console.error('Admin send failed:', e, this.permissionHint(e)); alert('Message failed to send.'); }
-    }
-
-    async toggleChatBan(telegramId) {
-        try {
-            const { data: u } = await supabaseClient.from('users').select('chat_banned').eq('telegram_id',telegramId).maybeSingle();
-            const next = !u?.chat_banned;
-            await supabaseClient.from('users').update({ chat_banned: next }).eq('telegram_id', telegramId);
-            this.triggerToast(next ? '🚫 User restricted from chat' : '✅ Chat access restored');
-            const btn = document.getElementById('adm-chat-ban-btn');
-            if(btn) btn.innerHTML = `<i class="fa-solid fa-ban"></i> ${next?'Unban from Chat':'Ban from Chat'}`;
+            await supabaseClient.from('users').update({ chat_banned: banned }).eq('telegram_id', id);
+            this.triggerToast(banned ? '🚫 Member restricted from chat' : '✅ Member unrestricted');
+            idInput.value='';
+            this.loadChatBannedList();
         } catch(e) { alert('Error (check "chat_banned" column exists): '+e.message); }
+    }
+
+    async loadChatBannedList() {
+        const el = document.getElementById('adm-chat-banned-list');
+        if(!el || !supabaseClient) return;
+        el.innerHTML = `<div class="text-center text-muted p-3"><i class="fa-solid fa-spinner fa-spin"></i></div>`;
+        try {
+            const { data, error } = await supabaseClient.from('users').select('telegram_id,first_name,username').eq('chat_banned', true);
+            if(error) throw error;
+            if(!data?.length) { el.innerHTML = `<p style="font-size:0.78rem;color:var(--text-muted);text-align:center;">No restricted members.</p>`; return; }
+            el.innerHTML = data.map(u => `<div class="admin-scheduled-row">
+                <div><div class="admin-scheduled-date">${this.escapeHtml(u.first_name||u.username||'Unknown')}</div><div class="admin-scheduled-count">ID: ${u.telegram_id}</div></div>
+                <button class="adm-btn-cyan" style="padding:5px 10px;font-size:0.72rem;" onclick="document.getElementById('adm-chat-mute-tgid').value='${u.telegram_id}'; app.setChatBanForId(false);">Unrestrict</button>
+            </div>`).join('');
+        } catch(e) { el.innerHTML = `<p style="color:var(--danger-red);text-align:center;">Error: ${e.message}${this.permissionHint(e)}</p>`; }
     }
 
     // ── TOAST ────────────────────────────────────────────────────

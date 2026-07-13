@@ -81,7 +81,8 @@
                     </div>
 
                     <div class="portal-cards-stack mt-4">
-                        <div class="portal-card cyan-gradient-card" onclick="app.showQuizBlueprint('free','Daily Free Quiz')">
+                        <div class="portal-card cyan-gradient-card portal-card-locked" id="free-quiz-portal-card">
+                            <span class="coming-soon-ribbon">LOCKED</span>
                             <div class="portal-card-content">
                                 <span class="portal-tag cyan-tag">DAILY DIAGNOSTIC</span>
                                 <h3>Daily Free Quiz</h3>
@@ -91,7 +92,7 @@
                                     <span><i class="fa-solid fa-book-open"></i> PYQ Based</span>
                                 </div>
                             </div>
-                            <div class="portal-arrow"><i class="fa-solid fa-arrow-right"></i></div>
+                            <div class="portal-arrow"><i class="fa-solid fa-lock"></i></div>
                         </div>
                     </div>
 
@@ -369,8 +370,8 @@
             <!-- ══════════════════════════════════ -->
             <section id="view-chat" class="app-view">
                 <div class="screen-header">
-                    <h2>Chat</h2>
-                    <p id="chat-subtitle">Talk directly with the SSC MAX VOCAB team</p>
+                    <h2>Elite Chat</h2>
+                    <p id="chat-subtitle">Group chat for Premium members</p>
                 </div>
                 <div id="chat-container">
                     <div class="text-center text-muted p-3"><i class="fa-solid fa-spinner fa-spin"></i></div>
