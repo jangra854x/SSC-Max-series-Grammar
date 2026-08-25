@@ -1,426 +1,232 @@
 <!DOCTYPE html>
-<html lang="en">
+<html lang="hi">
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
-    <title>SSC MAX VOCAB</title>
-    <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap" rel="stylesheet">
-    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
-    <link rel="stylesheet" href="style.css">
-    <script src="https://telegram.org/js/telegram-web-app.js"></script>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<title>SSC Selection Batch 11.0</title>
+<link rel="stylesheet" href="style.css">
+<script src="https://telegram.org/js/telegram-web-app.js"></script>
 </head>
 <body>
 
-    <!-- Live theme background layer (default Aurora only) -->
-    <div id="live-theme-layer"></div>
+<!-- ===================== LOADER ===================== -->
+<div id="loader" class="screen active">
+  <div class="loader-wrap">
+    <div class="logo-circle">
+      <span>SSC</span>
+    </div>
+    <div class="spinner"></div>
+    <p class="loader-text">Loading your batch...</p>
+  </div>
+</div>
 
-    <div class="bg-glow cyan-glow" id="ambient-cyan"></div>
-    <div class="bg-glow purple-glow-bg" id="ambient-purple"></div>
+<!-- ===================== LOCKED / PAYWALL SCREEN ===================== -->
+<div id="lockedScreen" class="screen">
+  <div class="locked-wrap">
+    <div class="locked-icon">🔒</div>
+    <h1 class="locked-title">Selection Batch 11.0</h1>
+    <p class="locked-sub">SSC CGL / CHSL Complete Course</p>
 
-    <div id="app">
-
-        <header class="app-header">
-            <div class="brand">
-                <span class="text-cyan">SSC</span> <span class="text-primary">MAX</span> <span class="text-gold">VOCAB</span>
-            </div>
-            <div class="header-actions">
-                <button class="theme-toggle-btn" id="theme-toggle-btn" title="Toggle dark mode">
-                    <i class="fa-solid fa-moon" id="theme-toggle-icon"></i>
-                </button>
-                <div class="tier-indicator-badge" id="header-tier-indicator">
-                    <i class="fa-solid fa-spinner fa-spin"></i> Loading...
-                </div>
-            </div>
-        </header>
-
-        <main id="view-container">
-
-            <!-- ══════════════════════════════════════════════ -->
-            <!-- DASHBOARD                                     -->
-            <!-- v7 — Everything above "Topic Wise Vocabulary" -->
-            <!-- rebuilt into a single "hero" wrapper with     -->
-            <!-- decorative glow/sticker layers (CSS + JS will -->
-            <!-- animate these — see dash-hero-decor children) -->
-            <!-- so it stops looking flat/empty.               -->
-            <!-- ══════════════════════════════════════════════ -->
-            <section id="view-dashboard" class="app-view active">
-
-                <div class="dash-hero-wrap" id="dash-hero-wrap">
-
-                    <!-- Decorative-only layer — pure eye-candy, no logic.
-                         CSS (next message) will animate orbs/sparkles/stickers here.
-                         Safe to add more <div class="hero-*"> children later. -->
-                    <div class="dash-hero-decor" id="dash-hero-decor" aria-hidden="true">
-                        <div class="hero-orb hero-orb-cyan"></div>
-                        <div class="hero-orb hero-orb-purple"></div>
-                        <div class="hero-orb hero-orb-gold"></div>
-                        <div class="hero-sparkle hero-sparkle-1"></div>
-                        <div class="hero-sparkle hero-sparkle-2"></div>
-                        <div class="hero-sparkle hero-sparkle-3"></div>
-                        <div class="hero-sticker hero-sticker-1"><i class="fa-solid fa-wand-magic-sparkles"></i></div>
-                        <div class="hero-sticker hero-sticker-2"><i class="fa-solid fa-star"></i></div>
-                    </div>
-
-                    <div class="exam-target-banner">
-                        SSC CGL • CHSL • MTS • GD • CPO • Steno • Selection Post
-                    </div>
-                    <div class="pyq-focus-banner mt-2">
-                        Complete SSC Vocabulary Preparation • PYQ Based
-                    </div>
-
-                    <div class="profile-header glass-card mt-3" id="dash-profile-card">
-                        <img src="https://placehold.co/120x120/121627/00f2fe?text=TG" alt="Avatar" class="tg-avatar" id="tg-user-avatar">
-                        <div class="profile-info">
-                            <div class="profile-name-row">
-                                <h3 id="tg-user-name">Loading...</h3>
-                                <span class="streak-badge-inline hidden" id="streak-badge-mini">
-                                    <i class="fa-solid fa-fire"></i> <span id="streak-count-mini">0</span>
-                                </span>
-                            </div>
-                        </div>
-                    </div>
-
-                    <div class="portal-cards-stack mt-4">
-                        <div class="portal-card cyan-gradient-card portal-card-locked" id="free-quiz-portal-card">
-                            <span class="coming-soon-ribbon">LOCKED</span>
-                            <div class="portal-card-content">
-                                <span class="portal-tag cyan-tag">DAILY DIAGNOSTIC</span>
-                                <h3>Daily Free Quiz</h3>
-                                <p>Test your standard TCS vocabulary baseline. High-frequency questions without paywalls.</p>
-                                <div class="portal-meta">
-                                    <span><i class="fa-solid fa-circle-question"></i> 30 Questions</span>
-                                    <span><i class="fa-solid fa-book-open"></i> PYQ Based</span>
-                                </div>
-                            </div>
-                            <div class="portal-arrow"><i class="fa-solid fa-lock"></i></div>
-                        </div>
-                    </div>
-
-                </div>
-                <!-- /dash-hero-wrap -->
-
-                <!-- Topic-Wise completion progress — auto-scales as new sets are
-                     added by admin, fills as the user finishes sets. Free Quiz is
-                     intentionally excluded from this count. -->
-                <div class="progress-track-card glass-card mt-4" id="progress-track-card">
-                    <div class="progress-track-head">
-                        <span><i class="fa-solid fa-chart-line"></i> Topic-Wise Progress</span>
-                        <span id="progress-track-pct">0%</span>
-                    </div>
-                    <div class="progress-track-bar-wrapper">
-                        <div class="progress-track-bar-fill" id="progress-track-bar-fill" style="width:0%;"></div>
-                    </div>
-                    <p class="progress-track-sub" id="progress-track-sub">Loading progress...</p>
-                </div>
-
-                <!-- Topic Wise Vocabulary — directly embedded, no card wrapper needed -->
-                <div class="topic-wise-section mt-4">
-                    <span class="portal-tag gold-tag"><i class="fa-solid fa-crown"></i> ELITE PREMIUM</span>
-                    <h3 class="topic-wise-heading">Complete Topic Wise Vocabulary</h3>
-                    <p class="topic-wise-desc">OWS • Idioms & Phrases • Synonyms • Spelling • Antonyms • Homophones</p>
-
-                    <div class="topic-mega-grid mt-3" id="premium-topics-list">
-                        <div class="skeleton-card-lg"></div>
-                        <div class="skeleton-card-lg"></div>
-                        <div class="skeleton-card-lg"></div>
-                        <div class="skeleton-card-lg"></div>
-                    </div>
-                </div>
-            </section>
-
-            <!-- ══════════════════════════════════ -->
-            <!-- QUIZ DETAILS — FREE QUIZ ONLY      -->
-            <!-- ══════════════════════════════════ -->
-            <section id="view-quiz-details" class="app-view">
-                <div class="screen-header">
-                    <h2>Assessment Overview</h2>
-                    <p id="qd-subtitle">Daily Free Quiz</p>
-                </div>
-                <div class="glass-card quiz-rules-card">
-                    <div class="rule-row">
-                        <span>📅 Date:</span>
-                        <strong id="qd-date">Today</strong>
-                    </div>
-                    <div class="rule-row">
-                        <span>❓ Total Questions:</span>
-                        <strong id="qd-count">30 Questions</strong>
-                    </div>
-                    <div class="rule-row">
-                        <span>⏱️ Quiz Duration:</span>
-                        <strong>Elapsed Stopwatch</strong>
-                    </div>
-                </div>
-                <div class="action-stack mt-4">
-                    <button class="btn-primary-gradient w-100" id="btn-confirm-start-quiz">
-                        <i class="fa-solid fa-flag-checkered"></i> START QUIZ
-                    </button>
-                    <button class="btn-secondary w-100 mt-2" id="btn-cancel-quiz" onclick="app.switchView('dashboard')">
-                        Cancel & Return
-                    </button>
-                </div>
-            </section>
-
-            <!-- ══════════════════════════════════ -->
-            <!-- TOPIC LETTERS VIEW (A–Z)          -->
-            <!-- Only for OWS / Idioms / Synonyms  -->
-            <!-- Back → Dashboard now (no premium  -->
-            <!-- screen in between anymore)         -->
-            <!-- ══════════════════════════════════ -->
-            <section id="view-topic-letters" class="app-view">
-                <div class="topic-sets-header">
-                    <button class="btn-back-nav" onclick="app.switchView('dashboard')">
-                        <i class="fa-solid fa-arrow-left"></i>
-                    </button>
-                    <div class="topic-sets-header-text">
-                        <h2 id="topic-letters-title">Topic</h2>
-                        <p>Select a letter to view sets</p>
-                    </div>
-                </div>
-                <div class="alphabet-grid" id="topic-letters-list">
-                    <div class="text-center text-muted p-3">
-                        <i class="fa-solid fa-spinner fa-spin"></i> Loading letters...
-                    </div>
-                </div>
-            </section>
-
-            <!-- ══════════════════════════════════ -->
-            <!-- TOPIC SETS VIEW                   -->
-            <!-- Reached from a letter OR directly  -->
-            <!-- (Spellings). Back destination set  -->
-            <!-- dynamically by JS.                 -->
-            <!-- v7 — sets-grid-4col class added so  -->
-            <!-- sets sit 4-per-row like the alphabet -->
-            <!-- grid instead of a loose stacked list -->
-            <!-- (styling to be added in CSS pass).   -->
-            <!-- ══════════════════════════════════ -->
-            <section id="view-topic-sets" class="app-view">
-                <div class="topic-sets-header">
-                    <button class="btn-back-nav" id="btn-topic-sets-back" onclick="app.switchView('dashboard')">
-                        <i class="fa-solid fa-arrow-left"></i>
-                    </button>
-                    <div class="topic-sets-header-text">
-                        <h2 id="topic-sets-title">Sets</h2>
-                        <p id="topic-sets-subtitle">Select a set to begin</p>
-                    </div>
-                </div>
-                <div class="topic-sets-container sets-grid-4col" id="topic-sets-list">
-                    <div class="text-center text-muted p-3">
-                        <i class="fa-solid fa-spinner fa-spin"></i> Loading sets...
-                    </div>
-                </div>
-            </section>
-
-            <!-- ══════════════════════════════════ -->
-            <!-- QUIZ VIEW                         -->
-            <!-- ══════════════════════════════════ -->
-            <section id="view-quiz" class="app-view full-overlay-view">
-                <div class="quiz-header">
-                    <button class="btn-close" onclick="app.confirmAbandonQuiz()">
-                        <i class="fa-solid fa-xmark"></i>
-                    </button>
-                    <div class="quiz-title-context">
-                        <h4 id="quiz-title-display">Vocabulary Assessment</h4>
-                    </div>
-                    <div class="quiz-timer" id="quiz-stopwatch">00:00</div>
-                </div>
-                <div class="quiz-progress-wrapper">
-                    <div class="quiz-progress-fill" id="quiz-progress-fill" style="width:0%;"></div>
-                </div>
-                <div class="quiz-meta-indices mb-2">
-                    <span id="quiz-question-counter">Loading...</span>
-                    <div class="meta-right-actions">
-                        <button class="btn-bookmark-q" id="btn-report-current" onclick="app.reportCurrentQuestion()" title="Report an issue with this question">
-                            <i class="fa-solid fa-flag"></i>
-                        </button>
-                        <button class="btn-bookmark-q" id="btn-bookmark-current" onclick="app.toggleBookmarkCurrentQuestion()">
-                            <i class="fa-regular fa-bookmark"></i> Bookmark
-                        </button>
-                    </div>
-                </div>
-                <div class="question-wrapper card-animation-swap" id="question-card-frame">
-                    <div class="question-tags">
-                        <span class="q-tag" id="question-category-tag">Vocabulary</span>
-                    </div>
-                    <p class="question-text" id="question-text-body">Loading question...</p>
-                    <div class="options-stack" id="question-options-container"></div>
-                </div>
-                <div class="quiz-footer-centered mt-4">
-                    <button class="btn-primary-gradient w-100 hidden" id="btn-next-q">
-                        Next Question <i class="fa-solid fa-arrow-right"></i>
-                    </button>
-                </div>
-            </section>
-
-            <!-- ══════════════════════════════════ -->
-            <!-- RESULT VIEW                       -->
-            <!-- v7 — "View Your Rank" toggle button -->
-            <!-- removed. Rank list is now shown      -->
-            <!-- DIRECTLY under the feedback card,     -->
-            <!-- no separate option/click needed —     -->
-            <!-- this section replaces the old bottom  -->
-            <!-- nav "Ranks" tab as the one place ranks -->
-            <!-- are shown (JS wiring for auto-loading  -->
-            <!-- comes in the next script.js pass).     -->
-            <!-- ══════════════════════════════════ -->
-            <section id="view-result" class="app-view full-overlay-view">
-                <div class="result-container">
-                    <div class="crown-badge-wrapper animate-bounce">
-                        <i class="fa-solid fa-trophy text-gold"></i>
-                    </div>
-                    <h2 class="result-heading">Assessment Complete</h2>
-                    <div class="rank-badge-dynamic" id="res-tier-badge">PERFORMANCE EVALUATION</div>
-
-                    <div class="result-stats-grid mt-4">
-                        <div class="res-card glass-card">
-                            <span class="res-val text-cyan" id="res-score">0</span>
-                            <span class="res-lbl">Final Score</span>
-                        </div>
-                        <div class="res-card glass-card">
-                            <span class="res-val text-gold" id="res-accuracy">0%</span>
-                            <span class="res-lbl">Accuracy Rate</span>
-                        </div>
-                        <div class="res-card glass-card correct-card">
-                            <span class="res-val text-success" id="res-correct">0</span>
-                            <span class="res-lbl">Correct</span>
-                        </div>
-                        <div class="res-card glass-card wrong-card">
-                            <span class="res-val text-danger" id="res-wrong">0</span>
-                            <span class="res-lbl">Incorrect</span>
-                        </div>
-                        <div class="res-card glass-card col-span-2">
-                            <span class="res-val" id="res-time">00:00</span>
-                            <span class="res-lbl">Time Spent</span>
-                        </div>
-                    </div>
-
-                    <div class="feedback-card glass-card mt-4">
-                        <p class="feedback-text" id="res-feedback">
-                            Incorrect answers and bookmarked items have been saved to your Vault. Review them daily for long-term retention.
-                        </p>
-                    </div>
-
-                    <button class="btn-primary-gradient w-100 mt-3" onclick="app.switchView('dashboard')">
-                        Return To Dashboard
-                    </button>
-
-                    <!-- Rank shown directly now — no toggle button -->
-                    <div class="result-lb-wrap" id="result-lb-section">
-                        <div class="result-lb-divider">
-                            <span>Today's Elite Rankings</span>
-                        </div>
-                        <div id="result-lb-container">
-                            <div class="text-center text-muted p-3">
-                                <i class="fa-solid fa-spinner fa-spin"></i> Loading rankings...
-                            </div>
-                        </div>
-                    </div>
-                </div>
-            </section>
-
-            <!-- ══════════════════════════════════ -->
-            <!-- VAULT                             -->
-            <!-- v7 — Rebuilt around auto-generated -->
-            <!-- "wrong question" sets (max 20 Qs   -->
-            <!-- each) instead of a flat weak-word   -->
-            <!-- list:                                -->
-            <!--  • Free user  → sees ONLY the Free   -->
-            <!--    Quiz label + its sets directly.    -->
-            <!--  • Premium user → sees NO Free Quiz   -->
-            <!--    label; instead a horizontal row of -->
-            <!--    topic names (vault-topics-row),    -->
-            <!--    and sets for the selected topic     -->
-            <!--    render below (vault-sets-container).-->
-            <!-- Clicking a set → start-quiz popup     -->
-            <!-- (JS-generated modal, same pattern as   -->
-            <!-- the topic-sets confirm popup).         -->
-            <!-- Actual data logic + free/premium       -->
-            <!-- toggling comes in the next script.js.  -->
-            <!-- ══════════════════════════════════ -->
-            <section id="view-vault" class="app-view">
-                <div class="screen-header">
-                    <h2>Vocabulary Vault</h2>
-                    <p id="vault-subtitle">Practice sets built from your wrong answers</p>
-                </div>
-                <div class="vault-search-wrapper mb-3">
-                    <i class="fa-solid fa-magnifying-glass search-icon"></i>
-                    <input type="search" id="vault-search-input" placeholder="Search sets..." oninput="app.filterVaultContent()">
-                </div>
-
-                <!-- Free-user-only label (JS shows/hides based on isPremium) -->
-                <div class="vault-section-label" id="vault-freequiz-label">
-                    <i class="fa-solid fa-bolt"></i> Free Quiz
-                </div>
-
-                <!-- Premium-only: one-line scroll of topic names -->
-                <div class="vault-topics-scroll hidden" id="vault-topics-row"></div>
-
-                <!-- Sets for whichever context is active (free quiz OR selected topic) -->
-                <div class="vault-sets-grid" id="vault-sets-container">
-                    <div class="text-center text-muted p-3">
-                        <i class="fa-solid fa-spinner fa-spin"></i> Syncing vault...
-                    </div>
-                </div>
-            </section>
-
-            <!-- ══════════════════════════════════ -->
-            <!-- CHAT — Premium 1:1 support chat.   -->
-            <!-- Free users see a locked paywall     -->
-            <!-- card. Admin sees a conversation      -->
-            <!-- list instead of a single thread.     -->
-            <!-- ══════════════════════════════════ -->
-            <section id="view-chat" class="app-view">
-                <div class="screen-header">
-                    <h2>Elite Chat</h2>
-                    <p id="chat-subtitle">Group chat for Premium members</p>
-                </div>
-                <div id="chat-container">
-                    <div class="text-center text-muted p-3"><i class="fa-solid fa-spinner fa-spin"></i></div>
-                </div>
-            </section>
-
-            <!-- ══════════════════════════════════ -->
-            <!-- RANKS                             -->
-            <!-- v7 — No longer reachable from the   -->
-            <!-- bottom nav (that tab is removed for -->
-            <!-- now, see nav below). Ranks are shown -->
-            <!-- directly inside the Result screen    -->
-            <!-- instead. Section kept in the DOM,     -->
-            <!-- untouched, in case it's needed again  -->
-            <!-- later — just not linked anywhere.     -->
-            <!-- ══════════════════════════════════ -->
-            <section id="view-ranks" class="app-view">
-                <div class="screen-header">
-                    <h2>Daily Elite Ranks</h2>
-                    <p id="leaderboard-date-subtitle">Live Standings</p>
-                </div>
-                <div class="rank-period-tabs mb-3">
-                    <button class="rank-period-btn active" data-period="daily" onclick="app.switchRankPeriod('daily')">Daily</button>
-                    <button class="rank-period-btn" data-period="weekly" onclick="app.switchRankPeriod('weekly')">Weekly</button>
-                    <button class="rank-period-btn" data-period="monthly" onclick="app.switchRankPeriod('monthly')">Monthly</button>
-                </div>
-                <div id="leaderboard-master-container"></div>
-            </section>
-
-        </main>
-
-        <!-- Bottom nav — admin 4th tab injected by JS on admin login.
-             "Ranks" tab removed for now (v7) — rank now shows directly
-             on the Result screen instead of being a separate page. -->
-        <nav class="bottom-nav-bar">
-            <button class="nav-tab active" data-target="dashboard">
-                <i class="fa-solid fa-house"></i><span>Dashboard</span>
-            </button>
-            <button class="nav-tab" data-target="vault">
-                <i class="fa-solid fa-bookmark"></i><span>Vault</span>
-            </button>
-            <button class="nav-tab" data-target="chat">
-                <i class="fa-solid fa-comment-dots"></i><span>Chat</span>
-            </button>
-        </nav>
-
+    <div class="locked-card">
+      <div class="locked-card-row">
+        <span>✅</span> English Complete Course
+      </div>
+      <div class="locked-card-row">
+        <span>✅</span> Reasoning Complete Course
+      </div>
+      <div class="locked-card-row">
+        <span>✅</span> Maths Complete Course
+      </div>
+      <div class="locked-card-row">
+        <span>✅</span> Topic-wise Video Lectures
+      </div>
+      <div class="locked-card-row">
+        <span>✅</span> Lifetime Access
+      </div>
     </div>
 
-    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
-    <script src="script.js"></script>
+    <div class="price-box">
+      <span class="price-old">₹1999</span>
+      <span class="price-new">₹499</span>
+      <span class="price-off">75% OFF</span>
+    </div>
+
+    <button id="buyBtn" class="btn-primary">Buy Now - ₹499</button>
+    <p class="locked-note">Payment ke baad access turant activate ho jayega</p>
+  </div>
+</div>
+
+<!-- ===================== HOME SCREEN (BATCH) ===================== -->
+<div id="homeScreen" class="screen">
+  <div class="topbar">
+    <div class="topbar-left">
+      <div class="avatar-mini">SB</div>
+      <div>
+        <div class="topbar-title">Selection Batch 11.0</div>
+        <div class="topbar-sub">SSC CGL / CHSL</div>
+      </div>
+    </div>
+    <button id="adminBtnHome" class="admin-icon-btn hidden">⚙️</button>
+  </div>
+
+  <div class="banner">
+    <div class="banner-glow"></div>
+    <div class="banner-content">
+      <p class="banner-tag">PREMIUM ACCESS ACTIVE</p>
+      <h2 class="banner-title">Selection Batch 11.0</h2>
+      <p class="banner-desc">Complete SSC Preparation Course</p>
+    </div>
+  </div>
+
+  <div class="section-label">Subjects</div>
+
+  <div id="subjectList" class="subject-list">
+    <!-- Subject cards injected by JS -->
+  </div>
+
+  <div class="bottom-space"></div>
+</div>
+
+<!-- ===================== TOPIC SCREEN ===================== -->
+<div id="topicScreen" class="screen">
+  <div class="topbar">
+    <button id="backFromTopic" class="back-btn">←</button>
+    <div>
+      <div class="topbar-title" id="topicSubjectTitle">Subject</div>
+      <div class="topbar-sub">Select a topic</div>
+    </div>
+  </div>
+
+  <div id="topicList" class="topic-list"></div>
+
+  <div class="bottom-space"></div>
+</div>
+
+<!-- ===================== VIDEO LIST SCREEN ===================== -->
+<div id="videoListScreen" class="screen">
+  <div class="topbar">
+    <button id="backFromVideoList" class="back-btn">←</button>
+    <div>
+      <div class="topbar-title" id="videoListTopicTitle">Topic</div>
+      <div class="topbar-sub" id="videoListCount">0 videos</div>
+    </div>
+  </div>
+
+  <div id="videoList" class="video-list"></div>
+
+  <div class="bottom-space"></div>
+</div>
+
+<!-- ===================== VIDEO PLAYER SCREEN ===================== -->
+<div id="playerScreen" class="screen">
+  <div class="player-topbar">
+    <button id="backFromPlayer" class="back-btn">←</button>
+    <div class="player-title" id="playerVideoTitle">Video Title</div>
+  </div>
+
+  <div class="video-wrap">
+    <video id="videoPlayer" controls playsinline controlsList="nodownload"></video>
+  </div>
+
+  <div class="player-info">
+    <h3 id="playerVideoTitle2">Video Title</h3>
+    <p id="playerVideoDesc">Video description goes here.</p>
+  </div>
+
+  <div class="bottom-space"></div>
+</div>
+
+<!-- ===================== ADMIN PANEL SCREEN ===================== -->
+<div id="adminScreen" class="screen">
+  <div class="topbar">
+    <button id="backFromAdmin" class="back-btn">←</button>
+    <div>
+      <div class="topbar-title">Admin Panel</div>
+      <div class="topbar-sub">Manage batch content</div>
+    </div>
+  </div>
+
+  <div class="admin-tabs">
+    <button class="admin-tab active" data-tab="tabContent">Content</button>
+    <button class="admin-tab" data-tab="tabUsers">Users</button>
+    <button class="admin-tab" data-tab="tabSettings">Settings</button>
+  </div>
+
+  <!-- CONTENT TAB -->
+  <div id="tabContent" class="admin-tab-content active">
+
+    <div class="admin-block">
+      <div class="admin-block-title">Add Video</div>
+
+      <label class="admin-label">Subject</label>
+      <select id="adminSubjectSelect" class="admin-input"></select>
+
+      <label class="admin-label">Topic</label>
+      <select id="adminTopicSelect" class="admin-input"></select>
+
+      <button id="adminAddTopicBtn" class="btn-secondary-sm">+ New Topic</button>
+
+      <label class="admin-label">Video Title</label>
+      <input id="adminVideoTitle" class="admin-input" type="text" placeholder="e.g. Tenses Part 1">
+
+      <label class="admin-label">Video Description</label>
+      <textarea id="adminVideoDesc" class="admin-input" rows="2" placeholder="Short description"></textarea>
+
+      <label class="admin-label">Video URL (mp4 / m3u8)</label>
+      <input id="adminVideoUrl" class="admin-input" type="text" placeholder="https://...">
+
+      <button id="adminAddVideoBtn" class="btn-primary">+ Add Video</button>
+    </div>
+
+    <div class="admin-block">
+      <div class="admin-block-title">Manage Structure</div>
+      <div id="adminStructureList" class="admin-structure-list"></div>
+    </div>
+
+  </div>
+
+  <!-- USERS TAB -->
+  <div id="tabUsers" class="admin-tab-content">
+    <div class="admin-block">
+      <div class="admin-block-title">Allowed User IDs</div>
+      <p class="admin-hint">Sirf inhi Telegram ID walo ka app khulega. Baaki users ko "Buy Now" screen dikhegi.</p>
+
+      <label class="admin-label">Add Telegram User ID</label>
+      <div class="admin-inline-row">
+        <input id="adminNewUserId" class="admin-input" type="text" placeholder="e.g. 123456789">
+        <button id="adminAddUserBtn" class="btn-primary-sm">Add</button>
+      </div>
+
+      <div id="allowedUsersList" class="allowed-users-list"></div>
+    </div>
+  </div>
+
+  <!-- SETTINGS TAB -->
+  <div id="tabSettings" class="admin-tab-content">
+    <div class="admin-block">
+      <div class="admin-block-title">Batch Settings</div>
+
+      <label class="admin-label">Batch Price (₹)</label>
+      <input id="adminPrice" class="admin-input" type="number" placeholder="499">
+
+      <label class="admin-label">Admin Contact Username (for buy redirect)</label>
+      <input id="adminContact" class="admin-input" type="text" placeholder="e.g. yourusername (without @)">
+
+      <button id="adminSaveSettingsBtn" class="btn-primary">Save Settings</button>
+    </div>
+
+    <div class="admin-block">
+      <div class="admin-block-title">Your Info</div>
+      <p class="admin-hint">Admin ID: <b id="adminMyId">-</b></p>
+    </div>
+  </div>
+
+  <div class="bottom-space"></div>
+</div>
+
+<!-- Toast -->
+<div id="toast" class="toast"></div>
+
+<script src="app.js"></script>
 </body>
 </html>
