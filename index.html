@@ -2,57 +2,125 @@
 <html lang="hi">
 <head>
 <meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-<title>SSC Selection Batch 11.0</title>
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
+<title>Selection Batch 11.0</title>
+<link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800;900&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
 <link rel="stylesheet" href="style.css">
 <script src="https://telegram.org/js/telegram-web-app.js"></script>
 </head>
 <body>
 
+<div class="bg-glow glow-a"></div>
+<div class="bg-glow glow-b"></div>
+<div class="bg-glow glow-c"></div>
+
 <!-- ===================== LOADER ===================== -->
 <div id="loader" class="screen active">
   <div class="loader-wrap">
-    <div class="logo-circle">
-      <span>SSC</span>
+    <div class="logo-badge">
+      <span>SB</span>
+      <div class="logo-ring"></div>
     </div>
-    <div class="spinner"></div>
-    <p class="loader-text">Loading your batch...</p>
+    <div class="loader-bar-track">
+      <div class="loader-bar-fill" id="loaderBarFill"></div>
+    </div>
+    <p class="loader-text" id="loaderText">Connecting...</p>
+  </div>
+</div>
+
+<!-- ===================== ERROR SCREEN (fallback safety net) ===================== -->
+<div id="errorScreen" class="screen">
+  <div class="error-wrap">
+    <div class="error-icon"><i class="fa-solid fa-triangle-exclamation"></i></div>
+    <h2>Kuch gadbad ho gayi</h2>
+    <p id="errorMsg">App load karne me dikkat aayi. Please retry karein.</p>
+    <button class="btn-primary" id="retryBtn"><i class="fa-solid fa-rotate-right"></i> Retry</button>
   </div>
 </div>
 
 <!-- ===================== LOCKED / PAYWALL SCREEN ===================== -->
 <div id="lockedScreen" class="screen">
   <div class="locked-wrap">
-    <div class="locked-icon">🔒</div>
+
+    <div class="locked-top-badge"><i class="fa-solid fa-crown"></i> PREMIUM COURSE</div>
+
+    <div class="locked-hero-icon">
+      <i class="fa-solid fa-lock"></i>
+    </div>
+
     <h1 class="locked-title">Selection Batch 11.0</h1>
-    <p class="locked-sub">SSC CGL / CHSL Complete Course</p>
+    <p class="locked-sub">SSC CGL • CHSL • MTS • Complete Foundation to Advanced Course</p>
+
+    <div class="locked-stats-row">
+      <div class="locked-stat">
+        <span class="locked-stat-num">3</span>
+        <span class="locked-stat-lbl">Subjects</span>
+      </div>
+      <div class="locked-stat-divider"></div>
+      <div class="locked-stat">
+        <span class="locked-stat-num" id="statTopics">—</span>
+        <span class="locked-stat-lbl">Topics</span>
+      </div>
+      <div class="locked-stat-divider"></div>
+      <div class="locked-stat">
+        <span class="locked-stat-num" id="statVideos">—</span>
+        <span class="locked-stat-lbl">Videos</span>
+      </div>
+    </div>
 
     <div class="locked-card">
       <div class="locked-card-row">
-        <span>✅</span> English Complete Course
+        <div class="locked-check"><i class="fa-solid fa-check"></i></div>
+        <div>
+          <div class="locked-row-title">English Complete Course</div>
+          <div class="locked-row-sub">Grammar, Vocabulary, Comprehension</div>
+        </div>
       </div>
       <div class="locked-card-row">
-        <span>✅</span> Reasoning Complete Course
+        <div class="locked-check"><i class="fa-solid fa-check"></i></div>
+        <div>
+          <div class="locked-row-title">Reasoning Complete Course</div>
+          <div class="locked-row-sub">Verbal, Non-Verbal, Analytical</div>
+        </div>
       </div>
       <div class="locked-card-row">
-        <span>✅</span> Maths Complete Course
+        <div class="locked-check"><i class="fa-solid fa-check"></i></div>
+        <div>
+          <div class="locked-row-title">Maths Complete Course</div>
+          <div class="locked-row-sub">Arithmetic, Advance, Data Interpretation</div>
+        </div>
       </div>
       <div class="locked-card-row">
-        <span>✅</span> Topic-wise Video Lectures
+        <div class="locked-check"><i class="fa-solid fa-check"></i></div>
+        <div>
+          <div class="locked-row-title">Topic-wise HD Video Lectures</div>
+          <div class="locked-row-sub">Stream anytime, inside the app</div>
+        </div>
       </div>
       <div class="locked-card-row">
-        <span>✅</span> Lifetime Access
+        <div class="locked-check"><i class="fa-solid fa-check"></i></div>
+        <div>
+          <div class="locked-row-title">Lifetime Access</div>
+          <div class="locked-row-sub">No renewal, no hidden charges</div>
+        </div>
       </div>
     </div>
 
     <div class="price-box">
-      <span class="price-old">₹1999</span>
-      <span class="price-new">₹499</span>
+      <div class="price-left">
+        <span class="price-old" id="priceOld">₹1999</span>
+        <span class="price-new"><span id="priceNew">₹499</span></span>
+      </div>
       <span class="price-off">75% OFF</span>
     </div>
 
-    <button id="buyBtn" class="btn-primary">Buy Now - ₹499</button>
-    <p class="locked-note">Payment ke baad access turant activate ho jayega</p>
+    <button id="buyBtn" class="btn-primary btn-buy">
+      <i class="fa-solid fa-bolt"></i> <span id="buyBtnText">Buy Now — ₹499</span>
+    </button>
+    <p class="locked-note"><i class="fa-solid fa-shield-halved"></i> Payment ke baad access turant activate ho jayega</p>
+
+    <div class="locked-myid">Your Telegram ID: <b id="lockedUserId">—</b></div>
   </div>
 </div>
 
@@ -60,103 +128,135 @@
 <div id="homeScreen" class="screen">
   <div class="topbar">
     <div class="topbar-left">
-      <div class="avatar-mini">SB</div>
+      <div class="avatar-mini"><i class="fa-solid fa-graduation-cap"></i></div>
       <div>
         <div class="topbar-title">Selection Batch 11.0</div>
-        <div class="topbar-sub">SSC CGL / CHSL</div>
+        <div class="topbar-sub" id="userGreeting">SSC CGL / CHSL</div>
       </div>
     </div>
-    <button id="adminBtnHome" class="admin-icon-btn hidden">⚙️</button>
+    <button id="adminBtnHome" class="admin-icon-btn hidden"><i class="fa-solid fa-user-shield"></i></button>
   </div>
 
-  <div class="banner">
-    <div class="banner-glow"></div>
-    <div class="banner-content">
-      <p class="banner-tag">PREMIUM ACCESS ACTIVE</p>
-      <h2 class="banner-title">Selection Batch 11.0</h2>
-      <p class="banner-desc">Complete SSC Preparation Course</p>
+  <div class="scroll-area">
+    <div class="banner">
+      <div class="banner-glow"></div>
+      <div class="banner-shine"></div>
+      <div class="banner-content">
+        <p class="banner-tag"><i class="fa-solid fa-circle-check"></i> PREMIUM ACCESS ACTIVE</p>
+        <h2 class="banner-title">Selection Batch 11.0</h2>
+        <p class="banner-desc">Complete SSC Preparation Course</p>
+        <div class="banner-progress-track">
+          <div class="banner-progress-fill" id="overallProgressFill" style="width:0%;"></div>
+        </div>
+        <p class="banner-progress-label"><span id="overallProgressPct">0%</span> course explored</p>
+      </div>
     </div>
+
+    <div class="section-label">Subjects</div>
+
+    <div id="subjectList" class="subject-list"></div>
+
+    <div class="section-label">Why This Batch</div>
+    <div class="perks-row">
+      <div class="perk-card">
+        <div class="perk-icon perk-a"><i class="fa-solid fa-video"></i></div>
+        <div class="perk-txt">HD Lectures</div>
+      </div>
+      <div class="perk-card">
+        <div class="perk-icon perk-b"><i class="fa-solid fa-infinity"></i></div>
+        <div class="perk-txt">Lifetime Access</div>
+      </div>
+      <div class="perk-card">
+        <div class="perk-icon perk-c"><i class="fa-solid fa-mobile-screen"></i></div>
+        <div class="perk-txt">Watch Anywhere</div>
+      </div>
+    </div>
+
+    <div class="bottom-space"></div>
   </div>
-
-  <div class="section-label">Subjects</div>
-
-  <div id="subjectList" class="subject-list">
-    <!-- Subject cards injected by JS -->
-  </div>
-
-  <div class="bottom-space"></div>
 </div>
 
 <!-- ===================== TOPIC SCREEN ===================== -->
 <div id="topicScreen" class="screen">
   <div class="topbar">
-    <button id="backFromTopic" class="back-btn">←</button>
+    <button class="back-btn" data-back="homeScreen"><i class="fa-solid fa-arrow-left"></i></button>
     <div>
       <div class="topbar-title" id="topicSubjectTitle">Subject</div>
       <div class="topbar-sub">Select a topic</div>
     </div>
   </div>
-
-  <div id="topicList" class="topic-list"></div>
-
-  <div class="bottom-space"></div>
+  <div class="scroll-area">
+    <div id="topicList" class="topic-list"></div>
+    <div class="bottom-space"></div>
+  </div>
 </div>
 
 <!-- ===================== VIDEO LIST SCREEN ===================== -->
 <div id="videoListScreen" class="screen">
   <div class="topbar">
-    <button id="backFromVideoList" class="back-btn">←</button>
+    <button class="back-btn" data-back="topicScreen"><i class="fa-solid fa-arrow-left"></i></button>
     <div>
       <div class="topbar-title" id="videoListTopicTitle">Topic</div>
       <div class="topbar-sub" id="videoListCount">0 videos</div>
     </div>
   </div>
-
-  <div id="videoList" class="video-list"></div>
-
-  <div class="bottom-space"></div>
+  <div class="scroll-area">
+    <div id="videoList" class="video-list"></div>
+    <div class="bottom-space"></div>
+  </div>
 </div>
 
 <!-- ===================== VIDEO PLAYER SCREEN ===================== -->
 <div id="playerScreen" class="screen">
   <div class="player-topbar">
-    <button id="backFromPlayer" class="back-btn">←</button>
+    <button class="back-btn" data-back="videoListScreen"><i class="fa-solid fa-arrow-left"></i></button>
     <div class="player-title" id="playerVideoTitle">Video Title</div>
   </div>
 
   <div class="video-wrap">
-    <video id="videoPlayer" controls playsinline controlsList="nodownload"></video>
+    <video id="videoPlayer" controls playsinline controlsList="nodownload noremoteplayback" disablePictureInPicture></video>
+    <div class="video-loading-overlay" id="videoLoadingOverlay">
+      <div class="spinner"></div>
+    </div>
   </div>
 
-  <div class="player-info">
-    <h3 id="playerVideoTitle2">Video Title</h3>
-    <p id="playerVideoDesc">Video description goes here.</p>
-  </div>
+  <div class="scroll-area">
+    <div class="player-info">
+      <span class="player-badge"><i class="fa-solid fa-play"></i> Now Playing</span>
+      <h3 id="playerVideoTitle2">Video Title</h3>
+      <p id="playerVideoDesc">Video description goes here.</p>
+    </div>
 
-  <div class="bottom-space"></div>
+    <div class="section-label">Up Next in this Topic</div>
+    <div id="upNextList" class="video-list"></div>
+
+    <div class="bottom-space"></div>
+  </div>
 </div>
 
 <!-- ===================== ADMIN PANEL SCREEN ===================== -->
 <div id="adminScreen" class="screen">
   <div class="topbar">
-    <button id="backFromAdmin" class="back-btn">←</button>
+    <button class="back-btn" data-back="homeScreen"><i class="fa-solid fa-arrow-left"></i></button>
     <div>
-      <div class="topbar-title">Admin Panel</div>
+      <div class="topbar-title"><i class="fa-solid fa-user-shield"></i> Admin Panel</div>
       <div class="topbar-sub">Manage batch content</div>
     </div>
   </div>
 
   <div class="admin-tabs">
-    <button class="admin-tab active" data-tab="tabContent">Content</button>
-    <button class="admin-tab" data-tab="tabUsers">Users</button>
-    <button class="admin-tab" data-tab="tabSettings">Settings</button>
+    <button class="admin-tab active" data-tab="tabContent"><i class="fa-solid fa-photo-film"></i> Content</button>
+    <button class="admin-tab" data-tab="tabUsers"><i class="fa-solid fa-users"></i> Users</button>
+    <button class="admin-tab" data-tab="tabSettings"><i class="fa-solid fa-gear"></i> Settings</button>
   </div>
+
+  <div class="scroll-area">
 
   <!-- CONTENT TAB -->
   <div id="tabContent" class="admin-tab-content active">
 
     <div class="admin-block">
-      <div class="admin-block-title">Add Video</div>
+      <div class="admin-block-title"><i class="fa-solid fa-plus"></i> Add Video</div>
 
       <label class="admin-label">Subject</label>
       <select id="adminSubjectSelect" class="admin-input"></select>
@@ -164,7 +264,7 @@
       <label class="admin-label">Topic</label>
       <select id="adminTopicSelect" class="admin-input"></select>
 
-      <button id="adminAddTopicBtn" class="btn-secondary-sm">+ New Topic</button>
+      <button id="adminAddTopicBtn" class="btn-secondary-sm"><i class="fa-solid fa-folder-plus"></i> New Topic</button>
 
       <label class="admin-label">Video Title</label>
       <input id="adminVideoTitle" class="admin-input" type="text" placeholder="e.g. Tenses Part 1">
@@ -175,11 +275,11 @@
       <label class="admin-label">Video URL (mp4 / m3u8)</label>
       <input id="adminVideoUrl" class="admin-input" type="text" placeholder="https://...">
 
-      <button id="adminAddVideoBtn" class="btn-primary">+ Add Video</button>
+      <button id="adminAddVideoBtn" class="btn-primary"><i class="fa-solid fa-cloud-arrow-up"></i> Add Video</button>
     </div>
 
     <div class="admin-block">
-      <div class="admin-block-title">Manage Structure</div>
+      <div class="admin-block-title"><i class="fa-solid fa-list-tree"></i> Manage Structure</div>
       <div id="adminStructureList" class="admin-structure-list"></div>
     </div>
 
@@ -188,7 +288,7 @@
   <!-- USERS TAB -->
   <div id="tabUsers" class="admin-tab-content">
     <div class="admin-block">
-      <div class="admin-block-title">Allowed User IDs</div>
+      <div class="admin-block-title"><i class="fa-solid fa-user-check"></i> Allowed User IDs</div>
       <p class="admin-hint">Sirf inhi Telegram ID walo ka app khulega. Baaki users ko "Buy Now" screen dikhegi.</p>
 
       <label class="admin-label">Add Telegram User ID</label>
@@ -204,29 +304,41 @@
   <!-- SETTINGS TAB -->
   <div id="tabSettings" class="admin-tab-content">
     <div class="admin-block">
-      <div class="admin-block-title">Batch Settings</div>
+      <div class="admin-block-title"><i class="fa-solid fa-tag"></i> Batch Settings</div>
 
       <label class="admin-label">Batch Price (₹)</label>
       <input id="adminPrice" class="admin-input" type="number" placeholder="499">
 
+      <label class="admin-label">Old / Strike Price (₹)</label>
+      <input id="adminOldPrice" class="admin-input" type="number" placeholder="1999">
+
       <label class="admin-label">Admin Contact Username (for buy redirect)</label>
       <input id="adminContact" class="admin-input" type="text" placeholder="e.g. yourusername (without @)">
 
-      <button id="adminSaveSettingsBtn" class="btn-primary">Save Settings</button>
+      <button id="adminSaveSettingsBtn" class="btn-primary"><i class="fa-solid fa-floppy-disk"></i> Save Settings</button>
     </div>
 
     <div class="admin-block">
-      <div class="admin-block-title">Your Info</div>
-      <p class="admin-hint">Admin ID: <b id="adminMyId">-</b></p>
+      <div class="admin-block-title"><i class="fa-solid fa-database"></i> Connection Status</div>
+      <div class="status-row">
+        <span>Cloud Database</span>
+        <span id="cloudStatus" class="status-pill status-checking">Checking...</span>
+      </div>
+      <div class="status-row">
+        <span>Your Admin ID</span>
+        <b id="adminMyId">-</b>
+      </div>
     </div>
   </div>
 
+  </div>
   <div class="bottom-space"></div>
 </div>
 
 <!-- Toast -->
 <div id="toast" class="toast"></div>
 
-<script src="app.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<script src="script.js"></script>
 </body>
 </html>
