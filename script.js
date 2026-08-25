@@ -118,7 +118,24 @@ function setupTelegram() {
     const tg = window.Telegram?.WebApp;
     if (tg) {
       tg.ready();
-      tg.expand();
+
+      // Request true fullscreen (Telegram Bot API 8.0+). Falls back
+      // silently on older clients where this method doesn't exist.
+      try {
+        if (typeof tg.requestFullscreen === "function") {
+          tg.requestFullscreen();
+        } else {
+          tg.expand();
+        }
+      } catch (e) {
+        try { tg.expand(); } catch (e2) {}
+      }
+
+      // Disable vertical swipe-to-close so scrolling never fights
+      // Telegram's own gesture handling.
+      try { tg.disableVerticalSwipes(); } catch (e) {}
+      try { tg.enableClosingConfirmation && tg.enableClosingConfirmation(); } catch (e) {}
+
       const user = tg.initDataUnsafe?.user;
       if (user && user.id) {
         CURRENT_USER_ID = String(user.id);
@@ -128,6 +145,15 @@ function setupTelegram() {
       }
       try { tg.setHeaderColor("#07070c"); } catch (e) {}
       try { tg.setBackgroundColor("#07070c"); } catch (e) {}
+      try { tg.setBottomBarColor && tg.setBottomBarColor("#07070c"); } catch (e) {}
+
+      // Apply Telegram's safe-area + content-safe-area insets as CSS
+      // variables so our fixed topbars never sit under the notch/status
+      // bar or Telegram's own floating header controls.
+      applyTelegramInsets(tg);
+      tg.onEvent("safeAreaChanged", () => applyTelegramInsets(tg));
+      tg.onEvent("contentSafeAreaChanged", () => applyTelegramInsets(tg));
+      tg.onEvent("fullscreenChanged", () => applyTelegramInsets(tg));
     }
   } catch (e) {
     console.warn("Telegram WebApp init failed", e);
@@ -142,6 +168,34 @@ function setupTelegram() {
 
   const idEl = document.getElementById("lockedUserId");
   if (idEl) idEl.textContent = CURRENT_USER_ID;
+}
+
+/* ---------------------------------------------------------
+   TELEGRAM SAFE AREA INSETS
+   Telegram gives us safeAreaInset (device notch/home-indicator) and
+   contentSafeAreaInset (space taken by Telegram's own header/controls
+   when the app is fullscreen). We combine both into CSS variables so
+   every sticky topbar in the app automatically pads itself correctly,
+   instead of hiding behind the status bar or Telegram's own UI.
+--------------------------------------------------------- */
+function applyTelegramInsets(tg) {
+  try {
+    const safe = tg.safeAreaInset || {};
+    const content = tg.contentSafeAreaInset || {};
+
+    const top = (safe.top || 0) + (content.top || 0);
+    const bottom = (safe.bottom || 0) + (content.bottom || 0);
+    const left = (safe.left || 0) + (content.left || 0);
+    const right = (safe.right || 0) + (content.right || 0);
+
+    const root = document.documentElement;
+    root.style.setProperty("--tg-safe-top", top + "px");
+    root.style.setProperty("--tg-safe-bottom", bottom + "px");
+    root.style.setProperty("--tg-safe-left", left + "px");
+    root.style.setProperty("--tg-safe-right", right + "px");
+  } catch (e) {
+    console.warn("Could not apply Telegram insets", e);
+  }
 }
 
 /* ---------------------------------------------------------
