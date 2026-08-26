@@ -214,9 +214,14 @@
   </div>
 
   <div class="video-wrap">
-    <video id="videoPlayer" controls playsinline controlsList="nodownload noremoteplayback" disablePictureInPicture></video>
+    <video id="videoPlayer" controls playsinline controlsList="nodownload noremoteplayback" disablePictureInPicture referrerpolicy="no-referrer"></video>
     <div class="video-loading-overlay" id="videoLoadingOverlay">
       <div class="spinner"></div>
+    </div>
+    <div class="video-fallback" id="videoFallback">
+      <i class="fa-solid fa-triangle-exclamation"></i>
+      <p>Ye video is app ke andar directly play nahi ho payi</p>
+      <button id="openInBrowserBtn" class="btn-primary-sm"><i class="fa-solid fa-up-right-from-square"></i> Browser me kholein</button>
     </div>
   </div>
 

@@ -422,9 +422,35 @@ function bindEvents() {
     player.addEventListener("canplay", () => overlay && overlay.classList.remove("show"));
     player.addEventListener("error", () => {
       if (overlay) overlay.classList.remove("show");
-      showToast("⚠️ Video load nahi ho payi. URL check karein.");
+      showVideoFallback();
     });
   }
+
+  safeBind("openInBrowserBtn", "click", () => {
+    if (!currentVideoUrl) return;
+    try {
+      if (window.Telegram?.WebApp?.openLink) {
+        window.Telegram.WebApp.openLink(currentVideoUrl);
+      } else {
+        window.open(currentVideoUrl, "_blank");
+      }
+    } catch (e) {
+      window.open(currentVideoUrl, "_blank");
+    }
+  });
+}
+
+let currentVideoUrl = null;
+
+function showVideoFallback() {
+  showToast("⚠️ Ye video is app ke andar directly play nahi ho payi");
+  const fallback = document.getElementById("videoFallback");
+  if (fallback) fallback.classList.add("show");
+}
+
+function hideVideoFallback() {
+  const fallback = document.getElementById("videoFallback");
+  if (fallback) fallback.classList.remove("show");
 }
 
 function safeBind(id, event, handler) {
@@ -612,11 +638,17 @@ function playVideo(video, topic) {
   setText("playerVideoTitle2", video.title);
   setText("playerVideoDesc", video.desc || "No description available.");
 
+  currentVideoUrl = video.url;
+  hideVideoFallback();
+
   const player = document.getElementById("videoPlayer");
   if (player) {
     player.src = video.url;
     player.load();
-    player.play().catch(() => {});
+    player.play().catch(() => {
+      // Autoplay blocked or immediate failure — not necessarily an error,
+      // the 'error' event listener will catch real playback failures.
+    });
   }
 
   const upNext = document.getElementById("upNextList");

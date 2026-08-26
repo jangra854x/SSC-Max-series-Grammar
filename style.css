@@ -661,6 +661,23 @@ body{
   background:rgba(0,0,0,0.4);
 }
 .video-loading-overlay.show{display:flex;}
+
+.video-fallback{
+  position:absolute;
+  inset:0;
+  display:none;
+  flex-direction:column;
+  align-items:center;
+  justify-content:center;
+  gap:14px;
+  background:rgba(0,0,0,0.9);
+  padding:24px;
+  text-align:center;
+}
+.video-fallback.show{display:flex;}
+.video-fallback i{font-size:28px; color:var(--gold);}
+.video-fallback p{font-size:13.5px; color:var(--text-dim); max-width:280px; line-height:1.5;}
+.video-fallback .btn-primary-sm{width:auto;}
 .spinner{
   width:32px;height:32px;
   border:3px solid rgba(255,255,255,0.15);
