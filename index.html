@@ -25,7 +25,7 @@
     <div class="loader-bar-track">
       <div class="loader-bar-fill" id="loaderBarFill"></div>
     </div>
-    <p class="loader-text" id="loaderText">Connecting...</p>
+    <p class="loader-text" id="loaderText">SSC</p>
   </div>
 </div>
 
@@ -135,34 +135,61 @@
   </div>
 </div>
 
-<!-- ===================== HOME SCREEN (BATCH) ===================== -->
+<!-- ===================== HOME SCREEN (MAIN LANDING) ===================== -->
 <div id="homeScreen" class="screen">
   <div class="topbar">
     <div class="topbar-left">
       <div class="avatar-mini"><i class="fa-solid fa-graduation-cap"></i></div>
       <div>
-        <div class="topbar-title">Selection Batch 11.0</div>
-        <div class="topbar-sub" id="userGreeting">SSC CGL / CHSL</div>
+        <div class="topbar-title">SSC Prep</div>
+        <div class="topbar-sub" id="userGreeting">Welcome</div>
       </div>
     </div>
     <button id="adminBtnHome" class="admin-icon-btn hidden"><i class="fa-solid fa-user-shield"></i></button>
   </div>
 
   <div class="scroll-area">
-    <div class="banner">
-      <div class="banner-glow"></div>
-      <div class="banner-shine"></div>
-      <div class="banner-content">
-        <p class="banner-tag"><i class="fa-solid fa-circle-check"></i> PREMIUM ACCESS ACTIVE</p>
-        <h2 class="banner-title">Selection Batch 11.0</h2>
-        <p class="banner-desc">Complete SSC Preparation Course</p>
-        <div class="banner-progress-track">
-          <div class="banner-progress-fill" id="overallProgressFill" style="width:0%;"></div>
+    <div class="section-label">Your Courses</div>
+
+    <div class="main-card-list">
+      <div class="main-card" id="openSwBatchCard">
+        <div class="main-card-icon main-card-icon-a"><i class="fa-solid fa-graduation-cap"></i></div>
+        <div class="main-card-body">
+          <div class="main-card-title">SW Batch 11.0</div>
+          <div class="main-card-sub">SSC CGL • CHSL • MTS Complete Course</div>
+          <div class="main-card-progress-track">
+            <div class="main-card-progress-fill" id="homeSwProgressFill" style="width:0%;"></div>
+          </div>
+          <p class="main-card-progress-label"><span id="homeSwProgressPct">0%</span> explored</p>
         </div>
-        <p class="banner-progress-label"><span id="overallProgressPct">0%</span> course explored</p>
+        <div class="main-card-arrow"><i class="fa-solid fa-chevron-right"></i></div>
+      </div>
+
+      <div class="main-card" id="openTbMocksCard">
+        <div class="main-card-icon main-card-icon-b"><i class="fa-solid fa-pen-to-square"></i></div>
+        <div class="main-card-body">
+          <div class="main-card-title">TB Mocks</div>
+          <div class="main-card-sub">Test series — coming soon</div>
+        </div>
+        <div class="main-card-lock"><i class="fa-solid fa-lock"></i></div>
       </div>
     </div>
 
+    <div class="bottom-space"></div>
+  </div>
+</div>
+
+<!-- ===================== SW BATCH SCREEN (was old home content) ===================== -->
+<div id="batchScreen" class="screen">
+  <div class="topbar">
+    <button class="back-btn" data-back="homeScreen"><i class="fa-solid fa-arrow-left"></i></button>
+    <div>
+      <div class="topbar-title">SW Batch 11.0</div>
+      <div class="topbar-sub">SSC CGL / CHSL</div>
+    </div>
+  </div>
+
+  <div class="scroll-area">
     <div class="section-label">Subjects</div>
 
     <div id="subjectList" class="subject-list"></div>
@@ -194,7 +221,7 @@
 <!-- ===================== TOPIC SCREEN ===================== -->
 <div id="topicScreen" class="screen">
   <div class="topbar">
-    <button class="back-btn" data-back="homeScreen"><i class="fa-solid fa-arrow-left"></i></button>
+    <button class="back-btn" data-back="batchScreen"><i class="fa-solid fa-arrow-left"></i></button>
     <div>
       <div class="topbar-title" id="topicSubjectTitle">Subject</div>
       <div class="topbar-sub">Select a topic</div>
@@ -292,6 +319,7 @@
   <div class="admin-tabs">
     <button class="admin-tab active" data-tab="tabContent"><i class="fa-solid fa-photo-film"></i> Content</button>
     <button class="admin-tab" data-tab="tabUsers"><i class="fa-solid fa-users"></i> Users</button>
+    <button class="admin-tab" data-tab="tabStats"><i class="fa-solid fa-chart-line"></i> Stats</button>
     <button class="admin-tab" data-tab="tabSettings"><i class="fa-solid fa-gear"></i> Settings</button>
   </div>
 
@@ -344,8 +372,32 @@
         <input id="adminNewUserId" class="admin-input" type="text" placeholder="e.g. 123456789">
         <button id="adminAddUserBtn" class="btn-primary-sm">Add</button>
       </div>
+      <p class="admin-hint">Jab tak subject access na diya jaye, user ko sab subjects locked dikhenge (agar Full Batch nahi diya).</p>
 
       <div id="allowedUsersList" class="allowed-users-list"></div>
+    </div>
+  </div>
+
+  <!-- STATS TAB -->
+  <div id="tabStats" class="admin-tab-content">
+    <div class="admin-block">
+      <div class="admin-block-title"><i class="fa-solid fa-users-line"></i> App Stats</div>
+      <div class="stats-row">
+        <div class="stats-box">
+          <span class="stats-num" id="statTotalUsers">0</span>
+          <span class="stats-lbl">Total Users</span>
+        </div>
+        <div class="stats-box">
+          <span class="stats-num" id="statTodayUsers">0</span>
+          <span class="stats-lbl">Aaj Aaye</span>
+        </div>
+      </div>
+    </div>
+
+    <div class="admin-block">
+      <div class="admin-block-title"><i class="fa-solid fa-user-clock"></i> User Activity</div>
+      <p class="admin-hint">Har user ka naam, ID, pehli baar app kab khola, aur card-wise time spent (last 7 din + overall).</p>
+      <div id="userStatsList" class="user-stats-list"></div>
     </div>
   </div>
 
@@ -391,6 +443,49 @@
 
 <!-- Toast -->
 <div id="toast" class="toast"></div>
+
+<!-- ===================== EDIT VIDEO MODAL ===================== -->
+<div id="editVideoModal" class="modal-overlay">
+  <div class="modal-box">
+    <div class="modal-header">
+      <span><i class="fa-solid fa-pen"></i> Edit Video</span>
+      <button id="editVideoCloseBtn" class="modal-close-btn"><i class="fa-solid fa-xmark"></i></button>
+    </div>
+    <div class="modal-body">
+      <label class="admin-label">Video Title</label>
+      <input id="editVideoTitle" class="admin-input" type="text">
+
+      <label class="admin-label">Video Description</label>
+      <textarea id="editVideoDesc" class="admin-input" rows="2"></textarea>
+
+      <label class="admin-label">Video URL (mp4 / m3u8)</label>
+      <input id="editVideoUrl" class="admin-input" type="text">
+
+      <label class="admin-label">Class PDF URL (optional)</label>
+      <input id="editVideoPdfUrl" class="admin-input" type="text" placeholder="https://... (khaali chhod sakte hain)">
+
+      <button id="editVideoSaveBtn" class="btn-primary"><i class="fa-solid fa-check"></i> Save Changes</button>
+    </div>
+  </div>
+</div>
+
+<!-- ===================== ADD USER ACCESS MODAL ===================== -->
+<div id="userAccessModal" class="modal-overlay">
+  <div class="modal-box">
+    <div class="modal-header">
+      <span><i class="fa-solid fa-user-lock"></i> Access Dein</span>
+      <button id="userAccessCloseBtn" class="modal-close-btn"><i class="fa-solid fa-xmark"></i></button>
+    </div>
+    <div class="modal-body">
+      <p class="admin-hint" id="userAccessTargetLabel">User ID: —</p>
+      <label class="admin-check-row"><input type="checkbox" id="accessFullBatch"> <span>Full Batch (sab subjects)</span></label>
+      <label class="admin-check-row"><input type="checkbox" id="accessEnglish"> <span>English only</span></label>
+      <label class="admin-check-row"><input type="checkbox" id="accessReasoning"> <span>Reasoning only</span></label>
+      <label class="admin-check-row"><input type="checkbox" id="accessMaths"> <span>Maths only</span></label>
+      <button id="userAccessSaveBtn" class="btn-primary"><i class="fa-solid fa-check"></i> Save Access</button>
+    </div>
+  </div>
+</div>
 
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 <script src="script.js"></script>

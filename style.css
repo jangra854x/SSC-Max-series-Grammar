@@ -938,3 +938,206 @@ textarea.admin-input{resize:vertical; font-family:inherit;}
 @media (min-width: 480px){
   .locked-wrap{padding-top:60px;}
 }
+
+/* ================= HOME LANDING CARDS ================= */
+.main-card-list{display:flex; flex-direction:column; gap:14px; padding:0 20px;}
+.main-card{
+  display:flex; align-items:center; gap:14px;
+  background:linear-gradient(180deg, var(--card2), var(--card));
+  border:1px solid var(--border);
+  border-radius:var(--radius);
+  padding:18px;
+  cursor:pointer;
+  position:relative;
+  overflow:hidden;
+  transition:transform .15s ease, border-color .15s ease;
+}
+.main-card:active{transform:scale(0.97);}
+.main-card-icon{
+  width:56px;height:56px; border-radius:16px; flex-shrink:0;
+  display:flex; align-items:center; justify-content:center;
+  font-size:22px; color:#fff;
+  box-shadow:0 8px 20px rgba(0,0,0,0.3);
+}
+.main-card-icon-a{background:linear-gradient(135deg,#7c5cff,#5c8aff);}
+.main-card-icon-b{background:linear-gradient(135deg,#ff9a5c,#ff5c8a);}
+.main-card-body{flex:1; min-width:0;}
+.main-card-title{font-size:16px; font-weight:800; margin-bottom:3px;}
+.main-card-sub{font-size:12px; color:var(--text-dim); margin-bottom:8px;}
+.main-card-progress-track{
+  height:5px; background:rgba(255,255,255,0.07);
+  border-radius:10px; overflow:hidden;
+}
+.main-card-progress-fill{height:100%; background:var(--grad-main); border-radius:10px;}
+.main-card-progress-label{font-size:11px; color:var(--text-faint); margin-top:6px;}
+.main-card-arrow{color:var(--text-faint); font-size:16px; flex-shrink:0;}
+.main-card-lock{
+  color:var(--text-faint); font-size:17px; flex-shrink:0;
+  width:36px;height:36px; border-radius:11px;
+  background:rgba(255,255,255,0.05);
+  display:flex; align-items:center; justify-content:center;
+}
+
+/* ================= CIRCULAR PROGRESS RING (subjects) ================= */
+.subject-ring-wrap{width:52px;height:52px; flex-shrink:0; position:relative;}
+.subject-ring-wrap svg{width:100%; height:100%; transform:rotate(-90deg);}
+.subject-ring-bg{fill:none; stroke:rgba(255,255,255,0.08); stroke-width:4;}
+.subject-ring-fill{fill:none; stroke-width:4; stroke-linecap:round; transition:stroke-dashoffset .5s ease;}
+.subject-ring-icon{
+  position:absolute; inset:8px;
+  border-radius:50%;
+  display:flex; align-items:center; justify-content:center;
+  font-size:15px; color:#fff;
+}
+.subject-card.locked{opacity:0.55;}
+.subject-card.locked .subject-arrow{display:none;}
+.subject-lock-badge{
+  color:var(--text-faint); font-size:15px; flex-shrink:0;
+  width:32px;height:32px; border-radius:10px;
+  background:rgba(255,255,255,0.05);
+  display:flex; align-items:center; justify-content:center;
+}
+
+/* ================= ADMIN: STRUCTURE ACCORDION ================= */
+.struct-subject{
+  border:1px solid var(--border);
+  border-radius:var(--radius-sm);
+  margin-bottom:10px;
+  overflow:hidden;
+  background:var(--card);
+}
+.struct-subject-head{
+  display:flex; align-items:center; gap:10px;
+  padding:13px 14px;
+  cursor:pointer;
+  font-size:13.5px; font-weight:700;
+}
+.struct-subject-head i.chev{margin-left:auto; transition:transform .2s ease; color:var(--text-faint);}
+.struct-subject.open .struct-subject-head i.chev{transform:rotate(90deg);}
+.struct-topics{display:none; padding:0 10px 10px;}
+.struct-subject.open .struct-topics{display:block;}
+
+.struct-topic{
+  border:1px solid var(--border);
+  border-radius:11px;
+  margin-bottom:8px;
+  overflow:hidden;
+  background:var(--card2);
+}
+.struct-topic-head{
+  display:flex; align-items:center; gap:8px;
+  padding:11px 12px;
+  cursor:pointer;
+  font-size:12.5px; font-weight:700;
+  color:var(--text-dim);
+}
+.struct-topic-head i.chev{margin-left:auto; transition:transform .2s ease; color:var(--text-faint); font-size:11px;}
+.struct-topic.open .struct-topic-head i.chev{transform:rotate(90deg);}
+.struct-topic-count{
+  font-size:10.5px; font-weight:700;
+  background:rgba(124,92,255,0.15); color:var(--accent);
+  padding:2px 8px; border-radius:10px;
+}
+.struct-videos{display:none; padding:6px 10px 10px;}
+.struct-topic.open .struct-videos{display:block;}
+
+.struct-video-row{
+  display:flex; align-items:center; gap:8px;
+  padding:9px 10px;
+  border-radius:9px;
+  background:rgba(255,255,255,0.03);
+  margin-bottom:6px;
+  font-size:12px;
+}
+.struct-video-title{flex:1; min-width:0; overflow:hidden; text-overflow:ellipsis; white-space:nowrap;}
+.struct-video-actions{display:flex; gap:6px; flex-shrink:0;}
+.struct-icon-btn{
+  width:28px;height:28px; border-radius:8px;
+  border:1px solid var(--border);
+  background:var(--card);
+  color:var(--text-dim);
+  display:flex; align-items:center; justify-content:center;
+  font-size:11px;
+  cursor:pointer;
+}
+.struct-icon-btn.danger{color:var(--danger); border-color:rgba(255,92,106,0.3);}
+.struct-icon-btn.move:active, .struct-icon-btn.edit:active, .struct-icon-btn.danger:active{transform:scale(0.9);}
+
+/* ================= ADMIN: STATS ================= */
+.stats-row{display:flex; gap:10px;}
+.stats-box{
+  flex:1;
+  background:var(--card);
+  border:1px solid var(--border);
+  border-radius:var(--radius-sm);
+  padding:16px;
+  text-align:center;
+}
+.stats-num{display:block; font-size:26px; font-weight:900; color:var(--text);}
+.stats-lbl{font-size:11.5px; color:var(--text-dim); font-weight:600;}
+
+.user-stats-list{display:flex; flex-direction:column; gap:10px;}
+.user-stats-card{
+  border:1px solid var(--border);
+  border-radius:var(--radius-sm);
+  background:var(--card);
+  padding:14px;
+}
+.user-stats-top{display:flex; justify-content:space-between; align-items:center; margin-bottom:8px;}
+.user-stats-name{font-size:13.5px; font-weight:700;}
+.user-stats-id{font-size:11px; color:var(--text-faint);}
+.user-stats-first{font-size:11px; color:var(--text-dim); margin-bottom:8px;}
+.user-stats-times{display:flex; flex-direction:column; gap:5px;}
+.user-stats-time-row{
+  display:flex; justify-content:space-between;
+  font-size:11.5px; color:var(--text-dim);
+  padding:6px 10px;
+  background:rgba(255,255,255,0.03);
+  border-radius:8px;
+}
+.user-stats-time-row b{color:var(--text);}
+
+.admin-check-row{
+  display:flex; align-items:center; gap:10px;
+  padding:11px 4px;
+  font-size:13px; font-weight:600;
+  cursor:pointer;
+}
+.admin-check-row input{width:18px; height:18px; accent-color:var(--accent);}
+
+/* ================= MODAL ================= */
+.modal-overlay{
+  display:none;
+  position:fixed; inset:0;
+  background:rgba(0,0,0,0.6);
+  z-index:200;
+  align-items:flex-end;
+  justify-content:center;
+}
+.modal-overlay.show{display:flex;}
+.modal-box{
+  width:100%;
+  max-width:520px;
+  background:var(--card2);
+  border:1px solid var(--border);
+  border-radius:22px 22px 0 0;
+  max-height:85vh;
+  overflow-y:auto;
+  animation:screenIn .3s cubic-bezier(.16,1,.3,1);
+}
+.modal-header{
+  display:flex; align-items:center; justify-content:space-between;
+  padding:18px 18px 14px;
+  font-size:15px; font-weight:800;
+  border-bottom:1px solid var(--border);
+  position:sticky; top:0;
+  background:var(--card2);
+}
+.modal-close-btn{
+  width:32px;height:32px; border-radius:10px;
+  border:none; background:rgba(255,255,255,0.06);
+  color:var(--text-dim);
+  display:flex; align-items:center; justify-content:center;
+  cursor:pointer;
+}
+.modal-body{padding:16px 18px 26px;}

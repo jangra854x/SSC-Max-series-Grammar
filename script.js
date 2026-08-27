@@ -22,15 +22,17 @@ const HARD_LOAD_TIMEOUT_MS = 4000; // loader will never wait longer than this
 function getDefaultData() {
   return {
     settings: {
-      price: 499, oldPrice: 1999, contactUsername: "pratibha0x",
+      contactUsername: "pratibha0x",
       priceEnglish: 299, priceReasoning: 199, priceMaths: 299, priceFullBatch: 699
     },
+    // allowedUsers: array of { id, subjects: ["english","reasoning","maths"] | "full" }
     allowedUsers: [],
     subjects: [
       { id: "english", name: "English", icon: "eng", emoji: "fa-book-open", topics: [] },
       { id: "reasoning", name: "Reasoning", icon: "reason", emoji: "fa-brain", topics: [] },
       { id: "maths", name: "Maths", icon: "maths", emoji: "fa-square-root-variable", topics: [] }
-    ]
+    ],
+    mocks: { locked: true, items: [] }
   };
 }
 
@@ -57,7 +59,7 @@ document.addEventListener("DOMContentLoaded", () => {
 });
 
 async function boot() {
-  setLoaderText("Connecting...");
+  setLoaderText("SSC");
   setupTelegram();
 
   // Hard safety net: no matter what happens, after HARD_LOAD_TIMEOUT_MS
@@ -70,7 +72,7 @@ async function boot() {
   }, HARD_LOAD_TIMEOUT_MS);
 
   try {
-    setLoaderText("Loading batch data...");
+    setLoaderText("SSC");
     await loadData();
   } catch (e) {
     console.warn("loadData threw, using default data", e);
@@ -98,12 +100,12 @@ function finishBoot() {
   try { renderAdminVisibility(); } catch (e) { console.error(e); }
   try { updateLockedStats(); } catch (e) { console.error(e); }
   try { updatePricingUI(); } catch (e) { console.error(e); }
+  try { trackUserVisit(); } catch (e) { console.error(e); }
 
   try {
     if (IS_ADMIN || isUserAllowed(CURRENT_USER_ID)) {
       showScreen("homeScreen");
-      renderSubjects();
-      updateOverallProgress();
+      renderHomeCards();
     } else {
       showScreen("lockedScreen");
     }
@@ -235,7 +237,7 @@ async function loadData() {
     return;
   }
 
-  setLoaderText("Syncing with cloud...");
+  setLoaderText("SSC");
 
   try {
     // supabase-js is loaded via <script> tag in index.html (blocking, before script.js)
@@ -296,15 +298,35 @@ function normalizeData(data) {
 
   data.settings = Object.assign({}, base.settings, data.settings || {});
   data.allowedUsers = Array.isArray(data.allowedUsers) ? data.allowedUsers : [];
+  // Migrate old plain-string allowedUsers ("123456") into the new object
+  // shape { id, subjects: "full" } so existing allowed users keep full access.
+  data.allowedUsers = data.allowedUsers.map(u => {
+    if (typeof u === "string") return { id: u, subjects: "full" };
+    if (u && typeof u === "object" && u.id) {
+      if (!u.subjects) u.subjects = "full";
+      return u;
+    }
+    return null;
+  }).filter(Boolean);
+
   data.subjects = Array.isArray(data.subjects) && data.subjects.length ? data.subjects : base.subjects;
 
   data.subjects.forEach(s => {
     if (!Array.isArray(s.topics)) s.topics = [];
-    s.topics.forEach(t => {
+    s.topics.forEach((t, tIdx) => {
       if (!Array.isArray(t.videos)) t.videos = [];
-      t.videos.forEach(v => { if (typeof v.pdfUrl !== "string") v.pdfUrl = ""; });
+      if (typeof t.order !== "number") t.order = tIdx;
+      t.videos.forEach((v, vIdx) => {
+        if (typeof v.pdfUrl !== "string") v.pdfUrl = "";
+        if (typeof v.order !== "number") v.order = vIdx;
+        if (typeof v.createdAt !== "number") v.createdAt = Date.now();
+      });
     });
   });
+
+  if (!data.mocks || typeof data.mocks !== "object") data.mocks = { locked: true, items: [] };
+  if (typeof data.mocks.locked !== "boolean") data.mocks.locked = true;
+  if (!Array.isArray(data.mocks.items)) data.mocks.items = [];
 
   return data;
 }
@@ -343,9 +365,69 @@ function setCloudStatus(connected) {
 /* ---------------------------------------------------------
    ACCESS CONTROL
 --------------------------------------------------------- */
+function getUserAccessEntry(userId) {
+  if (!userId || !APP_DATA || !Array.isArray(APP_DATA.allowedUsers)) return null;
+  return APP_DATA.allowedUsers.find(u => u.id === String(userId)) || null;
+}
+
+// Any access at all (used to decide locked-screen vs app)
 function isUserAllowed(userId) {
-  if (!userId || !APP_DATA || !Array.isArray(APP_DATA.allowedUsers)) return false;
-  return APP_DATA.allowedUsers.includes(String(userId));
+  return !!getUserAccessEntry(userId);
+}
+
+// Full-batch access, or specific subject access, or admin
+function hasSubjectAccess(userId, subjectId) {
+  if (IS_ADMIN) return true;
+  const entry = getUserAccessEntry(userId);
+  if (!entry) return false;
+  if (entry.subjects === "full") return true;
+  if (Array.isArray(entry.subjects)) return entry.subjects.includes(subjectId);
+  return false;
+}
+
+/* ---------------------------------------------------------
+   ANALYTICS: TRACK USER VISIT
+--------------------------------------------------------- */
+function trackUserVisit() {
+  if (!sbClient || !CURRENT_USER_ID) return;
+
+  let name = "Unknown";
+  let username = "";
+  try {
+    const tgUser = window.Telegram?.WebApp?.initDataUnsafe?.user;
+    if (tgUser) {
+      name = [tgUser.first_name, tgUser.last_name].filter(Boolean).join(" ") || "Unknown";
+      username = tgUser.username || "";
+    }
+  } catch (e) {}
+
+  (async () => {
+    try {
+      const { data: existing } = await withTimeout(
+        sbClient.from("app_users").select("user_id").eq("user_id", String(CURRENT_USER_ID)).maybeSingle(),
+        3000
+      );
+
+      if (existing) {
+        await withTimeout(
+          sbClient.from("app_users").update({
+            first_name: name, username, last_seen_at: new Date().toISOString()
+          }).eq("user_id", String(CURRENT_USER_ID)),
+          3000
+        );
+      } else {
+        await withTimeout(
+          sbClient.from("app_users").insert({
+            user_id: String(CURRENT_USER_ID), first_name: name, username,
+            first_seen_at: new Date().toISOString(), last_seen_at: new Date().toISOString()
+          }),
+          3000
+        );
+      }
+    } catch (e) {
+      console.warn("trackUserVisit failed", e);
+    }
+  })();
 }
 
 function renderAdminVisibility() {
@@ -372,12 +454,77 @@ function showErrorScreen(msg) {
 /* ---------------------------------------------------------
    SCREEN NAVIGATION
 --------------------------------------------------------- */
+// Maps internal screen ids -> the "card" bucket used for time-tracking/stats
+const SCREEN_TO_CARD_KEY = {
+  homeScreen: null, // landing itself isn't tracked as a card
+  batchScreen: "sw_batch",
+  topicScreen: "sw_batch",
+  videoListScreen: "sw_batch",
+  playerScreen: "sw_batch",
+  pdfScreen: "sw_batch",
+  adminScreen: null
+};
+
+let activeCardKey = null;
+let activeCardStartedAt = null;
+
 function showScreen(id) {
   document.querySelectorAll(".screen").forEach(s => s.classList.remove("active"));
   const target = document.getElementById(id);
   if (target) target.classList.add("active");
   window.scrollTo(0, 0);
+
+  handleCardTimeTransition(id);
 }
+
+function handleCardTimeTransition(newScreenId) {
+  const newCardKey = SCREEN_TO_CARD_KEY.hasOwnProperty(newScreenId) ? SCREEN_TO_CARD_KEY[newScreenId] : null;
+
+  if (activeCardKey && activeCardKey !== newCardKey) {
+    flushCardSession(activeCardKey, activeCardStartedAt);
+  }
+
+  if (newCardKey && newCardKey !== activeCardKey) {
+    activeCardKey = newCardKey;
+    activeCardStartedAt = Date.now();
+  } else if (!newCardKey) {
+    activeCardKey = null;
+    activeCardStartedAt = null;
+  }
+}
+
+function flushCardSession(cardKey, startedAt) {
+  if (!cardKey || !startedAt || !CURRENT_USER_ID) return;
+  const seconds = Math.round((Date.now() - startedAt) / 1000);
+  if (seconds < 2) return; // ignore accidental instant taps
+
+  if (sbClient) {
+    try {
+      sbClient.from("app_sessions").insert({
+        user_id: String(CURRENT_USER_ID),
+        card_key: cardKey,
+        seconds,
+        started_at: new Date(startedAt).toISOString(),
+        ended_at: new Date().toISOString()
+      }).then(() => {}).catch(e => console.warn("session log failed", e));
+    } catch (e) {
+      console.warn("session log failed", e);
+    }
+  }
+}
+
+// Flush any in-progress session when the user leaves/closes the mini app
+window.addEventListener("beforeunload", () => {
+  if (activeCardKey && activeCardStartedAt) {
+    flushCardSession(activeCardKey, activeCardStartedAt);
+  }
+});
+document.addEventListener("visibilitychange", () => {
+  if (document.visibilityState === "hidden" && activeCardKey && activeCardStartedAt) {
+    flushCardSession(activeCardKey, activeCardStartedAt);
+    activeCardStartedAt = Date.now(); // resume counting if they come back
+  }
+});
 
 /* ---------------------------------------------------------
    EVENT BINDINGS
@@ -395,10 +542,33 @@ function bindEvents() {
     renderAdminPanel();
   });
 
+  safeBind("openSwBatchCard", "click", openBatchScreen);
+  safeBind("openTbMocksCard", "click", () => {
+    showToast("🔒 TB Mocks jaldi aa raha hai — abhi available nahi hai.");
+  });
+
+  // Edit video modal
+  safeBind("editVideoCloseBtn", "click", closeEditVideoModal);
+  safeBind("editVideoSaveBtn", "click", handleEditVideoSave);
+
+  // User access modal
+  safeBind("userAccessCloseBtn", "click", closeUserAccessModal);
+  safeBind("userAccessSaveBtn", "click", handleUserAccessSave);
+  safeBind("accessFullBatch", "change", (e) => {
+    const subChecks = ["accessEnglish", "accessReasoning", "accessMaths"];
+    subChecks.forEach(id => {
+      const el = document.getElementById(id);
+      if (el) { el.checked = false; el.disabled = e.target.checked; }
+    });
+  });
+
   document.querySelectorAll(".back-btn").forEach(btn => {
     btn.addEventListener("click", () => {
       const target = btn.dataset.back;
-      if (target) showScreen(target);
+      if (!target) return;
+      showScreen(target);
+      if (target === "batchScreen") renderSubjects();
+      if (target === "homeScreen") renderHomeCards();
     });
   });
 
@@ -409,6 +579,7 @@ function bindEvents() {
       tab.classList.add("active");
       const content = document.getElementById(tab.dataset.tab);
       if (content) content.classList.add("active");
+      if (tab.dataset.tab === "tabStats") renderAdminStats();
     });
   });
 
@@ -555,23 +726,39 @@ function updateLockedStats() {
   setText("statVideos", videoCount);
 }
 
-function updateOverallProgress() {
-  // Simple "content explored" style indicator based on total videos available
-  let videoCount = 0;
-  APP_DATA.subjects.forEach(s => s.topics.forEach(t => videoCount += t.videos.length));
-  const pct = videoCount > 0 ? 100 : 0; // placeholder visual; real progress needs user tracking
-  const fill = document.getElementById("overallProgressFill");
-  if (fill) fill.style.width = (videoCount > 0 ? 8 : 0) + "%";
-  setText("overallProgressPct", videoCount > 0 ? "8%" : "0%");
-}
-
 function setText(id, val) {
   const el = document.getElementById(id);
   if (el) el.textContent = val;
 }
 
 /* ---------------------------------------------------------
-   RENDER: SUBJECTS
+   RENDER: HOME LANDING CARDS
+--------------------------------------------------------- */
+function renderHomeCards() {
+  const swFill = document.getElementById("homeSwProgressFill");
+  const pct = computeSwBatchProgressPct();
+  if (swFill) swFill.style.width = pct + "%";
+  setText("homeSwProgressPct", pct + "%");
+}
+
+function computeSwBatchProgressPct() {
+  // "Explored" = watched-video ratio would need per-user tracking of
+  // individual videos; as a stable proxy we show content-completeness
+  // (how much of the total catalog exists vs a rolling target), capped
+  // sensibly so it always looks meaningful for admins/users alike.
+  let videoCount = 0;
+  APP_DATA.subjects.forEach(s => s.topics.forEach(t => videoCount += t.videos.length));
+  if (videoCount === 0) return 0;
+  return Math.min(100, Math.round((videoCount / 250) * 100));
+}
+
+function openBatchScreen() {
+  showScreen("batchScreen");
+  renderSubjects();
+}
+
+/* ---------------------------------------------------------
+   RENDER: SUBJECTS (inside SW Batch)
 --------------------------------------------------------- */
 function renderSubjects() {
   const list = document.getElementById("subjectList");
@@ -581,20 +768,49 @@ function renderSubjects() {
   APP_DATA.subjects.forEach(subject => {
     const topicCount = subject.topics.length;
     const videoCount = subject.topics.reduce((sum, t) => sum + t.videos.length, 0);
+    const unlocked = hasSubjectAccess(CURRENT_USER_ID, subject.id);
+    const pct = videoCount === 0 ? 0 : Math.min(100, Math.round((videoCount / 80) * 100));
 
     const card = document.createElement("div");
-    card.className = "subject-card";
+    card.className = "subject-card" + (unlocked ? "" : " locked");
     card.innerHTML = `
-      <div class="subject-icon ${subject.icon}"><i class="fa-solid ${subject.emoji || 'fa-book'}"></i></div>
+      ${buildProgressRing(pct, subject.icon, subject.emoji)}
       <div class="subject-info">
         <div class="subject-name">${escapeHtml(subject.name)}</div>
         <div class="subject-meta">${topicCount} topics • ${videoCount} videos</div>
       </div>
-      <div class="subject-arrow"><i class="fa-solid fa-chevron-right"></i></div>
+      ${unlocked
+        ? `<div class="subject-arrow"><i class="fa-solid fa-chevron-right"></i></div>`
+        : `<div class="subject-lock-badge"><i class="fa-solid fa-lock"></i></div>`}
     `;
-    card.addEventListener("click", () => openSubject(subject.id));
+    card.addEventListener("click", () => {
+      if (unlocked) {
+        openSubject(subject.id);
+      } else {
+        showToast("🔒 Ye subject locked hai. Access ke liye Buy Now se contact karein.");
+      }
+    });
     list.appendChild(card);
   });
+}
+
+function buildProgressRing(pct, iconClass, emoji) {
+  const r = 22, c = 2 * Math.PI * r;
+  const offset = c - (pct / 100) * c;
+  const colorMap = { eng: "#ff5c8a", reason: "#5c8aff", maths: "#2fe08a" };
+  const color = colorMap[iconClass] || "#7c5cff";
+  return `
+    <div class="subject-ring-wrap">
+      <svg viewBox="0 0 52 52">
+        <circle class="subject-ring-bg" cx="26" cy="26" r="${r}"></circle>
+        <circle class="subject-ring-fill" cx="26" cy="26" r="${r}" stroke="${color}"
+          stroke-dasharray="${c}" stroke-dashoffset="${offset}"></circle>
+      </svg>
+      <div class="subject-ring-icon" style="background:${color};">
+        <i class="fa-solid ${emoji || 'fa-book'}"></i>
+      </div>
+    </div>
+  `;
 }
 
 function openSubject(subjectId) {
@@ -661,9 +877,15 @@ function renderVideos(topic) {
     return;
   }
 
-  topic.videos.forEach(video => {
+  // Newest-added video shows first (matches admin "order" field, highest first)
+  const sorted = getSortedVideos(topic);
+  sorted.forEach(video => {
     list.appendChild(buildVideoCard(video, topic));
   });
+}
+
+function getSortedVideos(topic) {
+  return [...topic.videos].sort((a, b) => (b.order || 0) - (a.order || 0));
 }
 
 function buildVideoCard(video, topic) {
@@ -753,7 +975,7 @@ function playVideo(video, topic) {
   const upNext = document.getElementById("upNextList");
   if (upNext) {
     upNext.innerHTML = "";
-    const others = topic.videos.filter(v => v.id !== video.id);
+    const others = getSortedVideos(topic).filter(v => v.id !== video.id);
     if (others.length === 0) {
       upNext.innerHTML = `<div class="empty-state" style="padding:30px 20px;">Aur koi video nahi hai is topic me</div>`;
     } else {
@@ -772,6 +994,7 @@ function renderAdminPanel() {
   populateAdminTopics();
   renderAdminStructure();
   renderAllowedUsers();
+  renderAdminStats();
 
   const priceEnglishEl = document.getElementById("adminPriceEnglish");
   const priceReasoningEl = document.getElementById("adminPriceReasoning");
@@ -861,7 +1084,11 @@ async function handleAddVideo() {
   const topic = subject.topics.find(t => t.id === topicId);
   if (!topic) return;
 
-  topic.videos.push({ id: "video_" + Date.now(), title, desc, url, pdfUrl: pdfUrl || "" });
+  const maxOrder = topic.videos.reduce((m, v) => Math.max(m, v.order || 0), 0);
+  topic.videos.push({
+    id: "video_" + Date.now(), title, desc, url, pdfUrl: pdfUrl || "",
+    order: maxOrder + 1, createdAt: Date.now()
+  });
 
   await saveData();
 
@@ -875,63 +1102,216 @@ async function handleAddVideo() {
   showToast("✅ Video add ho gayi: " + title);
 }
 
+// Track which subject/topic accordions are open so re-render doesn't collapse everything
+let openStructSubjects = new Set();
+let openStructTopics = new Set();
+
 function renderAdminStructure() {
   const container = document.getElementById("adminStructureList");
   if (!container) return;
   container.innerHTML = "";
 
   APP_DATA.subjects.forEach(subject => {
-    const block = document.createElement("div");
-    block.className = "admin-struct-item";
+    const topicCount = subject.topics.length;
+    const videoCount = subject.topics.reduce((sum, t) => sum + t.videos.length, 0);
+    const isOpen = openStructSubjects.has(subject.id);
 
-    let html = `<div class="admin-struct-subject"><i class="fa-solid ${subject.emoji || 'fa-book'}"></i> ${escapeHtml(subject.name)}</div>`;
+    const subjBlock = document.createElement("div");
+    subjBlock.className = "struct-subject" + (isOpen ? " open" : "");
+    subjBlock.innerHTML = `
+      <div class="struct-subject-head" data-subject="${subject.id}">
+        <i class="fa-solid ${subject.emoji || 'fa-book'}"></i>
+        ${escapeHtml(subject.name)}
+        <span class="struct-topic-count">${topicCount} topics • ${videoCount} videos</span>
+        <i class="fa-solid fa-chevron-right chev"></i>
+      </div>
+      <div class="struct-topics"></div>
+    `;
+
+    const topicsWrap = subjBlock.querySelector(".struct-topics");
 
     if (subject.topics.length === 0) {
-      html += `<div class="admin-struct-topic"><span>Koi topic nahi</span></div>`;
+      topicsWrap.innerHTML = `<div class="empty-state" style="padding:16px;">Koi topic nahi</div>`;
     } else {
-      subject.topics.forEach(topic => {
-        html += `<div class="admin-struct-topic">
-          <span><i class="fa-solid fa-folder"></i> ${escapeHtml(topic.name)} (${topic.videos.length})</span>
-          <button class="mini-del-btn" data-subject="${subject.id}" data-topic="${topic.id}" data-action="del-topic">Delete</button>
-        </div>`;
-        topic.videos.forEach(video => {
-          html += `<div class="admin-struct-video">
-            <span><i class="fa-solid fa-video"></i> ${escapeHtml(video.title)}</span>
-            <button class="mini-del-btn" data-subject="${subject.id}" data-topic="${topic.id}" data-video="${video.id}" data-action="del-video">Delete</button>
-          </div>`;
-        });
+      const sortedTopics = [...subject.topics].sort((a, b) => (b.order || 0) - (a.order || 0));
+      sortedTopics.forEach(topic => {
+        const topicOpen = openStructTopics.has(topic.id);
+        const topicEl = document.createElement("div");
+        topicEl.className = "struct-topic" + (topicOpen ? " open" : "");
+        topicEl.innerHTML = `
+          <div class="struct-topic-head" data-topic="${topic.id}" data-subject="${subject.id}">
+            <i class="fa-solid fa-folder"></i> ${escapeHtml(topic.name)}
+            <span class="struct-topic-count">${topic.videos.length}</span>
+            <button class="struct-icon-btn danger" data-action="del-topic" data-subject="${subject.id}" data-topic="${topic.id}" title="Delete topic"><i class="fa-solid fa-trash"></i></button>
+            <i class="fa-solid fa-chevron-right chev"></i>
+          </div>
+          <div class="struct-videos"></div>
+        `;
+
+        const videosWrap = topicEl.querySelector(".struct-videos");
+        const sortedVideos = getSortedVideos(topic);
+
+        if (sortedVideos.length === 0) {
+          videosWrap.innerHTML = `<div class="empty-state" style="padding:10px;">Koi video nahi</div>`;
+        } else {
+          sortedVideos.forEach((video, idx) => {
+            const row = document.createElement("div");
+            row.className = "struct-video-row";
+            row.innerHTML = `
+              <span class="struct-video-title"><i class="fa-solid fa-video"></i> ${escapeHtml(video.title)}${video.pdfUrl ? ' <i class="fa-solid fa-file-pdf" style="color:#ff8a8a;"></i>' : ''}</span>
+              <div class="struct-video-actions">
+                <button class="struct-icon-btn move" data-action="move-up" data-subject="${subject.id}" data-topic="${topic.id}" data-video="${video.id}" title="Upar"><i class="fa-solid fa-arrow-up"></i></button>
+                <button class="struct-icon-btn move" data-action="move-down" data-subject="${subject.id}" data-topic="${topic.id}" data-video="${video.id}" title="Neeche"><i class="fa-solid fa-arrow-down"></i></button>
+                <button class="struct-icon-btn edit" data-action="edit-video" data-subject="${subject.id}" data-topic="${topic.id}" data-video="${video.id}" title="Edit"><i class="fa-solid fa-pen"></i></button>
+                <button class="struct-icon-btn danger" data-action="del-video" data-subject="${subject.id}" data-topic="${topic.id}" data-video="${video.id}" title="Delete"><i class="fa-solid fa-trash"></i></button>
+              </div>
+            `;
+            videosWrap.appendChild(row);
+          });
+        }
+
+        topicsWrap.appendChild(topicEl);
       });
     }
 
-    block.innerHTML = html;
-    container.appendChild(block);
+    container.appendChild(subjBlock);
   });
 
-  container.querySelectorAll(".mini-del-btn").forEach(btn => {
+  // Accordion toggles
+  container.querySelectorAll(".struct-subject-head").forEach(head => {
+    head.addEventListener("click", (e) => {
+      if (e.target.closest("button")) return;
+      const id = head.dataset.subject;
+      if (openStructSubjects.has(id)) openStructSubjects.delete(id);
+      else openStructSubjects.add(id);
+      renderAdminStructure();
+    });
+  });
+  container.querySelectorAll(".struct-topic-head").forEach(head => {
+    head.addEventListener("click", (e) => {
+      if (e.target.closest("button")) return;
+      const id = head.dataset.topic;
+      if (openStructTopics.has(id)) openStructTopics.delete(id);
+      else openStructTopics.add(id);
+      renderAdminStructure();
+    });
+  });
+
+  // Action buttons
+  container.querySelectorAll("button[data-action]").forEach(btn => {
     btn.addEventListener("click", (e) => {
+      e.stopPropagation();
       const t = e.currentTarget;
       const action = t.dataset.action;
       const subjectId = t.dataset.subject;
       const topicId = t.dataset.topic;
+      const subject = getSubject(subjectId);
+      const topic = subject ? subject.topics.find(tp => tp.id === topicId) : null;
 
       if (action === "del-topic") {
         if (!confirm("Ye topic aur uski saari videos delete ho jayengi. Confirm?")) return;
-        const subject = getSubject(subjectId);
         subject.topics = subject.topics.filter(tp => tp.id !== topicId);
-      } else if (action === "del-video") {
-        const videoId = t.dataset.video;
-        if (!confirm("Ye video delete karein?")) return;
-        const subject = getSubject(subjectId);
-        const topic = subject.topics.find(tp => tp.id === topicId);
-        topic.videos = topic.videos.filter(v => v.id !== videoId);
+        saveData();
+        renderAdminStructure();
+        populateAdminTopics();
+        updateLockedStats();
+        return;
       }
 
-      saveData();
-      renderAdminStructure();
-      populateAdminTopics();
-      updateLockedStats();
+      if (!topic) return;
+      const videoId = t.dataset.video;
+      const video = topic.videos.find(v => v.id === videoId);
+
+      if (action === "del-video") {
+        if (!confirm("Ye video delete karein?")) return;
+        topic.videos = topic.videos.filter(v => v.id !== videoId);
+        saveData();
+        renderAdminStructure();
+        updateLockedStats();
+      } else if (action === "edit-video") {
+        openEditVideoModal(subjectId, topicId, videoId);
+      } else if (action === "move-up" || action === "move-down") {
+        reorderVideo(topic, videoId, action === "move-up" ? "up" : "down");
+        saveData();
+        renderAdminStructure();
+      }
     });
   });
+}
+
+function reorderVideo(topic, videoId, direction) {
+  // Videos are shown newest(highest order)-first, so "move up" (show earlier)
+  // means increasing this video's order past its neighbour above it.
+  const sorted = getSortedVideos(topic);
+  const idx = sorted.findIndex(v => v.id === videoId);
+  if (idx === -1) return;
+
+  const swapIdx = direction === "up" ? idx - 1 : idx + 1;
+  if (swapIdx < 0 || swapIdx >= sorted.length) return;
+
+  const a = sorted[idx];
+  const b = sorted[swapIdx];
+  const tmp = a.order;
+  a.order = b.order;
+  b.order = tmp;
+}
+
+/* ---------------------------------------------------------
+   ADMIN: EDIT VIDEO MODAL
+--------------------------------------------------------- */
+let editingVideoRef = null; // { subjectId, topicId, videoId }
+
+function openEditVideoModal(subjectId, topicId, videoId) {
+  const subject = getSubject(subjectId);
+  const topic = subject ? subject.topics.find(t => t.id === topicId) : null;
+  const video = topic ? topic.videos.find(v => v.id === videoId) : null;
+  if (!video) return;
+
+  editingVideoRef = { subjectId, topicId, videoId };
+
+  const titleEl = document.getElementById("editVideoTitle");
+  const descEl = document.getElementById("editVideoDesc");
+  const urlEl = document.getElementById("editVideoUrl");
+  const pdfEl = document.getElementById("editVideoPdfUrl");
+  if (titleEl) titleEl.value = video.title || "";
+  if (descEl) descEl.value = video.desc || "";
+  if (urlEl) urlEl.value = video.url || "";
+  if (pdfEl) pdfEl.value = video.pdfUrl || "";
+
+  const modal = document.getElementById("editVideoModal");
+  if (modal) modal.classList.add("show");
+}
+
+function closeEditVideoModal() {
+  editingVideoRef = null;
+  const modal = document.getElementById("editVideoModal");
+  if (modal) modal.classList.remove("show");
+}
+
+async function handleEditVideoSave() {
+  if (!editingVideoRef) return;
+  const { subjectId, topicId, videoId } = editingVideoRef;
+  const subject = getSubject(subjectId);
+  const topic = subject ? subject.topics.find(t => t.id === topicId) : null;
+  const video = topic ? topic.videos.find(v => v.id === videoId) : null;
+  if (!video) return;
+
+  const title = document.getElementById("editVideoTitle").value.trim();
+  const desc = document.getElementById("editVideoDesc").value.trim();
+  const url = document.getElementById("editVideoUrl").value.trim();
+  const pdfUrl = document.getElementById("editVideoPdfUrl").value.trim();
+
+  if (!title || !url) { showToast("⚠️ Title aur URL zaroori hai"); return; }
+
+  video.title = title;
+  video.desc = desc;
+  video.url = url;
+  video.pdfUrl = pdfUrl || "";
+
+  await saveData();
+  closeEditVideoModal();
+  renderAdminStructure();
+  showToast("✅ Video update ho gayi");
 }
 
 /* ---------------------------------------------------------
@@ -942,9 +1322,9 @@ function handleAddUser() {
   const id = input.value.trim();
 
   if (!id) { showToast("⚠️ User ID likhein"); return; }
-  if (APP_DATA.allowedUsers.includes(id)) { showToast("Ye ID pehle se allowed hai"); return; }
+  if (getUserAccessEntry(id)) { showToast("Ye ID pehle se allowed hai, neeche se access edit karein"); return; }
 
-  APP_DATA.allowedUsers.push(id);
+  APP_DATA.allowedUsers.push({ id, subjects: "full" });
   saveData();
   input.value = "";
   renderAllowedUsers();
@@ -961,18 +1341,184 @@ function renderAllowedUsers() {
     return;
   }
 
-  APP_DATA.allowedUsers.forEach(id => {
+  APP_DATA.allowedUsers.forEach(entry => {
+    const label = entry.subjects === "full"
+      ? "Full Batch"
+      : (Array.isArray(entry.subjects) && entry.subjects.length ? entry.subjects.join(", ") : "Koi access nahi");
+
     const row = document.createElement("div");
     row.className = "allowed-user-row";
-    row.innerHTML = `<span>${escapeHtml(id)}</span><button class="mini-del-btn">Remove</button>`;
-    row.querySelector("button").addEventListener("click", () => {
-      APP_DATA.allowedUsers = APP_DATA.allowedUsers.filter(u => u !== id);
+    row.innerHTML = `
+      <span>${escapeHtml(entry.id)} <br><small style="color:var(--text-faint);">${escapeHtml(label)}</small></span>
+      <div style="display:flex; gap:6px;">
+        <button class="struct-icon-btn edit" data-action="edit-access" data-id="${entry.id}"><i class="fa-solid fa-pen"></i></button>
+        <button class="mini-del-btn" data-action="remove-access" data-id="${entry.id}">Remove</button>
+      </div>
+    `;
+    container.appendChild(row);
+  });
+
+  container.querySelectorAll('[data-action="edit-access"]').forEach(btn => {
+    btn.addEventListener("click", () => openUserAccessModal(btn.dataset.id));
+  });
+  container.querySelectorAll('[data-action="remove-access"]').forEach(btn => {
+    btn.addEventListener("click", () => {
+      const id = btn.dataset.id;
+      APP_DATA.allowedUsers = APP_DATA.allowedUsers.filter(u => u.id !== id);
       saveData();
       renderAllowedUsers();
       showToast("User access hata diya gaya");
     });
-    container.appendChild(row);
   });
+}
+
+/* ---------------------------------------------------------
+   ADMIN: USER ACCESS MODAL (per-subject)
+--------------------------------------------------------- */
+let editingAccessUserId = null;
+
+function openUserAccessModal(userId) {
+  editingAccessUserId = userId;
+  const entry = getUserAccessEntry(userId);
+
+  setText("userAccessTargetLabel", "User ID: " + userId);
+
+  const fullEl = document.getElementById("accessFullBatch");
+  const engEl = document.getElementById("accessEnglish");
+  const reaEl = document.getElementById("accessReasoning");
+  const mathEl = document.getElementById("accessMaths");
+
+  const isFull = !entry || entry.subjects === "full";
+  const subs = (entry && Array.isArray(entry.subjects)) ? entry.subjects : [];
+
+  if (fullEl) fullEl.checked = isFull;
+  if (engEl) { engEl.checked = subs.includes("english"); engEl.disabled = isFull; }
+  if (reaEl) { reaEl.checked = subs.includes("reasoning"); reaEl.disabled = isFull; }
+  if (mathEl) { mathEl.checked = subs.includes("maths"); mathEl.disabled = isFull; }
+
+  const modal = document.getElementById("userAccessModal");
+  if (modal) modal.classList.add("show");
+}
+
+function closeUserAccessModal() {
+  editingAccessUserId = null;
+  const modal = document.getElementById("userAccessModal");
+  if (modal) modal.classList.remove("show");
+}
+
+function handleUserAccessSave() {
+  if (!editingAccessUserId) return;
+  let entry = getUserAccessEntry(editingAccessUserId);
+  if (!entry) {
+    entry = { id: editingAccessUserId, subjects: "full" };
+    APP_DATA.allowedUsers.push(entry);
+  }
+
+  const isFull = document.getElementById("accessFullBatch").checked;
+  if (isFull) {
+    entry.subjects = "full";
+  } else {
+    const subs = [];
+    if (document.getElementById("accessEnglish").checked) subs.push("english");
+    if (document.getElementById("accessReasoning").checked) subs.push("reasoning");
+    if (document.getElementById("accessMaths").checked) subs.push("maths");
+    entry.subjects = subs;
+  }
+
+  saveData();
+  closeUserAccessModal();
+  renderAllowedUsers();
+  showToast("✅ Access update ho gaya");
+}
+
+/* ---------------------------------------------------------
+   ADMIN: STATS TAB
+--------------------------------------------------------- */
+async function renderAdminStats() {
+  const listEl = document.getElementById("userStatsList");
+  if (!listEl) return;
+
+  if (!sbClient) {
+    listEl.innerHTML = `<div class="empty-state" style="padding:20px;">Cloud connect nahi hai, stats nahi mil paayenge</div>`;
+    return;
+  }
+
+  listEl.innerHTML = `<div class="empty-state" style="padding:20px;">Loading...</div>`;
+
+  try {
+    const { data: users, error: usersErr } = await withTimeout(
+      sbClient.from("app_users").select("*").order("last_seen_at", { ascending: false }),
+      6000
+    );
+    if (usersErr) throw usersErr;
+
+    const allUsers = users || [];
+    setText("statTotalUsers", allUsers.length);
+
+    const todayStart = new Date();
+    todayStart.setHours(0, 0, 0, 0);
+    const todayCount = allUsers.filter(u => new Date(u.last_seen_at) >= todayStart).length;
+    setText("statTodayUsers", todayCount);
+
+    const { data: sessions, error: sessErr } = await withTimeout(
+      sbClient.from("app_sessions").select("*"),
+      6000
+    );
+    if (sessErr) throw sessErr;
+
+    const allSessions = sessions || [];
+    const sevenDaysAgo = Date.now() - 7 * 24 * 60 * 60 * 1000;
+
+    listEl.innerHTML = "";
+    if (allUsers.length === 0) {
+      listEl.innerHTML = `<div class="empty-state" style="padding:20px;">Abhi koi user activity nahi hai</div>`;
+      return;
+    }
+
+    allUsers.forEach(u => {
+      const userSessions = allSessions.filter(s => s.user_id === u.user_id);
+      const overallSec = userSessions.reduce((sum, s) => sum + (s.seconds || 0), 0);
+      const last7Sec = userSessions
+        .filter(s => new Date(s.ended_at).getTime() >= sevenDaysAgo)
+        .reduce((sum, s) => sum + (s.seconds || 0), 0);
+
+      const card = document.createElement("div");
+      card.className = "user-stats-card";
+      card.innerHTML = `
+        <div class="user-stats-top">
+          <span class="user-stats-name">${escapeHtml(u.first_name || "Unknown")}${u.username ? " (@" + escapeHtml(u.username) + ")" : ""}</span>
+          <span class="user-stats-id">ID: ${escapeHtml(u.user_id)}</span>
+        </div>
+        <div class="user-stats-first">Pehli baar aaya: ${formatDateTime(u.first_seen_at)}</div>
+        <div class="user-stats-times">
+          <div class="user-stats-time-row"><span>SW Batch — Last 7 days</span><b>${formatDuration(last7Sec)}</b></div>
+          <div class="user-stats-time-row"><span>SW Batch — Overall</span><b>${formatDuration(overallSec)}</b></div>
+        </div>
+      `;
+      listEl.appendChild(card);
+    });
+  } catch (e) {
+    console.warn("renderAdminStats failed", e);
+    listEl.innerHTML = `<div class="empty-state" style="padding:20px;">Stats load nahi ho paaye</div>`;
+  }
+}
+
+function formatDuration(totalSeconds) {
+  if (!totalSeconds || totalSeconds < 60) return (totalSeconds || 0) + "s";
+  const hrs = Math.floor(totalSeconds / 3600);
+  const mins = Math.floor((totalSeconds % 3600) / 60);
+  if (hrs > 0) return `${hrs}h ${mins}m`;
+  return `${mins}m`;
+}
+
+function formatDateTime(iso) {
+  try {
+    const d = new Date(iso);
+    return d.toLocaleDateString("en-IN", { day: "numeric", month: "short", year: "numeric" }) +
+      ", " + d.toLocaleTimeString("en-IN", { hour: "2-digit", minute: "2-digit" });
+  } catch (e) {
+    return "—";
+  }
 }
 
 /* ---------------------------------------------------------
