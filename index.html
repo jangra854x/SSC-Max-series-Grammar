@@ -94,7 +94,7 @@
       <div class="locked-card-row">
         <div class="locked-check"><i class="fa-solid fa-check"></i></div>
         <div>
-          <div class="locked-row-title">Topic-wise HD Video Lectures</div>
+          <div class="locked-row-title">Topic-wise HD Video Lectures + Class PDF Sheets</div>
           <div class="locked-row-sub">Stream anytime, inside the app</div>
         </div>
       </div>
@@ -107,18 +107,29 @@
       </div>
     </div>
 
-    <div class="price-box">
-      <div class="price-left">
-        <span class="price-old" id="priceOld">₹1999</span>
-        <span class="price-new"><span id="priceNew">₹499</span></span>
+    <div class="price-plan-list" id="pricePlanList">
+      <div class="price-plan-row">
+        <span class="price-plan-name">English</span>
+        <span class="price-plan-amt" id="priceEnglish">₹299</span>
       </div>
-      <span class="price-off">75% OFF</span>
+      <div class="price-plan-row">
+        <span class="price-plan-name">Reasoning</span>
+        <span class="price-plan-amt" id="priceReasoning">₹199</span>
+      </div>
+      <div class="price-plan-row">
+        <span class="price-plan-name">Maths</span>
+        <span class="price-plan-amt" id="priceMaths">₹299</span>
+      </div>
+      <div class="price-plan-row price-plan-full">
+        <span class="price-plan-name"><i class="fa-solid fa-star"></i> Full Batch (All 3 Subjects)</span>
+        <span class="price-plan-amt" id="priceFullBatch">₹699</span>
+      </div>
     </div>
 
     <button id="buyBtn" class="btn-primary btn-buy">
-      <i class="fa-solid fa-bolt"></i> <span id="buyBtnText">Buy Now — ₹499</span>
+      <i class="fa-solid fa-bolt"></i> <span id="buyBtnText">Buy Now — Contact for Access</span>
     </button>
-    <p class="locked-note"><i class="fa-solid fa-shield-halved"></i> Payment ke baad access turant activate ho jayega</p>
+    <p class="locked-note"><i class="fa-solid fa-shield-halved"></i> Contact karne ke baad payment details milengi aur access activate hoga</p>
 
     <div class="locked-myid">Your Telegram ID: <b id="lockedUserId">—</b></div>
   </div>
@@ -170,6 +181,10 @@
         <div class="perk-icon perk-c"><i class="fa-solid fa-mobile-screen"></i></div>
         <div class="perk-txt">Watch Anywhere</div>
       </div>
+      <div class="perk-card">
+        <div class="perk-icon perk-d"><i class="fa-solid fa-file-pdf"></i></div>
+        <div class="perk-txt">Class Sheet (PDF)</div>
+      </div>
     </div>
 
     <div class="bottom-space"></div>
@@ -211,6 +226,12 @@
   <div class="player-topbar">
     <button class="back-btn" data-back="videoListScreen"><i class="fa-solid fa-arrow-left"></i></button>
     <div class="player-title" id="playerVideoTitle">Video Title</div>
+    <div class="player-menu-wrap">
+      <button id="playerMenuBtn" class="player-menu-btn"><i class="fa-solid fa-ellipsis-vertical"></i></button>
+      <div id="playerMenuDropdown" class="player-menu-dropdown">
+        <button id="rotateScreenBtn" class="player-menu-item"><i class="fa-solid fa-mobile-screen-button"></i> Rotate Screen</button>
+      </div>
+    </div>
   </div>
 
   <div class="video-wrap">
@@ -230,12 +251,31 @@
       <span class="player-badge"><i class="fa-solid fa-play"></i> Now Playing</span>
       <h3 id="playerVideoTitle2">Video Title</h3>
       <p id="playerVideoDesc">Video description goes here.</p>
+      <button id="openPdfBtn" class="btn-pdf-open hidden"><i class="fa-solid fa-file-pdf"></i> Class PDF Sheet Dekhein</button>
     </div>
 
     <div class="section-label">Up Next in this Topic</div>
     <div id="upNextList" class="video-list"></div>
 
     <div class="bottom-space"></div>
+  </div>
+</div>
+
+<!-- ===================== PDF VIEWER SCREEN ===================== -->
+<div id="pdfScreen" class="screen">
+  <div class="player-topbar">
+    <button class="back-btn" data-back="playerScreen"><i class="fa-solid fa-arrow-left"></i></button>
+    <div class="player-title" id="pdfScreenTitle">Class PDF</div>
+    <div class="player-menu-wrap">
+      <button id="pdfMenuBtn" class="player-menu-btn"><i class="fa-solid fa-ellipsis-vertical"></i></button>
+      <div id="pdfMenuDropdown" class="player-menu-dropdown">
+        <button id="pdfRotateBtn" class="player-menu-item"><i class="fa-solid fa-mobile-screen-button"></i> Rotate Screen</button>
+        <button id="pdfOpenBrowserBtn" class="player-menu-item"><i class="fa-solid fa-up-right-from-square"></i> Browser me kholein</button>
+      </div>
+    </div>
+  </div>
+  <div class="pdf-frame-wrap">
+    <iframe id="pdfFrame" class="pdf-frame" referrerpolicy="no-referrer"></iframe>
   </div>
 </div>
 
@@ -280,6 +320,9 @@
       <label class="admin-label">Video URL (mp4 / m3u8)</label>
       <input id="adminVideoUrl" class="admin-input" type="text" placeholder="https://...">
 
+      <label class="admin-label">Class PDF URL (optional)</label>
+      <input id="adminVideoPdfUrl" class="admin-input" type="text" placeholder="https://... (PDF link, khaali chhod sakte hain)">
+
       <button id="adminAddVideoBtn" class="btn-primary"><i class="fa-solid fa-cloud-arrow-up"></i> Add Video</button>
     </div>
 
@@ -311,14 +354,20 @@
     <div class="admin-block">
       <div class="admin-block-title"><i class="fa-solid fa-tag"></i> Batch Settings</div>
 
-      <label class="admin-label">Batch Price (₹)</label>
-      <input id="adminPrice" class="admin-input" type="number" placeholder="499">
+      <label class="admin-label">English Price (₹)</label>
+      <input id="adminPriceEnglish" class="admin-input" type="number" placeholder="299">
 
-      <label class="admin-label">Old / Strike Price (₹)</label>
-      <input id="adminOldPrice" class="admin-input" type="number" placeholder="1999">
+      <label class="admin-label">Reasoning Price (₹)</label>
+      <input id="adminPriceReasoning" class="admin-input" type="number" placeholder="199">
 
-      <label class="admin-label">Admin Contact Username (for buy redirect)</label>
-      <input id="adminContact" class="admin-input" type="text" placeholder="e.g. yourusername (without @)">
+      <label class="admin-label">Maths Price (₹)</label>
+      <input id="adminPriceMaths" class="admin-input" type="number" placeholder="299">
+
+      <label class="admin-label">Full Batch Price (₹)</label>
+      <input id="adminPriceFullBatch" class="admin-input" type="number" placeholder="699">
+
+      <label class="admin-label">Contact Username (for Buy Now redirect)</label>
+      <input id="adminContact" class="admin-input" type="text" placeholder="e.g. pratibha0x (without @)">
 
       <button id="adminSaveSettingsBtn" class="btn-primary"><i class="fa-solid fa-floppy-disk"></i> Save Settings</button>
     </div>

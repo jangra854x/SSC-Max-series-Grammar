@@ -21,7 +21,10 @@ const HARD_LOAD_TIMEOUT_MS = 4000; // loader will never wait longer than this
 --------------------------------------------------------- */
 function getDefaultData() {
   return {
-    settings: { price: 499, oldPrice: 1999, contactUsername: "" },
+    settings: {
+      price: 499, oldPrice: 1999, contactUsername: "pratibha0x",
+      priceEnglish: 299, priceReasoning: 199, priceMaths: 299, priceFullBatch: 699
+    },
     allowedUsers: [],
     subjects: [
       { id: "english", name: "English", icon: "eng", emoji: "fa-book-open", topics: [] },
@@ -299,6 +302,7 @@ function normalizeData(data) {
     if (!Array.isArray(s.topics)) s.topics = [];
     s.topics.forEach(t => {
       if (!Array.isArray(t.videos)) t.videos = [];
+      t.videos.forEach(v => { if (typeof v.pdfUrl !== "string") v.pdfUrl = ""; });
     });
   });
 
@@ -438,6 +442,55 @@ function bindEvents() {
       window.open(currentVideoUrl, "_blank");
     }
   });
+
+  // Player screen 3-dot menu
+  safeBind("playerMenuBtn", "click", (e) => {
+    e.stopPropagation();
+    const dd = document.getElementById("playerMenuDropdown");
+    if (dd) dd.classList.toggle("show");
+  });
+  safeBind("rotateScreenBtn", "click", () => {
+    toggleScreenRotation();
+    closePlayerMenu();
+  });
+
+  // PDF screen 3-dot menu
+  safeBind("pdfMenuBtn", "click", (e) => {
+    e.stopPropagation();
+    const dd = document.getElementById("pdfMenuDropdown");
+    if (dd) dd.classList.toggle("show");
+  });
+  safeBind("pdfRotateBtn", "click", () => {
+    toggleScreenRotation();
+    closePdfMenu();
+  });
+  safeBind("pdfOpenBrowserBtn", "click", () => {
+    if (!currentPdfUrl) return;
+    try {
+      if (window.Telegram?.WebApp?.openLink) {
+        window.Telegram.WebApp.openLink(currentPdfUrl);
+      } else {
+        window.open(currentPdfUrl, "_blank");
+      }
+    } catch (e) {
+      window.open(currentPdfUrl, "_blank");
+    }
+    closePdfMenu();
+  });
+
+  document.addEventListener("click", () => {
+    closePlayerMenu();
+    closePdfMenu();
+  });
+}
+
+function closePlayerMenu() {
+  const dd = document.getElementById("playerMenuDropdown");
+  if (dd) dd.classList.remove("show");
+}
+function closePdfMenu() {
+  const dd = document.getElementById("pdfMenuDropdown");
+  if (dd) dd.classList.remove("show");
 }
 
 let currentVideoUrl = null;
@@ -462,23 +515,16 @@ function safeBind(id, event, handler) {
    BUY BUTTON
 --------------------------------------------------------- */
 function handleBuyClick() {
-  const username = APP_DATA.settings.contactUsername;
-  const price = APP_DATA.settings.price || 499;
-
-  if (username) {
-    const msg = encodeURIComponent(`Hi! Main Selection Batch 11.0 (₹${price}) purchase karna chahta hoon. Please payment details bhejein. Mera ID: ${CURRENT_USER_ID}`);
-    const url = `https://t.me/${username}?text=${msg}`;
-    try {
-      if (window.Telegram?.WebApp?.openTelegramLink) {
-        window.Telegram.WebApp.openTelegramLink(url);
-      } else {
-        window.open(url, "_blank");
-      }
-    } catch (e) {
+  const username = (APP_DATA.settings.contactUsername || "pratibha0x").replace("@", "");
+  const url = `https://t.me/${username}`;
+  try {
+    if (window.Telegram?.WebApp?.openTelegramLink) {
+      window.Telegram.WebApp.openTelegramLink(url);
+    } else {
       window.open(url, "_blank");
     }
-  } else {
-    showToast("Payment link jaldi add hoga, thodi der baad try karein.");
+  } catch (e) {
+    window.open(url, "_blank");
   }
 }
 
@@ -486,12 +532,17 @@ function handleBuyClick() {
    PRICING / STATS UI
 --------------------------------------------------------- */
 function updatePricingUI() {
-  const price = APP_DATA.settings.price || 499;
-  const oldPrice = APP_DATA.settings.oldPrice || 1999;
+  const s = APP_DATA.settings;
+  const priceEnglish = s.priceEnglish || 299;
+  const priceReasoning = s.priceReasoning || 199;
+  const priceMaths = s.priceMaths || 299;
+  const priceFullBatch = s.priceFullBatch || 699;
 
-  setText("priceNew", "₹" + price);
-  setText("priceOld", "₹" + oldPrice);
-  setText("buyBtnText", "Buy Now — ₹" + price);
+  setText("priceEnglish", "₹" + priceEnglish);
+  setText("priceReasoning", "₹" + priceReasoning);
+  setText("priceMaths", "₹" + priceMaths);
+  setText("priceFullBatch", "₹" + priceFullBatch);
+  setText("buyBtnText", "Buy Now — Contact for Access");
 }
 
 function updateLockedStats() {
@@ -623,11 +674,47 @@ function buildVideoCard(video, topic) {
     <div class="video-info">
       <div class="video-title">${escapeHtml(video.title)}</div>
       <div class="video-desc">${escapeHtml(video.desc || "")}</div>
+      ${video.pdfUrl ? `<div class="video-pdf-tag"><i class="fa-solid fa-file-pdf"></i> PDF available</div>` : ``}
     </div>
     <div class="video-play-badge"><i class="fa-solid fa-chevron-right"></i></div>
   `;
   card.addEventListener("click", () => playVideo(video, topic));
   return card;
+}
+
+/* ---------------------------------------------------------
+   PDF VIEWER
+--------------------------------------------------------- */
+let currentPdfUrl = null;
+
+function openPdfViewer(video) {
+  if (!video || !video.pdfUrl) return;
+  currentPdfUrl = video.pdfUrl;
+  setText("pdfScreenTitle", video.title + " — Class PDF");
+
+  const frame = document.getElementById("pdfFrame");
+  if (frame) {
+    // Google Docs viewer renders the PDF inline without allowing a native
+    // download button, keeping it inside the mini app.
+    frame.src = "https://docs.google.com/gview?embedded=1&url=" + encodeURIComponent(video.pdfUrl);
+  }
+  showScreen("pdfScreen");
+}
+
+function toggleScreenRotation() {
+  try {
+    const el = document.documentElement;
+    if (screen.orientation && screen.orientation.lock) {
+      const isPortrait = !screen.orientation.type || screen.orientation.type.startsWith("portrait");
+      screen.orientation.lock(isPortrait ? "landscape" : "portrait").catch(() => {
+        showToast("⚠️ Rotation ye device/browser support nahi kar raha, phone ko manually ghumayein");
+      });
+    } else {
+      showToast("⚠️ Rotation ye device/browser support nahi kar raha, phone ko manually ghumayein");
+    }
+  } catch (e) {
+    showToast("⚠️ Rotation ye device/browser support nahi kar raha, phone ko manually ghumayein");
+  }
 }
 
 /* ---------------------------------------------------------
@@ -640,6 +727,18 @@ function playVideo(video, topic) {
 
   currentVideoUrl = video.url;
   hideVideoFallback();
+  closePlayerMenu();
+
+  const pdfBtn = document.getElementById("openPdfBtn");
+  if (pdfBtn) {
+    if (video.pdfUrl) {
+      pdfBtn.classList.remove("hidden");
+      pdfBtn.onclick = () => openPdfViewer(video);
+    } else {
+      pdfBtn.classList.add("hidden");
+      pdfBtn.onclick = null;
+    }
+  }
 
   const player = document.getElementById("videoPlayer");
   if (player) {
@@ -674,12 +773,16 @@ function renderAdminPanel() {
   renderAdminStructure();
   renderAllowedUsers();
 
-  const priceEl = document.getElementById("adminPrice");
-  const oldPriceEl = document.getElementById("adminOldPrice");
+  const priceEnglishEl = document.getElementById("adminPriceEnglish");
+  const priceReasoningEl = document.getElementById("adminPriceReasoning");
+  const priceMathsEl = document.getElementById("adminPriceMaths");
+  const priceFullBatchEl = document.getElementById("adminPriceFullBatch");
   const contactEl = document.getElementById("adminContact");
-  if (priceEl) priceEl.value = APP_DATA.settings.price || 499;
-  if (oldPriceEl) oldPriceEl.value = APP_DATA.settings.oldPrice || 1999;
-  if (contactEl) contactEl.value = APP_DATA.settings.contactUsername || "";
+  if (priceEnglishEl) priceEnglishEl.value = APP_DATA.settings.priceEnglish || 299;
+  if (priceReasoningEl) priceReasoningEl.value = APP_DATA.settings.priceReasoning || 199;
+  if (priceMathsEl) priceMathsEl.value = APP_DATA.settings.priceMaths || 299;
+  if (priceFullBatchEl) priceFullBatchEl.value = APP_DATA.settings.priceFullBatch || 699;
+  if (contactEl) contactEl.value = APP_DATA.settings.contactUsername || "pratibha0x";
 
   setCloudStatus(cloudConnected);
 }
@@ -742,12 +845,14 @@ async function handleAddVideo() {
   const titleEl = document.getElementById("adminVideoTitle");
   const descEl = document.getElementById("adminVideoDesc");
   const urlEl = document.getElementById("adminVideoUrl");
+  const pdfUrlEl = document.getElementById("adminVideoPdfUrl");
 
   const subjectId = subjectSelect.value;
   const topicId = topicSelect.value;
   const title = titleEl.value.trim();
   const desc = descEl.value.trim();
   const url = urlEl.value.trim();
+  const pdfUrl = pdfUrlEl ? pdfUrlEl.value.trim() : "";
 
   if (!topicId) { showToast("⚠️ Pehle topic select ya create karein"); return; }
   if (!title || !url) { showToast("⚠️ Video title aur URL zaroori hai"); return; }
@@ -756,13 +861,14 @@ async function handleAddVideo() {
   const topic = subject.topics.find(t => t.id === topicId);
   if (!topic) return;
 
-  topic.videos.push({ id: "video_" + Date.now(), title, desc, url });
+  topic.videos.push({ id: "video_" + Date.now(), title, desc, url, pdfUrl: pdfUrl || "" });
 
   await saveData();
 
   titleEl.value = "";
   descEl.value = "";
   urlEl.value = "";
+  if (pdfUrlEl) pdfUrlEl.value = "";
 
   renderAdminStructure();
   updateLockedStats();
@@ -873,13 +979,17 @@ function renderAllowedUsers() {
    ADMIN: SETTINGS
 --------------------------------------------------------- */
 function handleSaveSettings() {
-  const price = parseInt(document.getElementById("adminPrice").value) || 499;
-  const oldPrice = parseInt(document.getElementById("adminOldPrice").value) || 1999;
+  const priceEnglish = parseInt(document.getElementById("adminPriceEnglish").value) || 299;
+  const priceReasoning = parseInt(document.getElementById("adminPriceReasoning").value) || 199;
+  const priceMaths = parseInt(document.getElementById("adminPriceMaths").value) || 299;
+  const priceFullBatch = parseInt(document.getElementById("adminPriceFullBatch").value) || 699;
   const contact = document.getElementById("adminContact").value.trim().replace("@", "");
 
-  APP_DATA.settings.price = price;
-  APP_DATA.settings.oldPrice = oldPrice;
-  APP_DATA.settings.contactUsername = contact;
+  APP_DATA.settings.priceEnglish = priceEnglish;
+  APP_DATA.settings.priceReasoning = priceReasoning;
+  APP_DATA.settings.priceMaths = priceMaths;
+  APP_DATA.settings.priceFullBatch = priceFullBatch;
+  APP_DATA.settings.contactUsername = contact || "pratibha0x";
 
   saveData();
   updatePricingUI();
