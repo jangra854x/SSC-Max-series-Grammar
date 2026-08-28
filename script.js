@@ -22,11 +22,10 @@ const HARD_LOAD_TIMEOUT_MS = 4000; // loader will never wait longer than this
 function getDefaultData() {
   return {
     settings: {
-      contactUsername: "pratibha0x",
-      priceEnglish: 299, priceReasoning: 199, priceMaths: 299, priceFullBatch: 699
+      contactUsername: "pratibha0x"
     },
-    // allowedUsers: array of { id, subjects: ["english","reasoning","maths"] | "full" }
-    allowedUsers: [],
+    // leads: array of { id, name, age, mobile, examTarget, submittedAt }
+    leads: [],
     subjects: [
       { id: "english", name: "English", icon: "eng", emoji: "fa-book-open", topics: [] },
       { id: "reasoning", name: "Reasoning", icon: "reason", emoji: "fa-brain", topics: [] },
@@ -59,7 +58,7 @@ document.addEventListener("DOMContentLoaded", () => {
 });
 
 async function boot() {
-  setLoaderText("SSC");
+  setLoaderText("Connecting...");
   setupTelegram();
 
   // Hard safety net: no matter what happens, after HARD_LOAD_TIMEOUT_MS
@@ -72,7 +71,7 @@ async function boot() {
   }, HARD_LOAD_TIMEOUT_MS);
 
   try {
-    setLoaderText("SSC");
+    setLoaderText("Loading batch data...");
     await loadData();
   } catch (e) {
     console.warn("loadData threw, using default data", e);
@@ -237,7 +236,7 @@ async function loadData() {
     return;
   }
 
-  setLoaderText("SSC");
+  setLoaderText("Syncing with cloud...");
 
   try {
     // supabase-js is loaded via <script> tag in index.html (blocking, before script.js)
@@ -297,17 +296,29 @@ function normalizeData(data) {
   if (!data || typeof data !== "object") return base;
 
   data.settings = Object.assign({}, base.settings, data.settings || {});
-  data.allowedUsers = Array.isArray(data.allowedUsers) ? data.allowedUsers : [];
-  // Migrate old plain-string allowedUsers ("123456") into the new object
-  // shape { id, subjects: "full" } so existing allowed users keep full access.
-  data.allowedUsers = data.allowedUsers.map(u => {
-    if (typeof u === "string") return { id: u, subjects: "full" };
-    if (u && typeof u === "object" && u.id) {
-      if (!u.subjects) u.subjects = "full";
-      return u;
-    }
+
+  data.leads = Array.isArray(data.leads) ? data.leads : [];
+  data.leads = data.leads.map(l => {
+    if (l && typeof l === "object" && l.id) return l;
     return null;
   }).filter(Boolean);
+
+  // Backward-compat: old paid-access users (allowedUsers) automatically
+  // get their lead-form requirement waived since the app is now free —
+  // we migrate them into "leads" with placeholder info so they don't
+  // hit the form again, but flag them as legacy so admin can see clearly.
+  if (Array.isArray(data.allowedUsers) && data.allowedUsers.length) {
+    data.allowedUsers.forEach(u => {
+      const id = typeof u === "string" ? u : (u && u.id);
+      if (id && !data.leads.find(l => l.id === String(id))) {
+        data.leads.push({
+          id: String(id), name: "Legacy User", age: "", mobile: "",
+          examTarget: "", submittedAt: Date.now(), legacy: true
+        });
+      }
+    });
+    delete data.allowedUsers;
+  }
 
   data.subjects = Array.isArray(data.subjects) && data.subjects.length ? data.subjects : base.subjects;
 
@@ -363,26 +374,25 @@ function setCloudStatus(connected) {
 }
 
 /* ---------------------------------------------------------
-   ACCESS CONTROL
+   ACCESS CONTROL — App is FREE for everyone.
+   The only gate is: has the user submitted the one-time lead
+   form (name/age/mobile/exam target)? Once submitted, all
+   subjects are unlocked. Only "TB Mocks" stays locked (static).
 --------------------------------------------------------- */
-function getUserAccessEntry(userId) {
-  if (!userId || !APP_DATA || !Array.isArray(APP_DATA.allowedUsers)) return null;
-  return APP_DATA.allowedUsers.find(u => u.id === String(userId)) || null;
+function getUserLeadEntry(userId) {
+  if (!userId || !APP_DATA || !Array.isArray(APP_DATA.leads)) return null;
+  return APP_DATA.leads.find(u => u.id === String(userId)) || null;
 }
 
-// Any access at all (used to decide locked-screen vs app)
+// Has this user completed the lead form? (used to decide locked-screen vs app)
 function isUserAllowed(userId) {
-  return !!getUserAccessEntry(userId);
+  if (IS_ADMIN) return true;
+  return !!getUserLeadEntry(userId);
 }
 
-// Full-batch access, or specific subject access, or admin
+// App is free — every submitted user gets every subject.
 function hasSubjectAccess(userId, subjectId) {
-  if (IS_ADMIN) return true;
-  const entry = getUserAccessEntry(userId);
-  if (!entry) return false;
-  if (entry.subjects === "full") return true;
-  if (Array.isArray(entry.subjects)) return entry.subjects.includes(subjectId);
-  return false;
+  return true;
 }
 
 /* ---------------------------------------------------------
@@ -530,9 +540,6 @@ document.addEventListener("visibilitychange", () => {
    EVENT BINDINGS
 --------------------------------------------------------- */
 function bindEvents() {
-  const buyBtn = document.getElementById("buyBtn");
-  if (buyBtn) buyBtn.addEventListener("click", handleBuyClick);
-
   const retryBtn = document.getElementById("retryBtn");
   if (retryBtn) retryBtn.addEventListener("click", () => window.location.reload());
 
@@ -547,20 +554,19 @@ function bindEvents() {
     showToast("🔒 TB Mocks jaldi aa raha hai — abhi available nahi hai.");
   });
 
+  // Lead form (one-time, compulsory)
+  safeBind("leadFormSubmitBtn", "click", handleLeadFormSubmit);
+  safeBind("leadMobile", "input", (e) => {
+    e.target.value = e.target.value.replace(/[^0-9]/g, "").slice(0, 10);
+  });
+
   // Edit video modal
   safeBind("editVideoCloseBtn", "click", closeEditVideoModal);
   safeBind("editVideoSaveBtn", "click", handleEditVideoSave);
 
-  // User access modal
-  safeBind("userAccessCloseBtn", "click", closeUserAccessModal);
-  safeBind("userAccessSaveBtn", "click", handleUserAccessSave);
-  safeBind("accessFullBatch", "change", (e) => {
-    const subChecks = ["accessEnglish", "accessReasoning", "accessMaths"];
-    subChecks.forEach(id => {
-      const el = document.getElementById(id);
-      if (el) { el.checked = false; el.disabled = e.target.checked; }
-    });
-  });
+  // Admin: leads / stats search
+  safeBind("adminLeadSearch", "input", renderLeadsList);
+  safeBind("adminStatsSearch", "input", () => renderAdminStats());
 
   document.querySelectorAll(".back-btn").forEach(btn => {
     btn.addEventListener("click", () => {
@@ -580,13 +586,13 @@ function bindEvents() {
       const content = document.getElementById(tab.dataset.tab);
       if (content) content.classList.add("active");
       if (tab.dataset.tab === "tabStats") renderAdminStats();
+      if (tab.dataset.tab === "tabUsers") renderLeadsList();
     });
   });
 
   safeBind("adminSubjectSelect", "change", populateAdminTopics);
   safeBind("adminAddTopicBtn", "click", handleAddTopic);
   safeBind("adminAddVideoBtn", "click", handleAddVideo);
-  safeBind("adminAddUserBtn", "click", handleAddUser);
   safeBind("adminSaveSettingsBtn", "click", handleSaveSettings);
 
   const player = document.getElementById("videoPlayer");
@@ -683,37 +689,85 @@ function safeBind(id, event, handler) {
 }
 
 /* ---------------------------------------------------------
-   BUY BUTTON
+   LEAD FORM (one-time, compulsory — replaces old paywall)
 --------------------------------------------------------- */
-function handleBuyClick() {
-  const username = (APP_DATA.settings.contactUsername || "pratibha0x").replace("@", "");
-  const url = `https://t.me/${username}`;
-  try {
-    if (window.Telegram?.WebApp?.openTelegramLink) {
-      window.Telegram.WebApp.openTelegramLink(url);
-    } else {
-      window.open(url, "_blank");
-    }
-  } catch (e) {
-    window.open(url, "_blank");
-  }
+function validateIndianMobile(num) {
+  if (!/^[0-9]{10}$/.test(num)) return false;
+  if (!/^[6-9]/.test(num)) return false; // valid Indian mobile prefixes
+  if (/^(\d)\1{9}$/.test(num)) return false; // e.g. 9999999999
+  const sequential = "0123456789";
+  const seqRev = "9876543210";
+  if (sequential.includes(num) || seqRev.includes(num)) return false;
+  return true;
 }
 
-/* ---------------------------------------------------------
-   PRICING / STATS UI
---------------------------------------------------------- */
-function updatePricingUI() {
-  const s = APP_DATA.settings;
-  const priceEnglish = s.priceEnglish || 299;
-  const priceReasoning = s.priceReasoning || 199;
-  const priceMaths = s.priceMaths || 299;
-  const priceFullBatch = s.priceFullBatch || 699;
+async function handleLeadFormSubmit() {
+  const errEl = document.getElementById("leadFormError");
+  const showErr = (msg) => {
+    if (errEl) { errEl.textContent = msg; errEl.classList.remove("hidden"); }
+  };
+  if (errEl) errEl.classList.add("hidden");
 
-  setText("priceEnglish", "₹" + priceEnglish);
-  setText("priceReasoning", "₹" + priceReasoning);
-  setText("priceMaths", "₹" + priceMaths);
-  setText("priceFullBatch", "₹" + priceFullBatch);
-  setText("buyBtnText", "Buy Now — Contact for Access");
+  const name = document.getElementById("leadName").value.trim();
+  const age = document.getElementById("leadAge").value.trim();
+  const mobile = document.getElementById("leadMobile").value.trim();
+  const examTarget = document.getElementById("leadExamTarget").value;
+
+  if (!name || name.length < 2) { showErr("⚠️ Sahi naam likhein"); return; }
+  const ageNum = parseInt(age);
+  if (!age || isNaN(ageNum) || ageNum < 10 || ageNum > 60) { showErr("⚠️ Sahi age likhein"); return; }
+  if (!validateIndianMobile(mobile)) { showErr("⚠️ Sahi 10-digit mobile number likhein (6-9 se shuru, koi fake number nahi)"); return; }
+  if (!examTarget) { showErr("⚠️ Exam target select karein"); return; }
+
+  const btn = document.getElementById("leadFormSubmitBtn");
+  if (btn) { btn.disabled = true; btn.style.opacity = "0.6"; }
+
+  const leadEntry = {
+    id: String(CURRENT_USER_ID), name, age: ageNum, mobile, examTarget,
+    submittedAt: Date.now()
+  };
+
+  if (!Array.isArray(APP_DATA.leads)) APP_DATA.leads = [];
+  APP_DATA.leads = APP_DATA.leads.filter(l => l.id !== leadEntry.id);
+  APP_DATA.leads.push(leadEntry);
+
+  try {
+    await saveData();
+  } catch (e) {
+    console.warn("lead save failed", e);
+  }
+
+  // Also save into the dedicated "app_leads" table (readable columns:
+  // name, age, mobile, exam_target) so it's easy to browse in Supabase
+  // Table Editor, separate from the big JSON blob.
+  if (sbClient) {
+    try {
+      await withTimeout(
+        sbClient.from("app_leads").upsert({
+          user_id: leadEntry.id,
+          name: leadEntry.name,
+          age: leadEntry.age,
+          mobile: leadEntry.mobile,
+          exam_target: leadEntry.examTarget,
+          is_legacy: false,
+          submitted_at: new Date(leadEntry.submittedAt).toISOString()
+        }, { onConflict: "user_id" }),
+        4000
+      );
+    } catch (e) {
+      console.warn("app_leads table save failed", e);
+    }
+  }
+
+  if (btn) { btn.disabled = false; btn.style.opacity = "1"; }
+
+  showScreen("homeScreen");
+  renderHomeCards();
+}
+
+function updatePricingUI() {
+  // App is free — nothing to render. Kept as a no-op so any older
+  // call sites don't break.
 }
 
 function updateLockedStats() {
@@ -735,21 +789,7 @@ function setText(id, val) {
    RENDER: HOME LANDING CARDS
 --------------------------------------------------------- */
 function renderHomeCards() {
-  const swFill = document.getElementById("homeSwProgressFill");
-  const pct = computeSwBatchProgressPct();
-  if (swFill) swFill.style.width = pct + "%";
-  setText("homeSwProgressPct", pct + "%");
-}
-
-function computeSwBatchProgressPct() {
-  // "Explored" = watched-video ratio would need per-user tracking of
-  // individual videos; as a stable proxy we show content-completeness
-  // (how much of the total catalog exists vs a rolling target), capped
-  // sensibly so it always looks meaningful for admins/users alike.
-  let videoCount = 0;
-  APP_DATA.subjects.forEach(s => s.topics.forEach(t => videoCount += t.videos.length));
-  if (videoCount === 0) return 0;
-  return Math.min(100, Math.round((videoCount / 250) * 100));
+  renderHomeStatsRings();
 }
 
 function openBatchScreen() {
@@ -758,7 +798,44 @@ function openBatchScreen() {
 }
 
 /* ---------------------------------------------------------
-   RENDER: SUBJECTS (inside SW Batch)
+   RENDER: HOME STATISTICS (big circular % rings)
+--------------------------------------------------------- */
+function renderHomeStatsRings() {
+  const row = document.getElementById("homeStatsRingRow");
+  if (!row) return;
+  row.innerHTML = "";
+
+  APP_DATA.subjects.forEach(subject => {
+    const videoCount = subject.topics.reduce((sum, t) => sum + t.videos.length, 0);
+    // Content-completeness proxy: how full this subject's catalog is
+    // versus a realistic target size, so the ring always looks meaningful.
+    const pct = videoCount === 0 ? 0 : Math.min(100, Math.round((videoCount / 80) * 100));
+
+    const card = document.createElement("div");
+    card.className = "stats-ring-card";
+    card.innerHTML = buildStatsRing(pct, subject.name);
+    row.appendChild(card);
+  });
+}
+
+function buildStatsRing(pct, label) {
+  const r = 34, c = 2 * Math.PI * r;
+  const offset = c - (pct / 100) * c;
+  return `
+    <div class="stats-ring-wrap">
+      <svg viewBox="0 0 76 76">
+        <circle class="stats-ring-bg" cx="38" cy="38" r="${r}"></circle>
+        <circle class="stats-ring-fill" cx="38" cy="38" r="${r}"
+          stroke-dasharray="${c}" stroke-dashoffset="${offset}"></circle>
+      </svg>
+      <div class="stats-ring-pct">${pct}%</div>
+    </div>
+    <div class="stats-ring-label">${escapeHtml(label)}</div>
+  `;
+}
+
+/* ---------------------------------------------------------
+   RENDER: SUBJECTS (inside SW Batch) — kept simple, as before
 --------------------------------------------------------- */
 function renderSubjects() {
   const list = document.getElementById("subjectList");
@@ -768,49 +845,20 @@ function renderSubjects() {
   APP_DATA.subjects.forEach(subject => {
     const topicCount = subject.topics.length;
     const videoCount = subject.topics.reduce((sum, t) => sum + t.videos.length, 0);
-    const unlocked = hasSubjectAccess(CURRENT_USER_ID, subject.id);
-    const pct = videoCount === 0 ? 0 : Math.min(100, Math.round((videoCount / 80) * 100));
 
     const card = document.createElement("div");
-    card.className = "subject-card" + (unlocked ? "" : " locked");
+    card.className = "subject-card";
     card.innerHTML = `
-      ${buildProgressRing(pct, subject.icon, subject.emoji)}
+      <div class="subject-icon ${subject.icon}"><i class="fa-solid ${subject.emoji || 'fa-book'}"></i></div>
       <div class="subject-info">
         <div class="subject-name">${escapeHtml(subject.name)}</div>
         <div class="subject-meta">${topicCount} topics • ${videoCount} videos</div>
       </div>
-      ${unlocked
-        ? `<div class="subject-arrow"><i class="fa-solid fa-chevron-right"></i></div>`
-        : `<div class="subject-lock-badge"><i class="fa-solid fa-lock"></i></div>`}
+      <div class="subject-arrow"><i class="fa-solid fa-chevron-right"></i></div>
     `;
-    card.addEventListener("click", () => {
-      if (unlocked) {
-        openSubject(subject.id);
-      } else {
-        showToast("🔒 Ye subject locked hai. Access ke liye Buy Now se contact karein.");
-      }
-    });
+    card.addEventListener("click", () => openSubject(subject.id));
     list.appendChild(card);
   });
-}
-
-function buildProgressRing(pct, iconClass, emoji) {
-  const r = 22, c = 2 * Math.PI * r;
-  const offset = c - (pct / 100) * c;
-  const colorMap = { eng: "#ff5c8a", reason: "#5c8aff", maths: "#2fe08a" };
-  const color = colorMap[iconClass] || "#7c5cff";
-  return `
-    <div class="subject-ring-wrap">
-      <svg viewBox="0 0 52 52">
-        <circle class="subject-ring-bg" cx="26" cy="26" r="${r}"></circle>
-        <circle class="subject-ring-fill" cx="26" cy="26" r="${r}" stroke="${color}"
-          stroke-dasharray="${c}" stroke-dashoffset="${offset}"></circle>
-      </svg>
-      <div class="subject-ring-icon" style="background:${color};">
-        <i class="fa-solid ${emoji || 'fa-book'}"></i>
-      </div>
-    </div>
-  `;
 }
 
 function openSubject(subjectId) {
@@ -877,13 +925,16 @@ function renderVideos(topic) {
     return;
   }
 
-  // Newest-added video shows first (matches admin "order" field, highest first)
-  const sorted = getSortedVideos(topic);
-  sorted.forEach(video => {
+  // User-facing list stays in original upload order (oldest -> newest),
+  // exactly like before. Only the admin's "Manage Structure" view shows
+  // the newest video first, to make new uploads easy to double-check.
+  topic.videos.forEach(video => {
     list.appendChild(buildVideoCard(video, topic));
   });
 }
 
+// Used ONLY by admin "Manage Structure" so newly-added videos are easy
+// to spot at the top without scrolling through the whole topic.
 function getSortedVideos(topic) {
   return [...topic.videos].sort((a, b) => (b.order || 0) - (a.order || 0));
 }
@@ -975,7 +1026,7 @@ function playVideo(video, topic) {
   const upNext = document.getElementById("upNextList");
   if (upNext) {
     upNext.innerHTML = "";
-    const others = getSortedVideos(topic).filter(v => v.id !== video.id);
+    const others = topic.videos.filter(v => v.id !== video.id);
     if (others.length === 0) {
       upNext.innerHTML = `<div class="empty-state" style="padding:30px 20px;">Aur koi video nahi hai is topic me</div>`;
     } else {
@@ -993,18 +1044,10 @@ function renderAdminPanel() {
   populateAdminSubjects();
   populateAdminTopics();
   renderAdminStructure();
-  renderAllowedUsers();
+  renderLeadsList();
   renderAdminStats();
 
-  const priceEnglishEl = document.getElementById("adminPriceEnglish");
-  const priceReasoningEl = document.getElementById("adminPriceReasoning");
-  const priceMathsEl = document.getElementById("adminPriceMaths");
-  const priceFullBatchEl = document.getElementById("adminPriceFullBatch");
   const contactEl = document.getElementById("adminContact");
-  if (priceEnglishEl) priceEnglishEl.value = APP_DATA.settings.priceEnglish || 299;
-  if (priceReasoningEl) priceReasoningEl.value = APP_DATA.settings.priceReasoning || 199;
-  if (priceMathsEl) priceMathsEl.value = APP_DATA.settings.priceMaths || 299;
-  if (priceFullBatchEl) priceFullBatchEl.value = APP_DATA.settings.priceFullBatch || 699;
   if (contactEl) contactEl.value = APP_DATA.settings.contactUsername || "pratibha0x";
 
   setCloudStatus(cloudConnected);
@@ -1315,125 +1358,77 @@ async function handleEditVideoSave() {
 }
 
 /* ---------------------------------------------------------
-   ADMIN: USER ACCESS CONTROL
+   ADMIN: LEADS TAB (user-submitted name/age/mobile/exam target)
 --------------------------------------------------------- */
-function handleAddUser() {
-  const input = document.getElementById("adminNewUserId");
-  const id = input.value.trim();
-
-  if (!id) { showToast("⚠️ User ID likhein"); return; }
-  if (getUserAccessEntry(id)) { showToast("Ye ID pehle se allowed hai, neeche se access edit karein"); return; }
-
-  APP_DATA.allowedUsers.push({ id, subjects: "full" });
-  saveData();
-  input.value = "";
-  renderAllowedUsers();
-  showToast("✅ User access diya gaya: " + id);
-}
-
-function renderAllowedUsers() {
-  const container = document.getElementById("allowedUsersList");
+function renderLeadsList() {
+  const container = document.getElementById("leadsList");
   if (!container) return;
   container.innerHTML = "";
 
-  if (APP_DATA.allowedUsers.length === 0) {
-    container.innerHTML = `<div class="empty-state" style="padding:30px 10px;">Abhi koi user allowed nahi hai</div>`;
+  const searchEl = document.getElementById("adminLeadSearch");
+  const query = (searchEl ? searchEl.value : "").trim().toLowerCase();
+
+  let leads = [...(APP_DATA.leads || [])].sort((a, b) => (b.submittedAt || 0) - (a.submittedAt || 0));
+
+  if (query) {
+    leads = leads.filter(l =>
+      (l.name || "").toLowerCase().includes(query) ||
+      (l.mobile || "").includes(query) ||
+      (l.id || "").includes(query)
+    );
+  }
+
+  if (leads.length === 0) {
+    container.innerHTML = `<div class="empty-state" style="padding:30px 10px;">${query ? "Koi match nahi mila" : "Abhi koi lead nahi hai"}</div>`;
     return;
   }
 
-  APP_DATA.allowedUsers.forEach(entry => {
-    const label = entry.subjects === "full"
-      ? "Full Batch"
-      : (Array.isArray(entry.subjects) && entry.subjects.length ? entry.subjects.join(", ") : "Koi access nahi");
-
-    const row = document.createElement("div");
-    row.className = "allowed-user-row";
-    row.innerHTML = `
-      <span>${escapeHtml(entry.id)} <br><small style="color:var(--text-faint);">${escapeHtml(label)}</small></span>
-      <div style="display:flex; gap:6px;">
-        <button class="struct-icon-btn edit" data-action="edit-access" data-id="${entry.id}"><i class="fa-solid fa-pen"></i></button>
-        <button class="mini-del-btn" data-action="remove-access" data-id="${entry.id}">Remove</button>
+  leads.forEach(lead => {
+    const card = document.createElement("div");
+    card.className = "user-stats-card";
+    card.innerHTML = `
+      <div class="user-stats-top">
+        <span class="user-stats-name">${escapeHtml(lead.name || "—")}${lead.legacy ? ' <small style="color:var(--text-faint);">(legacy)</small>' : ""}</span>
+        <span class="user-stats-id">ID: ${escapeHtml(lead.id)}</span>
+      </div>
+      <div class="user-stats-first">Submitted: ${lead.submittedAt ? formatDateTime(new Date(lead.submittedAt).toISOString()) : "—"}</div>
+      <div class="user-stats-times">
+        <div class="user-stats-time-row"><span>Age</span><b>${escapeHtml(String(lead.age || "—"))}</b></div>
+        <div class="user-stats-time-row"><span>Mobile</span><b>${escapeHtml(lead.mobile || "—")}</b></div>
+        <div class="user-stats-time-row"><span>Exam Target</span><b>${escapeHtml(lead.examTarget || "—")}</b></div>
       </div>
     `;
-    container.appendChild(row);
+    container.appendChild(card);
   });
-
-  container.querySelectorAll('[data-action="edit-access"]').forEach(btn => {
-    btn.addEventListener("click", () => openUserAccessModal(btn.dataset.id));
-  });
-  container.querySelectorAll('[data-action="remove-access"]').forEach(btn => {
-    btn.addEventListener("click", () => {
-      const id = btn.dataset.id;
-      APP_DATA.allowedUsers = APP_DATA.allowedUsers.filter(u => u.id !== id);
-      saveData();
-      renderAllowedUsers();
-      showToast("User access hata diya gaya");
-    });
-  });
-}
-
-/* ---------------------------------------------------------
-   ADMIN: USER ACCESS MODAL (per-subject)
---------------------------------------------------------- */
-let editingAccessUserId = null;
-
-function openUserAccessModal(userId) {
-  editingAccessUserId = userId;
-  const entry = getUserAccessEntry(userId);
-
-  setText("userAccessTargetLabel", "User ID: " + userId);
-
-  const fullEl = document.getElementById("accessFullBatch");
-  const engEl = document.getElementById("accessEnglish");
-  const reaEl = document.getElementById("accessReasoning");
-  const mathEl = document.getElementById("accessMaths");
-
-  const isFull = !entry || entry.subjects === "full";
-  const subs = (entry && Array.isArray(entry.subjects)) ? entry.subjects : [];
-
-  if (fullEl) fullEl.checked = isFull;
-  if (engEl) { engEl.checked = subs.includes("english"); engEl.disabled = isFull; }
-  if (reaEl) { reaEl.checked = subs.includes("reasoning"); reaEl.disabled = isFull; }
-  if (mathEl) { mathEl.checked = subs.includes("maths"); mathEl.disabled = isFull; }
-
-  const modal = document.getElementById("userAccessModal");
-  if (modal) modal.classList.add("show");
-}
-
-function closeUserAccessModal() {
-  editingAccessUserId = null;
-  const modal = document.getElementById("userAccessModal");
-  if (modal) modal.classList.remove("show");
-}
-
-function handleUserAccessSave() {
-  if (!editingAccessUserId) return;
-  let entry = getUserAccessEntry(editingAccessUserId);
-  if (!entry) {
-    entry = { id: editingAccessUserId, subjects: "full" };
-    APP_DATA.allowedUsers.push(entry);
-  }
-
-  const isFull = document.getElementById("accessFullBatch").checked;
-  if (isFull) {
-    entry.subjects = "full";
-  } else {
-    const subs = [];
-    if (document.getElementById("accessEnglish").checked) subs.push("english");
-    if (document.getElementById("accessReasoning").checked) subs.push("reasoning");
-    if (document.getElementById("accessMaths").checked) subs.push("maths");
-    entry.subjects = subs;
-  }
-
-  saveData();
-  closeUserAccessModal();
-  renderAllowedUsers();
-  showToast("✅ Access update ho gaya");
 }
 
 /* ---------------------------------------------------------
    ADMIN: STATS TAB
 --------------------------------------------------------- */
+function renderTodayUsersList(todayUsers) {
+  const container = document.getElementById("todayUsersList");
+  if (!container) return;
+  container.innerHTML = "";
+
+  if (todayUsers.length === 0) {
+    container.innerHTML = `<div class="empty-state" style="padding:20px;">Aaj tak koi user nahi aaya</div>`;
+    return;
+  }
+
+  todayUsers.forEach(u => {
+    const row = document.createElement("div");
+    row.className = "user-stats-card";
+    row.innerHTML = `
+      <div class="user-stats-top">
+        <span class="user-stats-name">${escapeHtml(u.first_name || "Unknown")}${u.username ? " (@" + escapeHtml(u.username) + ")" : ""}</span>
+        <span class="user-stats-id">ID: ${escapeHtml(u.user_id)}</span>
+      </div>
+      <div class="user-stats-first">Last seen: ${formatDateTime(u.last_seen_at)}</div>
+    `;
+    container.appendChild(row);
+  });
+}
+
 async function renderAdminStats() {
   const listEl = document.getElementById("userStatsList");
   if (!listEl) return;
@@ -1469,13 +1464,29 @@ async function renderAdminStats() {
     const allSessions = sessions || [];
     const sevenDaysAgo = Date.now() - 7 * 24 * 60 * 60 * 1000;
 
+    // "Aaj aaye" users list (Stats tab)
+    const todayUsers = allUsers.filter(u => new Date(u.last_seen_at) >= todayStart);
+    renderTodayUsersList(todayUsers);
+
+    // Apply search filter (name / username / id)
+    const searchEl = document.getElementById("adminStatsSearch");
+    const query = (searchEl ? searchEl.value : "").trim().toLowerCase();
+    let filteredUsers = allUsers;
+    if (query) {
+      filteredUsers = allUsers.filter(u =>
+        (u.first_name || "").toLowerCase().includes(query) ||
+        (u.username || "").toLowerCase().includes(query) ||
+        (u.user_id || "").includes(query)
+      );
+    }
+
     listEl.innerHTML = "";
-    if (allUsers.length === 0) {
-      listEl.innerHTML = `<div class="empty-state" style="padding:20px;">Abhi koi user activity nahi hai</div>`;
+    if (filteredUsers.length === 0) {
+      listEl.innerHTML = `<div class="empty-state" style="padding:20px;">${query ? "Koi match nahi mila" : "Abhi koi user activity nahi hai"}</div>`;
       return;
     }
 
-    allUsers.forEach(u => {
+    filteredUsers.forEach(u => {
       const userSessions = allSessions.filter(s => s.user_id === u.user_id);
       const overallSec = userSessions.reduce((sum, s) => sum + (s.seconds || 0), 0);
       const last7Sec = userSessions
@@ -1525,20 +1536,10 @@ function formatDateTime(iso) {
    ADMIN: SETTINGS
 --------------------------------------------------------- */
 function handleSaveSettings() {
-  const priceEnglish = parseInt(document.getElementById("adminPriceEnglish").value) || 299;
-  const priceReasoning = parseInt(document.getElementById("adminPriceReasoning").value) || 199;
-  const priceMaths = parseInt(document.getElementById("adminPriceMaths").value) || 299;
-  const priceFullBatch = parseInt(document.getElementById("adminPriceFullBatch").value) || 699;
   const contact = document.getElementById("adminContact").value.trim().replace("@", "");
-
-  APP_DATA.settings.priceEnglish = priceEnglish;
-  APP_DATA.settings.priceReasoning = priceReasoning;
-  APP_DATA.settings.priceMaths = priceMaths;
-  APP_DATA.settings.priceFullBatch = priceFullBatch;
   APP_DATA.settings.contactUsername = contact || "pratibha0x";
 
   saveData();
-  updatePricingUI();
   showToast("✅ Settings save ho gayi");
 }
 

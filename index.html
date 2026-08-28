@@ -19,13 +19,13 @@
 <div id="loader" class="screen active">
   <div class="loader-wrap">
     <div class="logo-badge">
-      <span>SB</span>
+      <span>SSC</span>
       <div class="logo-ring"></div>
     </div>
     <div class="loader-bar-track">
       <div class="loader-bar-fill" id="loaderBarFill"></div>
     </div>
-    <p class="loader-text" id="loaderText">SSC</p>
+    <p class="loader-text" id="loaderText">Connecting...</p>
   </div>
 </div>
 
@@ -39,18 +39,18 @@
   </div>
 </div>
 
-<!-- ===================== LOCKED / PAYWALL SCREEN ===================== -->
+<!-- ===================== LEAD FORM SCREEN (one-time, compulsory) ===================== -->
 <div id="lockedScreen" class="screen">
   <div class="locked-wrap">
 
-    <div class="locked-top-badge"><i class="fa-solid fa-crown"></i> PREMIUM COURSE</div>
+    <div class="locked-top-badge"><i class="fa-solid fa-graduation-cap"></i> FREE COURSE</div>
 
     <div class="locked-hero-icon">
-      <i class="fa-solid fa-lock"></i>
+      <i class="fa-solid fa-user-pen"></i>
     </div>
 
     <h1 class="locked-title">Selection Batch 11.0</h1>
-    <p class="locked-sub">SSC CGL • CHSL • MTS • Complete Foundation to Advanced Course</p>
+    <p class="locked-sub">Shuru karne se pehle apni details bharein</p>
 
     <div class="locked-stats-row">
       <div class="locked-stat">
@@ -69,67 +69,32 @@
       </div>
     </div>
 
-    <div class="locked-card">
-      <div class="locked-card-row">
-        <div class="locked-check"><i class="fa-solid fa-check"></i></div>
-        <div>
-          <div class="locked-row-title">English Complete Course</div>
-          <div class="locked-row-sub">Grammar, Vocabulary, Comprehension</div>
-        </div>
-      </div>
-      <div class="locked-card-row">
-        <div class="locked-check"><i class="fa-solid fa-check"></i></div>
-        <div>
-          <div class="locked-row-title">Reasoning Complete Course</div>
-          <div class="locked-row-sub">Verbal, Non-Verbal, Analytical</div>
-        </div>
-      </div>
-      <div class="locked-card-row">
-        <div class="locked-check"><i class="fa-solid fa-check"></i></div>
-        <div>
-          <div class="locked-row-title">Maths Complete Course</div>
-          <div class="locked-row-sub">Arithmetic, Advance, Data Interpretation</div>
-        </div>
-      </div>
-      <div class="locked-card-row">
-        <div class="locked-check"><i class="fa-solid fa-check"></i></div>
-        <div>
-          <div class="locked-row-title">Topic-wise HD Video Lectures + Class PDF Sheets</div>
-          <div class="locked-row-sub">Stream anytime, inside the app</div>
-        </div>
-      </div>
-      <div class="locked-card-row">
-        <div class="locked-check"><i class="fa-solid fa-check"></i></div>
-        <div>
-          <div class="locked-row-title">Lifetime Access</div>
-          <div class="locked-row-sub">No renewal, no hidden charges</div>
-        </div>
-      </div>
+    <div class="lead-form-card">
+      <label class="admin-label">Full Name</label>
+      <input id="leadName" class="admin-input" type="text" placeholder="Apna naam likhein" autocomplete="name">
+
+      <label class="admin-label">Age</label>
+      <input id="leadAge" class="admin-input" type="number" placeholder="Apni age likhein" min="10" max="60" inputmode="numeric">
+
+      <label class="admin-label">Mobile Number</label>
+      <input id="leadMobile" class="admin-input" type="tel" placeholder="10 digit mobile number" maxlength="10" inputmode="numeric">
+
+      <label class="admin-label">Exam Target</label>
+      <select id="leadExamTarget" class="admin-input">
+        <option value="">Select karein</option>
+        <option value="SSC CGL">SSC CGL</option>
+        <option value="SSC CHSL">SSC CHSL</option>
+        <option value="SSC MTS">SSC MTS</option>
+        <option value="SSC GD">SSC GD</option>
+        <option value="Other">Other</option>
+      </select>
+
+      <p id="leadFormError" class="lead-form-error hidden"></p>
     </div>
 
-    <div class="price-plan-list" id="pricePlanList">
-      <div class="price-plan-row">
-        <span class="price-plan-name">English</span>
-        <span class="price-plan-amt" id="priceEnglish">₹299</span>
-      </div>
-      <div class="price-plan-row">
-        <span class="price-plan-name">Reasoning</span>
-        <span class="price-plan-amt" id="priceReasoning">₹199</span>
-      </div>
-      <div class="price-plan-row">
-        <span class="price-plan-name">Maths</span>
-        <span class="price-plan-amt" id="priceMaths">₹299</span>
-      </div>
-      <div class="price-plan-row price-plan-full">
-        <span class="price-plan-name"><i class="fa-solid fa-star"></i> Full Batch (All 3 Subjects)</span>
-        <span class="price-plan-amt" id="priceFullBatch">₹699</span>
-      </div>
-    </div>
-
-    <button id="buyBtn" class="btn-primary btn-buy">
-      <i class="fa-solid fa-bolt"></i> <span id="buyBtnText">Buy Now — Contact for Access</span>
+    <button id="leadFormSubmitBtn" class="btn-primary btn-buy">
+      <i class="fa-solid fa-arrow-right"></i> <span>Continue — Free</span>
     </button>
-    <p class="locked-note"><i class="fa-solid fa-shield-halved"></i> Contact karne ke baad payment details milengi aur access activate hoga</p>
 
     <div class="locked-myid">Your Telegram ID: <b id="lockedUserId">—</b></div>
   </div>
@@ -149,6 +114,9 @@
   </div>
 
   <div class="scroll-area">
+    <div class="section-label">Your Progress</div>
+    <div class="stats-ring-row" id="homeStatsRingRow"></div>
+
     <div class="section-label">Your Courses</div>
 
     <div class="main-card-list">
@@ -157,10 +125,6 @@
         <div class="main-card-body">
           <div class="main-card-title">SW Batch 11.0</div>
           <div class="main-card-sub">SSC CGL • CHSL • MTS Complete Course</div>
-          <div class="main-card-progress-track">
-            <div class="main-card-progress-fill" id="homeSwProgressFill" style="width:0%;"></div>
-          </div>
-          <p class="main-card-progress-label"><span id="homeSwProgressPct">0%</span> explored</p>
         </div>
         <div class="main-card-arrow"><i class="fa-solid fa-chevron-right"></i></div>
       </div>
@@ -364,17 +328,12 @@
   <!-- USERS TAB -->
   <div id="tabUsers" class="admin-tab-content">
     <div class="admin-block">
-      <div class="admin-block-title"><i class="fa-solid fa-user-check"></i> Allowed User IDs</div>
-      <p class="admin-hint">Sirf inhi Telegram ID walo ka app khulega. Baaki users ko "Buy Now" screen dikhegi.</p>
-
-      <label class="admin-label">Add Telegram User ID</label>
+      <div class="admin-block-title"><i class="fa-solid fa-address-book"></i> User Leads</div>
+      <p class="admin-hint">App poori tarah free hai — sab users ko access hai. Yahan sirf woh details hain jo users ne form bharte waqt di thi.</p>
       <div class="admin-inline-row">
-        <input id="adminNewUserId" class="admin-input" type="text" placeholder="e.g. 123456789">
-        <button id="adminAddUserBtn" class="btn-primary-sm">Add</button>
+        <input id="adminLeadSearch" class="admin-input" type="text" placeholder="Naam, number ya ID se search karein">
       </div>
-      <p class="admin-hint">Jab tak subject access na diya jaye, user ko sab subjects locked dikhenge (agar Full Batch nahi diya).</p>
-
-      <div id="allowedUsersList" class="allowed-users-list"></div>
+      <div id="leadsList" class="user-stats-list"></div>
     </div>
   </div>
 
@@ -395,7 +354,15 @@
     </div>
 
     <div class="admin-block">
+      <div class="admin-block-title"><i class="fa-solid fa-calendar-day"></i> Aaj Aaye Users</div>
+      <div id="todayUsersList" class="user-stats-list"></div>
+    </div>
+
+    <div class="admin-block">
       <div class="admin-block-title"><i class="fa-solid fa-user-clock"></i> User Activity</div>
+      <div class="admin-inline-row">
+        <input id="adminStatsSearch" class="admin-input" type="text" placeholder="Naam, username ya ID se search karein">
+      </div>
       <p class="admin-hint">Har user ka naam, ID, pehli baar app kab khola, aur card-wise time spent (last 7 din + overall).</p>
       <div id="userStatsList" class="user-stats-list"></div>
     </div>
@@ -404,22 +371,11 @@
   <!-- SETTINGS TAB -->
   <div id="tabSettings" class="admin-tab-content">
     <div class="admin-block">
-      <div class="admin-block-title"><i class="fa-solid fa-tag"></i> Batch Settings</div>
+      <div class="admin-block-title"><i class="fa-solid fa-gear"></i> App Settings</div>
 
-      <label class="admin-label">English Price (₹)</label>
-      <input id="adminPriceEnglish" class="admin-input" type="number" placeholder="299">
-
-      <label class="admin-label">Reasoning Price (₹)</label>
-      <input id="adminPriceReasoning" class="admin-input" type="number" placeholder="199">
-
-      <label class="admin-label">Maths Price (₹)</label>
-      <input id="adminPriceMaths" class="admin-input" type="number" placeholder="299">
-
-      <label class="admin-label">Full Batch Price (₹)</label>
-      <input id="adminPriceFullBatch" class="admin-input" type="number" placeholder="699">
-
-      <label class="admin-label">Contact Username (for Buy Now redirect)</label>
+      <label class="admin-label">Support / Contact Username</label>
       <input id="adminContact" class="admin-input" type="text" placeholder="e.g. pratibha0x (without @)">
+      <p class="admin-hint">Ye future me kisi bhi 'Contact Us' button ke liye use hoga.</p>
 
       <button id="adminSaveSettingsBtn" class="btn-primary"><i class="fa-solid fa-floppy-disk"></i> Save Settings</button>
     </div>
@@ -465,24 +421,6 @@
       <input id="editVideoPdfUrl" class="admin-input" type="text" placeholder="https://... (khaali chhod sakte hain)">
 
       <button id="editVideoSaveBtn" class="btn-primary"><i class="fa-solid fa-check"></i> Save Changes</button>
-    </div>
-  </div>
-</div>
-
-<!-- ===================== ADD USER ACCESS MODAL ===================== -->
-<div id="userAccessModal" class="modal-overlay">
-  <div class="modal-box">
-    <div class="modal-header">
-      <span><i class="fa-solid fa-user-lock"></i> Access Dein</span>
-      <button id="userAccessCloseBtn" class="modal-close-btn"><i class="fa-solid fa-xmark"></i></button>
-    </div>
-    <div class="modal-body">
-      <p class="admin-hint" id="userAccessTargetLabel">User ID: —</p>
-      <label class="admin-check-row"><input type="checkbox" id="accessFullBatch"> <span>Full Batch (sab subjects)</span></label>
-      <label class="admin-check-row"><input type="checkbox" id="accessEnglish"> <span>English only</span></label>
-      <label class="admin-check-row"><input type="checkbox" id="accessReasoning"> <span>Reasoning only</span></label>
-      <label class="admin-check-row"><input type="checkbox" id="accessMaths"> <span>Maths only</span></label>
-      <button id="userAccessSaveBtn" class="btn-primary"><i class="fa-solid fa-check"></i> Save Access</button>
     </div>
   </div>
 </div>

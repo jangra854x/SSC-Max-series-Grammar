@@ -15,6 +15,7 @@
   --gold:#ffc95c;
   --success:#2fe08a;
   --danger:#ff5c6a;
+  --accent:#4d8dff;
   --grad-main: linear-gradient(135deg,#7c5cff 0%,#5c8aff 45%,#00e0ff 100%);
   --grad-gold: linear-gradient(135deg,#ffe08a,#ffb057);
   --radius-lg:22px;
@@ -118,9 +119,9 @@ body{
 }
 .logo-badge span{
   font-weight:900;
-  font-size:26px;
+  font-size:19px;
   color:#fff;
-  letter-spacing:1px;
+  letter-spacing:0.5px;
   position:relative;
   z-index:2;
 }
@@ -1141,3 +1142,49 @@ textarea.admin-input{resize:vertical; font-family:inherit;}
   cursor:pointer;
 }
 .modal-body{padding:16px 18px 26px;}
+
+/* ================= LEAD FORM ================= */
+.lead-form-card{
+  background:var(--card);
+  border:1px solid var(--border);
+  border-radius:var(--radius);
+  padding:18px 18px 8px;
+  margin-bottom:18px;
+  text-align:left;
+}
+.lead-form-error{
+  color:var(--danger);
+  font-size:12px;
+  font-weight:600;
+  margin:-4px 0 14px;
+}
+
+/* ================= HOME STATISTICS RINGS ================= */
+.stats-ring-row{
+  display:flex;
+  gap:12px;
+  padding:0 20px 22px;
+  overflow-x:auto;
+}
+.stats-ring-card{
+  flex:1;
+  min-width:100px;
+  background:var(--card);
+  border:1px solid var(--border);
+  border-radius:var(--radius-sm);
+  padding:16px 10px;
+  display:flex;
+  flex-direction:column;
+  align-items:center;
+  gap:8px;
+}
+.stats-ring-wrap{width:76px; height:76px; position:relative;}
+.stats-ring-wrap svg{width:100%; height:100%; transform:rotate(-90deg);}
+.stats-ring-bg{fill:none; stroke:rgba(255,255,255,0.09); stroke-width:6;}
+.stats-ring-fill{fill:none; stroke:var(--accent); stroke-width:6; stroke-linecap:round; transition:stroke-dashoffset .6s ease;}
+.stats-ring-pct{
+  position:absolute; inset:0;
+  display:flex; align-items:center; justify-content:center;
+  font-size:15px; font-weight:800; color:var(--text);
+}
+.stats-ring-label{font-size:11.5px; font-weight:700; color:var(--text-dim); text-align:center;}
