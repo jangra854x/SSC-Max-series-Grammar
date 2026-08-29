@@ -102,7 +102,7 @@ function finishBoot() {
   try { trackUserVisit(); } catch (e) { console.error(e); }
 
   try {
-    if (IS_ADMIN) {
+    if (IS_ADMIN || isPremiumUser(CURRENT_USER_ID)) {
       showScreen("homeScreen");
       renderHomeCards();
     } else if (isUserAllowed(CURRENT_USER_ID)) {
@@ -419,9 +419,11 @@ function normalizeData(data) {
     if (!Array.isArray(s.topics)) s.topics = [];
     s.topics.forEach((t, tIdx) => {
       if (!Array.isArray(t.videos)) t.videos = [];
+      if (!Array.isArray(t.subTopics)) t.subTopics = [];
       if (typeof t.order !== "number") t.order = tIdx;
       t.videos.forEach((v, vIdx) => {
         if (typeof v.pdfUrl !== "string") v.pdfUrl = "";
+        if (typeof v.subTopicId !== "string") v.subTopicId = "";
         if (typeof v.order !== "number") v.order = vIdx;
         if (typeof v.createdAt !== "number") v.createdAt = Date.now();
       });
@@ -481,6 +483,11 @@ function getUserLeadEntry(userId) {
 function isUserAllowed(userId) {
   if (IS_ADMIN) return true;
   return !!getUserLeadEntry(userId);
+}
+
+function isPremiumUser(userId) {
+  const lead = getUserLeadEntry(userId);
+  return !!(lead && lead.premium);
 }
 
 // App is free — every submitted user gets every subject.
@@ -684,7 +691,9 @@ function bindEvents() {
   });
 
   safeBind("adminSubjectSelect", "change", populateAdminTopics);
+  safeBind("adminTopicSelect", "change", populateAdminSubTopics);
   safeBind("adminAddTopicBtn", "click", handleAddTopic);
+  safeBind("adminAddSubTopicBtn", "click", handleAddSubTopic);
   safeBind("adminAddVideoBtn", "click", handleAddVideo);
   safeBind("adminSaveSettingsBtn", "click", handleSaveSettings);
 }
@@ -767,10 +776,10 @@ async function handleLeadFormSubmit() {
 
   if (btn) { btn.disabled = false; btn.style.opacity = "1"; }
 
-  startAppOpenAdGate(() => {
-    showScreen("homeScreen");
-    renderHomeCards();
-  });
+  // First-time users skip the app-open ad right after registering —
+  // ads start from their next app open onward.
+  showScreen("homeScreen");
+  renderHomeCards();
 }
 
 function updatePricingUI() {
@@ -1026,14 +1035,7 @@ function openWatchFlow(video, topic, type) {
 
   creditVideoProgress(video);
 
-  showScreen("appAdScreen");
-  setText("appAdTitle", "Getting your content ready");
-  setText("appAdSub", 'Please watch a quick ad to continue. This helps us keep the course free for everyone. Tip: once the ad has played, tap the ✕ (close) button on it — don\'t tap "Continue" inside the ad itself.');
-
-  runAdChain(1, {
-    title: "appAdTitle", sub: "appAdSub",
-    btn: "appAdActionBtn", banner: "appAdBlockerBanner"
-  }, () => {
+  const openContent = () => {
     try {
       if (window.Telegram?.WebApp?.openLink) {
         window.Telegram.WebApp.openLink(url);
@@ -1043,6 +1045,22 @@ function openWatchFlow(video, topic, type) {
     } catch (e) {
       window.open(url, "_blank");
     }
+  };
+
+  if (IS_ADMIN || isPremiumUser(CURRENT_USER_ID)) {
+    openContent();
+    return;
+  }
+
+  showScreen("appAdScreen");
+  setText("appAdTitle", "Getting your content ready");
+  setText("appAdSub", 'Please watch a quick ad to continue. This helps us keep the course free for everyone. Tip: once the ad has played, tap the ✕ (close) button on it — don\'t tap "Continue" inside the ad itself.');
+
+  runAdChain(1, {
+    title: "appAdTitle", sub: "appAdSub",
+    btn: "appAdActionBtn", banner: "appAdBlockerBanner"
+  }, () => {
+    openContent();
     // Bring the user back to the video list behind the scenes so the
     // ad screen doesn't linger once their browser tab has opened.
     showScreen("videoListScreen");
@@ -1088,8 +1106,9 @@ function populateAdminTopics() {
   if (!subject || subject.topics.length === 0) {
     const opt = document.createElement("option");
     opt.value = "";
-    opt.textContent = "-- Pehle topic banayein --";
+    opt.textContent = "-- Create a topic first --";
     select.appendChild(opt);
+    populateAdminSubTopics();
     return;
   }
 
@@ -1097,6 +1116,27 @@ function populateAdminTopics() {
     const opt = document.createElement("option");
     opt.value = t.id;
     opt.textContent = t.name;
+    select.appendChild(opt);
+  });
+  populateAdminSubTopics();
+}
+
+function populateAdminSubTopics() {
+  const subjectSelect = document.getElementById("adminSubjectSelect");
+  const topicSelect = document.getElementById("adminTopicSelect");
+  const select = document.getElementById("adminSubTopicSelect");
+  if (!select) return;
+
+  select.innerHTML = '<option value="">None (directly in topic)</option>';
+
+  const subject = getSubject(subjectSelect.value);
+  const topic = subject ? subject.topics.find(t => t.id === topicSelect.value) : null;
+  if (!topic || !Array.isArray(topic.subTopics)) return;
+
+  topic.subTopics.forEach(st => {
+    const opt = document.createElement("option");
+    opt.value = st.id;
+    opt.textContent = st.name;
     select.appendChild(opt);
   });
 }
@@ -1109,7 +1149,7 @@ function handleAddTopic() {
   const name = prompt("Enter new topic name (e.g. Tenses, Percentage, Syllogism):");
   if (!name || !name.trim()) return;
 
-  subject.topics.push({ id: "topic_" + Date.now(), name: name.trim(), videos: [] });
+  subject.topics.push({ id: "topic_" + Date.now(), name: name.trim(), videos: [], subTopics: [] });
 
   saveData();
   populateAdminTopics();
@@ -1117,9 +1157,29 @@ function handleAddTopic() {
   showToast("✅ Topic added: " + name);
 }
 
+function handleAddSubTopic() {
+  const subjectSelect = document.getElementById("adminSubjectSelect");
+  const topicSelect = document.getElementById("adminTopicSelect");
+  const subject = getSubject(subjectSelect.value);
+  const topic = subject ? subject.topics.find(t => t.id === topicSelect.value) : null;
+  if (!topic) { showToast("⚠️ Please select or create a topic first"); return; }
+
+  const name = prompt("Enter new sub-topic / folder name (e.g. Part 1, Practice Set A):");
+  if (!name || !name.trim()) return;
+
+  if (!Array.isArray(topic.subTopics)) topic.subTopics = [];
+  topic.subTopics.push({ id: "subtopic_" + Date.now(), name: name.trim() });
+
+  saveData();
+  populateAdminSubTopics();
+  renderAdminStructure();
+  showToast("✅ Sub-topic added: " + name);
+}
+
 async function handleAddVideo() {
   const subjectSelect = document.getElementById("adminSubjectSelect");
   const topicSelect = document.getElementById("adminTopicSelect");
+  const subTopicSelect = document.getElementById("adminSubTopicSelect");
   const titleEl = document.getElementById("adminVideoTitle");
   const descEl = document.getElementById("adminVideoDesc");
   const urlEl = document.getElementById("adminVideoUrl");
@@ -1127,6 +1187,7 @@ async function handleAddVideo() {
 
   const subjectId = subjectSelect.value;
   const topicId = topicSelect.value;
+  const subTopicId = subTopicSelect ? subTopicSelect.value : "";
   const title = titleEl.value.trim();
   const desc = descEl.value.trim();
   const url = urlEl.value.trim();
@@ -1142,6 +1203,7 @@ async function handleAddVideo() {
   const maxOrder = topic.videos.reduce((m, v) => Math.max(m, v.order || 0), 0);
   topic.videos.push({
     id: "video_" + Date.now(), title, desc, url, pdfUrl: pdfUrl || "",
+    subTopicId: subTopicId || "",
     order: maxOrder + 1, createdAt: Date.now()
   });
 
@@ -1400,17 +1462,30 @@ function renderLeadsList() {
     card.className = "user-stats-card";
     card.innerHTML = `
       <div class="user-stats-top">
-        <span class="user-stats-name">${escapeHtml(lead.name || "—")}${lead.legacy ? ' <small style="color:var(--text-faint);">(legacy)</small>' : ""}</span>
+        <span class="user-stats-name">${escapeHtml(lead.name || "—")}${lead.legacy ? ' <small style="color:var(--text-faint);">(legacy)</small>' : ""}${lead.premium ? ' <small style="color:var(--gold);">★ Premium</small>' : ""}</span>
         <span class="user-stats-id">ID: ${escapeHtml(lead.id)}</span>
       </div>
       <div class="user-stats-first">Submitted: ${lead.submittedAt ? formatDateTime(new Date(lead.submittedAt).toISOString()) : "—"}</div>
       <div class="user-stats-times">
-        <div class="user-stats-time-row"><span>Age</span><b>${escapeHtml(String(lead.age || "—"))}</b></div>
-        <div class="user-stats-time-row"><span>Mobile</span><b>${escapeHtml(lead.mobile || "—")}</b></div>
         <div class="user-stats-time-row"><span>Exam Target</span><b>${escapeHtml(lead.examTarget || "—")}</b></div>
       </div>
+      <button class="struct-icon-btn edit" data-action="toggle-premium" data-id="${escapeHtml(lead.id)}" style="margin-top:8px; width:auto; padding:0 12px; height:32px;">
+        <i class="fa-solid fa-star"></i> ${lead.premium ? "Remove Premium" : "Grant Premium (no ads)"}
+      </button>
     `;
     container.appendChild(card);
+  });
+
+  container.querySelectorAll('[data-action="toggle-premium"]').forEach(btn => {
+    btn.addEventListener("click", () => {
+      const id = btn.dataset.id;
+      const lead = APP_DATA.leads.find(l => l.id === id);
+      if (!lead) return;
+      lead.premium = !lead.premium;
+      saveData();
+      renderLeadsList();
+      showToast(lead.premium ? "✅ Premium granted" : "Premium removed");
+    });
   });
 }
 
