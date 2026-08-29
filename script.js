@@ -14,7 +14,7 @@ const SUPABASE_URL = "https://gmbnmefjzvpwrvkolwdw.supabase.co";
 const SUPABASE_ANON_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImdtYm5tZWZqenZwd3J2a29sd2R3Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODc2MzQ1MzksImV4cCI6MjEwMzIxMDUzOX0.lmlrmrB6e7s9NnOS_B24VaQ0IGTeBqa-cHrfzVz5mes";
 
 const ADMIN_ID = "7990149560";
-const HARD_LOAD_TIMEOUT_MS = 4000; // loader will never wait longer than this
+const HARD_LOAD_TIMEOUT_MS = 18000; // loader will never wait longer than this
 
 /* ---------------------------------------------------------
    DEFAULT DATA
@@ -318,6 +318,8 @@ function safeLocalSet(data) {
 /* ---------------------------------------------------------
    DATA LOAD (Supabase primary, localStorage fallback)
 --------------------------------------------------------- */
+let cloudLoadSucceeded = false;
+
 async function loadData() {
   // Show something instantly from local cache if present
   const local = safeLocalGet();
@@ -341,20 +343,25 @@ async function loadData() {
 
     sbClient = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
 
+    // Generous timeout — the content JSON can be large (194+ videos), so a
+    // short timeout was falsely triggering "no data" and risked overwriting
+    // real cloud data with an empty local fallback on the next save.
     const result = await withTimeout(
       sbClient.from("app_data").select("value").eq("id", "main").single(),
-      3000
+      15000
     );
 
     const { data, error } = result;
 
     if (error) {
       if (error.code === "PGRST116") {
-        // no row yet -> create it
+        // no row yet -> create it (only safe because this specifically
+        // means "row genuinely doesn't exist", confirmed by Supabase itself)
         await withTimeout(
           sbClient.from("app_data").upsert({ id: "main", value: APP_DATA }),
-          3000
+          15000
         );
+        cloudLoadSucceeded = true;
         setCloudStatus(true);
       } else {
         console.warn("Supabase select error", error);
@@ -366,6 +373,7 @@ async function loadData() {
     if (data && data.value) {
       APP_DATA = normalizeData(data.value);
       safeLocalSet(APP_DATA);
+      cloudLoadSucceeded = true;
       setCloudStatus(true);
     }
   } catch (e) {
@@ -441,10 +449,19 @@ async function saveData() {
   safeLocalSet(APP_DATA);
 
   if (sbClient) {
+    if (!cloudLoadSucceeded) {
+      // Safety guard: never push to Supabase until we've successfully
+      // pulled the real cloud data at least once this session. Without
+      // this, a slow/failed initial load could silently overwrite real
+      // cloud content with empty/default local data.
+      console.warn("Skipping cloud save: initial cloud load hasn't succeeded yet.");
+      showToast("⚠️ Cloud not synced yet — please wait a moment and try again");
+      return;
+    }
     try {
       await withTimeout(
         sbClient.from("app_data").upsert({ id: "main", value: APP_DATA }),
-        4000
+        15000
       );
       setCloudStatus(true);
     } catch (e) {
