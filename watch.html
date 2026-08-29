@@ -1,0 +1,270 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+<title>Please wait — Selection Batch 11.0</title>
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+<link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800;900&display=swap" rel="stylesheet">
+
+<!-- Monetag SDK -->
+<script src='//libtl.com/sdk.js' data-zone='11673534' data-sdk='show_11673534'></script>
+
+<style>
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body {
+    font-family: 'Plus Jakarta Sans', sans-serif;
+    background: #0a0a0f;
+    color: #fff;
+    min-height: 100vh;
+    min-height: 100dvh;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 24px;
+  }
+  .card {
+    max-width: 420px;
+    width: 100%;
+    text-align: center;
+  }
+  .icon-badge {
+    width: 76px; height: 76px;
+    margin: 0 auto 22px;
+    border-radius: 22px;
+    background: linear-gradient(135deg,#7c5cff,#5c8aff);
+    display: flex; align-items: center; justify-content: center;
+    font-size: 30px;
+    box-shadow: 0 12px 30px rgba(124,92,255,0.35);
+  }
+  h1 {
+    font-size: 19px;
+    font-weight: 800;
+    margin-bottom: 8px;
+  }
+  p.sub {
+    font-size: 13.5px;
+    color: rgba(255,255,255,0.55);
+    margin-bottom: 30px;
+    line-height: 1.5;
+  }
+  .steps {
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+    margin-bottom: 28px;
+  }
+  .step {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    background: rgba(255,255,255,0.04);
+    border: 1px solid rgba(255,255,255,0.08);
+    border-radius: 14px;
+    padding: 14px 16px;
+    text-align: left;
+  }
+  .step-num {
+    width: 30px; height: 30px;
+    border-radius: 50%;
+    background: rgba(255,255,255,0.07);
+    display: flex; align-items: center; justify-content: center;
+    font-size: 13px; font-weight: 800;
+    flex-shrink: 0;
+    transition: all .25s ease;
+  }
+  .step.done .step-num {
+    background: #2fe08a;
+    color: #0a0a0f;
+  }
+  .step.done .step-num::before {
+    content: "\f00c";
+    font-family: "Font Awesome 6 Free";
+    font-weight: 900;
+  }
+  .step.done .step-num span { display: none; }
+  .step-text {
+    flex: 1;
+    font-size: 13.5px;
+    font-weight: 600;
+    color: rgba(255,255,255,0.85);
+  }
+  .step.done .step-text { color: #fff; }
+  .step-status {
+    font-size: 11px;
+    font-weight: 700;
+    color: rgba(255,255,255,0.35);
+  }
+  .step.done .step-status { color: #2fe08a; }
+
+  .btn {
+    width: 100%;
+    padding: 16px;
+    border-radius: 16px;
+    border: none;
+    font-family: inherit;
+    font-size: 15px;
+    font-weight: 800;
+    cursor: pointer;
+    display: flex; align-items: center; justify-content: center; gap: 8px;
+    transition: transform .15s ease, opacity .2s ease;
+  }
+  .btn-primary {
+    background: linear-gradient(135deg,#7c5cff,#5c8aff);
+    color: #fff;
+  }
+  .btn-primary:active { transform: scale(0.97); }
+  .btn-disabled {
+    background: rgba(255,255,255,0.08);
+    color: rgba(255,255,255,0.35);
+    cursor: not-allowed;
+  }
+  .note {
+    margin-top: 18px;
+    font-size: 11.5px;
+    color: rgba(255,255,255,0.3);
+  }
+  .spinner {
+    width: 14px; height: 14px;
+    border: 2px solid rgba(255,255,255,0.3);
+    border-top-color: #fff;
+    border-radius: 50%;
+    animation: spin 0.7s linear infinite;
+  }
+  @keyframes spin { to { transform: rotate(360deg); } }
+</style>
+</head>
+<body>
+
+<div class="card">
+  <div class="icon-badge"><i class="fa-solid fa-play"></i></div>
+  <h1 id="titleText">Getting your content ready</h1>
+  <p class="sub" id="subText">Please watch both quick ads below to unlock your content. This helps us keep the course free for everyone.</p>
+
+  <div class="steps">
+    <div class="step" id="step1">
+      <div class="step-num"><span>1</span></div>
+      <div class="step-text">Watch Ad 1</div>
+      <div class="step-status" id="step1Status">Tap to start</div>
+    </div>
+    <div class="step" id="step2">
+      <div class="step-num"><span>2</span></div>
+      <div class="step-text">Watch Ad 2</div>
+      <div class="step-status" id="step2Status">Locked</div>
+    </div>
+  </div>
+
+  <button id="actionBtn" class="btn btn-primary">
+    <i class="fa-solid fa-play"></i> <span id="actionBtnText">Watch Ad 1</span>
+  </button>
+
+  <p class="note" id="noteText">Content will open automatically once both ads are complete</p>
+</div>
+
+<script>
+  // ---------------------------------------------------------
+  // Reads target content URL + type from the query string, e.g:
+  // watch.html?type=video&url=https://example.com/lecture.mp4
+  // watch.html?type=pdf&url=https://example.com/sheet.pdf
+  // ---------------------------------------------------------
+  const params = new URLSearchParams(window.location.search);
+  const targetUrl = params.get('url');
+  const contentType = params.get('type') || 'video';
+
+  let step = 0; // 0 = nothing watched, 1 = ad1 done, 2 = both done
+
+  const step1El = document.getElementById('step1');
+  const step2El = document.getElementById('step2');
+  const step1Status = document.getElementById('step1Status');
+  const step2Status = document.getElementById('step2Status');
+  const actionBtn = document.getElementById('actionBtn');
+  const actionBtnText = document.getElementById('actionBtnText');
+  const titleText = document.getElementById('titleText');
+  const subText = document.getElementById('subText');
+  const noteText = document.getElementById('noteText');
+
+  if (!targetUrl) {
+    titleText.textContent = "Something went wrong";
+    subText.textContent = "No content link was provided. Please go back and try again.";
+    actionBtn.style.display = "none";
+  }
+
+  function setButtonLoading(isLoading, label) {
+    actionBtn.disabled = isLoading;
+    if (isLoading) {
+      actionBtn.innerHTML = '<span class="spinner"></span> ' + label;
+    } else {
+      actionBtnText.textContent = label;
+      actionBtn.innerHTML = '<i class="fa-solid fa-play"></i> <span id="actionBtnText">' + label + '</span>';
+    }
+  }
+
+  function goToContent() {
+    if (!targetUrl) return;
+    titleText.textContent = "All set!";
+    subText.textContent = "Opening your " + (contentType === 'pdf' ? 'PDF' : 'video') + " now...";
+    noteText.textContent = "If it doesn't open automatically, tap the button below.";
+    actionBtn.style.display = "flex";
+    actionBtn.className = "btn btn-primary";
+    actionBtnText.textContent = "Open Now";
+    actionBtn.innerHTML = '<i class="fa-solid fa-arrow-up-right-from-square"></i> <span>Open Now</span>';
+    actionBtn.onclick = () => { window.location.href = targetUrl; };
+    setTimeout(() => { window.location.href = targetUrl; }, 900);
+  }
+
+  function watchAd1() {
+    if (typeof show_11673534 !== 'function') {
+      // SDK failed to load (ad blocker, offline, etc.) — don't block the
+      // user's access to free educational content indefinitely.
+      step1El.classList.add('done');
+      step1Status.textContent = 'Done';
+      advanceToStep2();
+      return;
+    }
+    setButtonLoading(true, 'Loading ad...');
+    show_11673534().then(() => {
+      step1El.classList.add('done');
+      step1Status.textContent = 'Done';
+      advanceToStep2();
+    }).catch(() => {
+      // Ad failed to show/load — still let the user proceed so a broken
+      // ad slot never blocks access to the course.
+      step1El.classList.add('done');
+      step1Status.textContent = 'Done';
+      advanceToStep2();
+    });
+  }
+
+  function advanceToStep2() {
+    step = 1;
+    step2Status.textContent = 'Tap to start';
+    setButtonLoading(false, 'Watch Ad 2');
+    actionBtn.onclick = watchAd2;
+  }
+
+  function watchAd2() {
+    if (typeof show_11673534 !== 'function') {
+      step2El.classList.add('done');
+      step2Status.textContent = 'Done';
+      goToContent();
+      return;
+    }
+    setButtonLoading(true, 'Loading ad...');
+    show_11673534('pop').then(() => {
+      step2El.classList.add('done');
+      step2Status.textContent = 'Done';
+      goToContent();
+    }).catch(() => {
+      step2El.classList.add('done');
+      step2Status.textContent = 'Done';
+      goToContent();
+    });
+  }
+
+  if (targetUrl) {
+    actionBtn.onclick = watchAd1;
+  }
+</script>
+
+</body>
+</html>

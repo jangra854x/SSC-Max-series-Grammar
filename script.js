@@ -355,7 +355,7 @@ async function saveData() {
     } catch (e) {
       console.warn("Supabase save failed", e);
       setCloudStatus(false);
-      showToast("⚠️ Cloud sync fail hua, data local me save hai");
+      showToast("⚠️ Cloud sync failed, data saved locally");
     }
   }
 }
@@ -551,7 +551,7 @@ function bindEvents() {
 
   safeBind("openSwBatchCard", "click", openBatchScreen);
   safeBind("openTbMocksCard", "click", () => {
-    showToast("🔒 TB Mocks jaldi aa raha hai — abhi available nahi hai.");
+    showToast("🔒 TB Mocks is coming soon — not available yet.");
   });
 
   // Lead form (one-time, compulsory)
@@ -594,93 +594,6 @@ function bindEvents() {
   safeBind("adminAddTopicBtn", "click", handleAddTopic);
   safeBind("adminAddVideoBtn", "click", handleAddVideo);
   safeBind("adminSaveSettingsBtn", "click", handleSaveSettings);
-
-  const player = document.getElementById("videoPlayer");
-  if (player) {
-    const overlay = document.getElementById("videoLoadingOverlay");
-    player.addEventListener("waiting", () => overlay && overlay.classList.add("show"));
-    player.addEventListener("playing", () => overlay && overlay.classList.remove("show"));
-    player.addEventListener("canplay", () => overlay && overlay.classList.remove("show"));
-    player.addEventListener("error", () => {
-      if (overlay) overlay.classList.remove("show");
-      showVideoFallback();
-    });
-  }
-
-  safeBind("openInBrowserBtn", "click", () => {
-    if (!currentVideoUrl) return;
-    try {
-      if (window.Telegram?.WebApp?.openLink) {
-        window.Telegram.WebApp.openLink(currentVideoUrl);
-      } else {
-        window.open(currentVideoUrl, "_blank");
-      }
-    } catch (e) {
-      window.open(currentVideoUrl, "_blank");
-    }
-  });
-
-  // Player screen 3-dot menu
-  safeBind("playerMenuBtn", "click", (e) => {
-    e.stopPropagation();
-    const dd = document.getElementById("playerMenuDropdown");
-    if (dd) dd.classList.toggle("show");
-  });
-  safeBind("rotateScreenBtn", "click", () => {
-    toggleScreenRotation();
-    closePlayerMenu();
-  });
-
-  // PDF screen 3-dot menu
-  safeBind("pdfMenuBtn", "click", (e) => {
-    e.stopPropagation();
-    const dd = document.getElementById("pdfMenuDropdown");
-    if (dd) dd.classList.toggle("show");
-  });
-  safeBind("pdfRotateBtn", "click", () => {
-    toggleScreenRotation();
-    closePdfMenu();
-  });
-  safeBind("pdfOpenBrowserBtn", "click", () => {
-    if (!currentPdfUrl) return;
-    try {
-      if (window.Telegram?.WebApp?.openLink) {
-        window.Telegram.WebApp.openLink(currentPdfUrl);
-      } else {
-        window.open(currentPdfUrl, "_blank");
-      }
-    } catch (e) {
-      window.open(currentPdfUrl, "_blank");
-    }
-    closePdfMenu();
-  });
-
-  document.addEventListener("click", () => {
-    closePlayerMenu();
-    closePdfMenu();
-  });
-}
-
-function closePlayerMenu() {
-  const dd = document.getElementById("playerMenuDropdown");
-  if (dd) dd.classList.remove("show");
-}
-function closePdfMenu() {
-  const dd = document.getElementById("pdfMenuDropdown");
-  if (dd) dd.classList.remove("show");
-}
-
-let currentVideoUrl = null;
-
-function showVideoFallback() {
-  showToast("⚠️ Ye video is app ke andar directly play nahi ho payi");
-  const fallback = document.getElementById("videoFallback");
-  if (fallback) fallback.classList.add("show");
-}
-
-function hideVideoFallback() {
-  const fallback = document.getElementById("videoFallback");
-  if (fallback) fallback.classList.remove("show");
 }
 
 function safeBind(id, event, handler) {
@@ -713,11 +626,11 @@ async function handleLeadFormSubmit() {
   const mobile = document.getElementById("leadMobile").value.trim();
   const examTarget = document.getElementById("leadExamTarget").value;
 
-  if (!name || name.length < 2) { showErr("⚠️ Sahi naam likhein"); return; }
+  if (!name || name.length < 2) { showErr("⚠️ Please enter a valid name"); return; }
   const ageNum = parseInt(age);
-  if (!age || isNaN(ageNum) || ageNum < 10 || ageNum > 60) { showErr("⚠️ Sahi age likhein"); return; }
-  if (!validateIndianMobile(mobile)) { showErr("⚠️ Sahi 10-digit mobile number likhein (6-9 se shuru, koi fake number nahi)"); return; }
-  if (!examTarget) { showErr("⚠️ Exam target select karein"); return; }
+  if (!age || isNaN(ageNum) || ageNum < 10 || ageNum > 60) { showErr("⚠️ Please enter a valid age"); return; }
+  if (!validateIndianMobile(mobile)) { showErr("⚠️ Please enter a valid 10-digit mobile number (must start with 6-9, no fake numbers)"); return; }
+  if (!examTarget) { showErr("⚠️ Please select an exam target"); return; }
 
   const btn = document.getElementById("leadFormSubmitBtn");
   if (btn) { btn.disabled = true; btn.style.opacity = "0.6"; }
@@ -799,18 +712,59 @@ function openBatchScreen() {
 
 /* ---------------------------------------------------------
    RENDER: HOME STATISTICS (big circular % rings)
+   Progress = how many of this subject's videos the user has
+   opened at least once, out of the subject's total video count.
+   Each video is worth an equal share (100 / total videos).
 --------------------------------------------------------- */
+const WATCHED_VIDEOS_KEY = "sw_batch_watched_videos_v1";
+
+function getWatchedVideoIds() {
+  try {
+    const raw = localStorage.getItem(WATCHED_VIDEOS_KEY);
+    const arr = raw ? JSON.parse(raw) : [];
+    return new Set(Array.isArray(arr) ? arr : []);
+  } catch (e) {
+    return new Set();
+  }
+}
+
+function saveWatchedVideoIds(set) {
+  try {
+    localStorage.setItem(WATCHED_VIDEOS_KEY, JSON.stringify([...set]));
+  } catch (e) {
+    console.warn("could not save watched-video progress", e);
+  }
+}
+
+// Called the moment a user opens a video/PDF (see openWatchFlow). Credits
+// that single video's share of the subject's progress exactly once —
+// re-opening the same video later does not increase progress again.
+function creditVideoProgress(video) {
+  if (!video || !video.id) return;
+  const watched = getWatchedVideoIds();
+  if (watched.has(video.id)) return; // already credited, never double-count
+  watched.add(video.id);
+  saveWatchedVideoIds(watched);
+  renderHomeStatsRings();
+}
+
+function computeSubjectProgressPct(subject) {
+  const allVideoIds = [];
+  subject.topics.forEach(t => t.videos.forEach(v => allVideoIds.push(v.id)));
+  if (allVideoIds.length === 0) return 0;
+
+  const watched = getWatchedVideoIds();
+  const watchedCount = allVideoIds.filter(id => watched.has(id)).length;
+  return Math.round((watchedCount / allVideoIds.length) * 100);
+}
+
 function renderHomeStatsRings() {
   const row = document.getElementById("homeStatsRingRow");
   if (!row) return;
   row.innerHTML = "";
 
   APP_DATA.subjects.forEach(subject => {
-    const videoCount = subject.topics.reduce((sum, t) => sum + t.videos.length, 0);
-    // Content-completeness proxy: how full this subject's catalog is
-    // versus a realistic target size, so the ring always looks meaningful.
-    const pct = videoCount === 0 ? 0 : Math.min(100, Math.round((videoCount / 80) * 100));
-
+    const pct = computeSubjectProgressPct(subject);
     const card = document.createElement("div");
     card.className = "stats-ring-card";
     card.innerHTML = buildStatsRing(pct, subject.name);
@@ -879,7 +833,7 @@ function renderTopics(subject) {
   list.innerHTML = "";
 
   if (subject.topics.length === 0) {
-    list.innerHTML = `<div class="empty-state"><i class="fa-solid fa-folder-open"></i>Abhi is subject me koi topic add nahi hua.<br>Jaldi hi content aayega</div>`;
+    list.innerHTML = `<div class="empty-state"><i class="fa-solid fa-folder-open"></i>No topics added to this subject yet.<br>New content coming soon</div>`;
     return;
   }
 
@@ -921,7 +875,7 @@ function renderVideos(topic) {
   list.innerHTML = "";
 
   if (topic.videos.length === 0) {
-    list.innerHTML = `<div class="empty-state"><i class="fa-solid fa-video-slash"></i>Is topic me abhi koi video upload nahi hui.<br>Jaldi hi aayegi</div>`;
+    list.innerHTML = `<div class="empty-state"><i class="fa-solid fa-video-slash"></i>No videos uploaded to this topic yet.<br>Coming soon</div>`;
     return;
   }
 
@@ -951,90 +905,34 @@ function buildVideoCard(video, topic) {
     </div>
     <div class="video-play-badge"><i class="fa-solid fa-chevron-right"></i></div>
   `;
-  card.addEventListener("click", () => playVideo(video, topic));
+  card.addEventListener("click", () => openWatchFlow(video, topic, "video"));
   return card;
 }
 
 /* ---------------------------------------------------------
-   PDF VIEWER
+   AD-GATED CONTENT OPENING
+   Videos always play in the phone's browser (in-app playback
+   isn't reliable inside Telegram's WebView), so every video/PDF
+   open goes through watch.html first, which shows 2 mandatory
+   ads before redirecting to the real content URL. Progress for
+   that video is credited the moment this flow starts.
 --------------------------------------------------------- */
-let currentPdfUrl = null;
+function openWatchFlow(video, topic, type) {
+  const url = type === "pdf" ? video.pdfUrl : video.url;
+  if (!url) return;
 
-function openPdfViewer(video) {
-  if (!video || !video.pdfUrl) return;
-  currentPdfUrl = video.pdfUrl;
-  setText("pdfScreenTitle", video.title + " — Class PDF");
+  creditVideoProgress(video);
 
-  const frame = document.getElementById("pdfFrame");
-  if (frame) {
-    // Google Docs viewer renders the PDF inline without allowing a native
-    // download button, keeping it inside the mini app.
-    frame.src = "https://docs.google.com/gview?embedded=1&url=" + encodeURIComponent(video.pdfUrl);
-  }
-  showScreen("pdfScreen");
-}
-
-function toggleScreenRotation() {
+  const watchUrl = "watch.html?type=" + encodeURIComponent(type) + "&url=" + encodeURIComponent(url);
   try {
-    const el = document.documentElement;
-    if (screen.orientation && screen.orientation.lock) {
-      const isPortrait = !screen.orientation.type || screen.orientation.type.startsWith("portrait");
-      screen.orientation.lock(isPortrait ? "landscape" : "portrait").catch(() => {
-        showToast("⚠️ Rotation ye device/browser support nahi kar raha, phone ko manually ghumayein");
-      });
+    if (window.Telegram?.WebApp?.openLink) {
+      window.Telegram.WebApp.openLink(watchUrl);
     } else {
-      showToast("⚠️ Rotation ye device/browser support nahi kar raha, phone ko manually ghumayein");
+      window.open(watchUrl, "_blank");
     }
   } catch (e) {
-    showToast("⚠️ Rotation ye device/browser support nahi kar raha, phone ko manually ghumayein");
+    window.open(watchUrl, "_blank");
   }
-}
-
-/* ---------------------------------------------------------
-   PLAYER
---------------------------------------------------------- */
-function playVideo(video, topic) {
-  setText("playerVideoTitle", video.title);
-  setText("playerVideoTitle2", video.title);
-  setText("playerVideoDesc", video.desc || "No description available.");
-
-  currentVideoUrl = video.url;
-  hideVideoFallback();
-  closePlayerMenu();
-
-  const pdfBtn = document.getElementById("openPdfBtn");
-  if (pdfBtn) {
-    if (video.pdfUrl) {
-      pdfBtn.classList.remove("hidden");
-      pdfBtn.onclick = () => openPdfViewer(video);
-    } else {
-      pdfBtn.classList.add("hidden");
-      pdfBtn.onclick = null;
-    }
-  }
-
-  const player = document.getElementById("videoPlayer");
-  if (player) {
-    player.src = video.url;
-    player.load();
-    player.play().catch(() => {
-      // Autoplay blocked or immediate failure — not necessarily an error,
-      // the 'error' event listener will catch real playback failures.
-    });
-  }
-
-  const upNext = document.getElementById("upNextList");
-  if (upNext) {
-    upNext.innerHTML = "";
-    const others = topic.videos.filter(v => v.id !== video.id);
-    if (others.length === 0) {
-      upNext.innerHTML = `<div class="empty-state" style="padding:30px 20px;">Aur koi video nahi hai is topic me</div>`;
-    } else {
-      others.forEach(v => upNext.appendChild(buildVideoCard(v, topic)));
-    }
-  }
-
-  showScreen("playerScreen");
 }
 
 /* ---------------------------------------------------------
@@ -1094,7 +992,7 @@ function handleAddTopic() {
   const subject = getSubject(subjectSelect.value);
   if (!subject) return;
 
-  const name = prompt("Naye topic ka naam likhein (e.g. Tenses, Percentage, Syllogism):");
+  const name = prompt("Enter new topic name (e.g. Tenses, Percentage, Syllogism):");
   if (!name || !name.trim()) return;
 
   subject.topics.push({ id: "topic_" + Date.now(), name: name.trim(), videos: [] });
@@ -1102,7 +1000,7 @@ function handleAddTopic() {
   saveData();
   populateAdminTopics();
   renderAdminStructure();
-  showToast("✅ Topic add ho gaya: " + name);
+  showToast("✅ Topic added: " + name);
 }
 
 async function handleAddVideo() {
@@ -1120,8 +1018,8 @@ async function handleAddVideo() {
   const url = urlEl.value.trim();
   const pdfUrl = pdfUrlEl ? pdfUrlEl.value.trim() : "";
 
-  if (!topicId) { showToast("⚠️ Pehle topic select ya create karein"); return; }
-  if (!title || !url) { showToast("⚠️ Video title aur URL zaroori hai"); return; }
+  if (!topicId) { showToast("⚠️ Please select or create a topic first"); return; }
+  if (!title || !url) { showToast("⚠️ Video title and URL are required"); return; }
 
   const subject = getSubject(subjectId);
   const topic = subject.topics.find(t => t.id === topicId);
@@ -1174,7 +1072,7 @@ function renderAdminStructure() {
     const topicsWrap = subjBlock.querySelector(".struct-topics");
 
     if (subject.topics.length === 0) {
-      topicsWrap.innerHTML = `<div class="empty-state" style="padding:16px;">Koi topic nahi</div>`;
+      topicsWrap.innerHTML = `<div class="empty-state" style="padding:16px;">No topics</div>`;
     } else {
       const sortedTopics = [...subject.topics].sort((a, b) => (b.order || 0) - (a.order || 0));
       sortedTopics.forEach(topic => {
@@ -1195,7 +1093,7 @@ function renderAdminStructure() {
         const sortedVideos = getSortedVideos(topic);
 
         if (sortedVideos.length === 0) {
-          videosWrap.innerHTML = `<div class="empty-state" style="padding:10px;">Koi video nahi</div>`;
+          videosWrap.innerHTML = `<div class="empty-state" style="padding:10px;">No videos</div>`;
         } else {
           sortedVideos.forEach((video, idx) => {
             const row = document.createElement("div");
@@ -1252,7 +1150,7 @@ function renderAdminStructure() {
       const topic = subject ? subject.topics.find(tp => tp.id === topicId) : null;
 
       if (action === "del-topic") {
-        if (!confirm("Ye topic aur uski saari videos delete ho jayengi. Confirm?")) return;
+        if (!confirm("This topic and all its videos will be deleted. Confirm?")) return;
         subject.topics = subject.topics.filter(tp => tp.id !== topicId);
         saveData();
         renderAdminStructure();
@@ -1266,7 +1164,7 @@ function renderAdminStructure() {
       const video = topic.videos.find(v => v.id === videoId);
 
       if (action === "del-video") {
-        if (!confirm("Ye video delete karein?")) return;
+        if (!confirm("Delete this video?")) return;
         topic.videos = topic.videos.filter(v => v.id !== videoId);
         saveData();
         renderAdminStructure();
@@ -1344,7 +1242,7 @@ async function handleEditVideoSave() {
   const url = document.getElementById("editVideoUrl").value.trim();
   const pdfUrl = document.getElementById("editVideoPdfUrl").value.trim();
 
-  if (!title || !url) { showToast("⚠️ Title aur URL zaroori hai"); return; }
+  if (!title || !url) { showToast("⚠️ Title and URL are required"); return; }
 
   video.title = title;
   video.desc = desc;
@@ -1354,7 +1252,7 @@ async function handleEditVideoSave() {
   await saveData();
   closeEditVideoModal();
   renderAdminStructure();
-  showToast("✅ Video update ho gayi");
+  showToast("✅ Video updated successfully");
 }
 
 /* ---------------------------------------------------------
@@ -1379,7 +1277,7 @@ function renderLeadsList() {
   }
 
   if (leads.length === 0) {
-    container.innerHTML = `<div class="empty-state" style="padding:30px 10px;">${query ? "Koi match nahi mila" : "Abhi koi lead nahi hai"}</div>`;
+    container.innerHTML = `<div class="empty-state" style="padding:30px 10px;">${query ? "No matches found" : "No leads yet"}</div>`;
     return;
   }
 
@@ -1411,7 +1309,7 @@ function renderTodayUsersList(todayUsers) {
   container.innerHTML = "";
 
   if (todayUsers.length === 0) {
-    container.innerHTML = `<div class="empty-state" style="padding:20px;">Aaj tak koi user nahi aaya</div>`;
+    container.innerHTML = `<div class="empty-state" style="padding:20px;">No users have visited today</div>`;
     return;
   }
 
@@ -1434,7 +1332,7 @@ async function renderAdminStats() {
   if (!listEl) return;
 
   if (!sbClient) {
-    listEl.innerHTML = `<div class="empty-state" style="padding:20px;">Cloud connect nahi hai, stats nahi mil paayenge</div>`;
+    listEl.innerHTML = `<div class="empty-state" style="padding:20px;">Cloud not connected, stats unavailable</div>`;
     return;
   }
 
@@ -1482,7 +1380,7 @@ async function renderAdminStats() {
 
     listEl.innerHTML = "";
     if (filteredUsers.length === 0) {
-      listEl.innerHTML = `<div class="empty-state" style="padding:20px;">${query ? "Koi match nahi mila" : "Abhi koi user activity nahi hai"}</div>`;
+      listEl.innerHTML = `<div class="empty-state" style="padding:20px;">${query ? "No matches found" : "No user activity yet"}</div>`;
       return;
     }
 
@@ -1510,7 +1408,7 @@ async function renderAdminStats() {
     });
   } catch (e) {
     console.warn("renderAdminStats failed", e);
-    listEl.innerHTML = `<div class="empty-state" style="padding:20px;">Stats load nahi ho paaye</div>`;
+    listEl.innerHTML = `<div class="empty-state" style="padding:20px;">Failed to load stats</div>`;
   }
 }
 
@@ -1540,7 +1438,7 @@ function handleSaveSettings() {
   APP_DATA.settings.contactUsername = contact || "pratibha0x";
 
   saveData();
-  showToast("✅ Settings save ho gayi");
+  showToast("✅ Settings saved successfully");
 }
 
 /* ---------------------------------------------------------
