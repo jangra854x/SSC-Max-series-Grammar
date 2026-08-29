@@ -168,7 +168,7 @@ function startAppOpenAdGate(onDone) {
       if (settled) return;
       settled = true;
       showBlocked();
-    }, 15000);
+    }, 30000);
 
     show_11673534().then(() => {
       if (settled) return;

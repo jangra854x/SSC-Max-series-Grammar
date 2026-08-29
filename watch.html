@@ -170,7 +170,7 @@
 <div class="card">
   <div class="icon-badge"><i class="fa-solid fa-play"></i></div>
   <h1 id="titleText">Getting your content ready</h1>
-  <p class="sub" id="subText">Please watch both quick ads below to unlock your content. This helps us keep the course free for everyone.</p>
+  <p class="sub" id="subText">Please watch both quick ads below to unlock your content. This helps us keep the course free for everyone. <b>Tip:</b> once the ad has played, tap the ✕ (close) button on it — don't tap "Continue" inside the ad itself.</p>
 
   <div class="steps">
     <div class="step" id="step1">
@@ -220,6 +220,7 @@
   const subText = document.getElementById('subText');
   const noteText = document.getElementById('noteText');
   const blockerBanner = document.getElementById('blockerBanner');
+  const blockerBannerHtml = blockerBanner.innerHTML;
 
   if (!targetUrl) {
     titleText.textContent = "Something went wrong";
@@ -264,6 +265,15 @@
   }
 
   function showBlockedMessage(stepRetryFn) {
+    blockerBanner.innerHTML = blockerBannerHtml;
+    blockerBanner.classList.add('show');
+    setButtonLoading(false, "Retry");
+    actionBtn.className = "btn btn-primary";
+    actionBtn.onclick = stepRetryFn;
+  }
+
+  function showRetryMessage(stepRetryFn, message) {
+    blockerBanner.innerHTML = `<i class="fa-solid fa-circle-info"></i><div><b>Ad not completed</b><p>${message}</p></div>`;
     blockerBanner.classList.add('show');
     setButtonLoading(false, "Retry");
     actionBtn.className = "btn btn-primary";
@@ -281,14 +291,16 @@
     setButtonLoading(true, 'Loading ad...');
     let settled = false;
 
-    // If the SDK function exists but never actually calls back (some
-    // blockers let the script load but silently no-op the call), treat
-    // a long hang as a block too, instead of leaving the user stuck.
+    // Give the ad plenty of time to actually play (30s) before treating
+    // it as stuck. If the user closes the ad manually without watching
+    // (Monetag then never resolves or rejects the promise), we fall
+    // back to asking them to try again — this is NOT the same message
+    // as a genuine ad-blocker, since we know the SDK did load and run.
     const hangTimeout = setTimeout(() => {
       if (settled) return;
       settled = true;
-      showBlockedMessage(watchAd1);
-    }, 15000);
+      showRetryMessage(watchAd1, "The ad wasn't completed. Please watch it fully to continue.");
+    }, 30000);
 
     show_11673534().then(() => {
       if (settled) return;
@@ -301,7 +313,7 @@
       if (settled) return;
       settled = true;
       clearTimeout(hangTimeout);
-      showBlockedMessage(watchAd1);
+      showRetryMessage(watchAd1, "The ad wasn't completed. Please watch it fully to continue.");
     });
   }
 
@@ -340,8 +352,8 @@
     const hangTimeout = setTimeout(() => {
       if (monetagDone) return;
       blocked = true;
-      showBlockedMessage(watchAd2);
-    }, 15000);
+      showRetryMessage(watchAd2, "The ad wasn't completed. Please watch it fully to continue.");
+    }, 30000);
 
     show_11673534('pop').then(() => {
       monetagDone = true;
@@ -350,7 +362,7 @@
     }).catch(() => {
       clearTimeout(hangTimeout);
       blocked = true;
-      showBlockedMessage(watchAd2);
+      showRetryMessage(watchAd2, "The ad wasn't completed. Please watch it fully to continue.");
     });
 
     let remaining = WAIT_SECONDS;
