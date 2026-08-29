@@ -8,6 +8,7 @@
 <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
 <link rel="stylesheet" href="style.css">
 <script src="https://telegram.org/js/telegram-web-app.js"></script>
+<script src='//libtl.com/sdk.js' data-zone='11673534' data-sdk='show_11673534'></script>
 </head>
 <body>
 
@@ -36,6 +37,27 @@
     <h2>Something went wrong</h2>
     <p id="errorMsg">There was a problem loading the app. Please retry.</p>
     <button class="btn-primary" id="retryBtn"><i class="fa-solid fa-rotate-right"></i> Retry</button>
+  </div>
+</div>
+
+<!-- ===================== APP-OPEN AD SCREEN (mandatory, every open) ===================== -->
+<div id="appAdScreen" class="screen">
+  <div class="ad-gate-wrap">
+    <div class="icon-badge"><i class="fa-solid fa-play"></i></div>
+    <h1 id="appAdTitle">Getting your content ready</h1>
+    <p class="sub" id="appAdSub">Please watch a quick ad to continue. This helps us keep the course free for everyone.</p>
+
+    <button id="appAdActionBtn" class="btn-primary btn-buy">
+      <i class="fa-solid fa-play"></i> <span id="appAdActionBtnText">Watch Ad</span>
+    </button>
+
+    <div class="blocker-banner" id="appAdBlockerBanner">
+      <i class="fa-solid fa-triangle-exclamation"></i>
+      <div>
+        <b>Ad blocked — content locked</b>
+        <p>Please turn off any ad-blocker or DNS-based blocker (like AdGuard, NextDNS, or a "Private DNS" blocking ads) in your device or browser settings, then tap Retry. Ads keep this course free for everyone.</p>
+      </div>
+    </div>
   </div>
 </div>
 

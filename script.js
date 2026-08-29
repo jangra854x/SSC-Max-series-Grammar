@@ -102,16 +102,91 @@ function finishBoot() {
   try { trackUserVisit(); } catch (e) { console.error(e); }
 
   try {
-    if (IS_ADMIN || isUserAllowed(CURRENT_USER_ID)) {
+    if (IS_ADMIN) {
       showScreen("homeScreen");
       renderHomeCards();
+    } else if (isUserAllowed(CURRENT_USER_ID)) {
+      // Returning user (already submitted the lead form) — show the
+      // mandatory app-open ad before letting them into the app.
+      startAppOpenAdGate(() => {
+        showScreen("homeScreen");
+        renderHomeCards();
+      });
     } else {
+      // New user — fill the lead form first, ad runs after submission
+      // (see handleLeadFormSubmit).
       showScreen("lockedScreen");
     }
   } catch (e) {
     console.error("Final render error", e);
-    showErrorScreen("App display karne me dikkat aayi.");
+    showErrorScreen("There was a problem displaying the app.");
   }
+}
+
+/* ---------------------------------------------------------
+   APP-OPEN AD GATE (mandatory, every app open — except admin)
+   Same strict enforcement as watch.html: if the Monetag SDK
+   didn't load or a call fails, treat it as an ad/DNS blocker
+   and show a blocking message + Retry. No silent bypass.
+--------------------------------------------------------- */
+function startAppOpenAdGate(onDone) {
+  showScreen("appAdScreen");
+
+  const titleEl = document.getElementById("appAdTitle");
+  const subEl = document.getElementById("appAdSub");
+  const btn = document.getElementById("appAdActionBtn");
+  const banner = document.getElementById("appAdBlockerBanner");
+
+  function setLoading(isLoading, label) {
+    btn.disabled = isLoading;
+    btn.innerHTML = isLoading
+      ? '<span class="spinner-inline"></span> ' + label
+      : '<i class="fa-solid fa-play"></i> <span>' + label + '</span>';
+  }
+
+  function isSdkAvailable() {
+    return typeof show_11673534 === "function";
+  }
+
+  function showBlocked() {
+    banner.classList.add("show");
+    setLoading(false, "Retry");
+  }
+
+  function attemptAd() {
+    banner.classList.remove("show");
+
+    if (!isSdkAvailable()) {
+      showBlocked();
+      return;
+    }
+
+    setLoading(true, "Loading ad...");
+    let settled = false;
+
+    const hangTimeout = setTimeout(() => {
+      if (settled) return;
+      settled = true;
+      showBlocked();
+    }, 15000);
+
+    show_11673534().then(() => {
+      if (settled) return;
+      settled = true;
+      clearTimeout(hangTimeout);
+      titleEl.textContent = "All set!";
+      subEl.textContent = "Taking you to the app...";
+      setTimeout(onDone, 400);
+    }).catch(() => {
+      if (settled) return;
+      settled = true;
+      clearTimeout(hangTimeout);
+      showBlocked();
+    });
+  }
+
+  btn.onclick = attemptAd;
+  attemptAd();
 }
 
 /* ---------------------------------------------------------
@@ -674,8 +749,10 @@ async function handleLeadFormSubmit() {
 
   if (btn) { btn.disabled = false; btn.style.opacity = "1"; }
 
-  showScreen("homeScreen");
-  renderHomeCards();
+  startAppOpenAdGate(() => {
+    showScreen("homeScreen");
+    renderHomeCards();
+  });
 }
 
 function updatePricingUI() {

@@ -133,6 +133,36 @@
     animation: spin 0.7s linear infinite;
   }
   @keyframes spin { to { transform: rotate(360deg); } }
+
+  .blocker-banner {
+    display: none;
+    align-items: flex-start;
+    gap: 12px;
+    background: rgba(255,92,106,0.1);
+    border: 1px solid rgba(255,92,106,0.35);
+    border-radius: 14px;
+    padding: 14px 16px;
+    margin-top: 18px;
+    text-align: left;
+  }
+  .blocker-banner.show { display: flex; }
+  .blocker-banner i {
+    color: #ff5c6a;
+    font-size: 18px;
+    margin-top: 2px;
+    flex-shrink: 0;
+  }
+  .blocker-banner b {
+    display: block;
+    font-size: 13px;
+    color: #ff8a8a;
+    margin-bottom: 4px;
+  }
+  .blocker-banner p {
+    font-size: 12px;
+    line-height: 1.5;
+    color: rgba(255,255,255,0.65);
+  }
 </style>
 </head>
 <body>
@@ -160,6 +190,14 @@
   </button>
 
   <p class="note" id="noteText">Content will open automatically once both ads are complete</p>
+
+  <div class="blocker-banner" id="blockerBanner">
+    <i class="fa-solid fa-triangle-exclamation"></i>
+    <div>
+      <b>Ad blocked — content locked</b>
+      <p>Please turn off any ad-blocker or DNS-based blocker (like AdGuard, NextDNS, or a "Private DNS" blocking ads) in your device or browser settings, then tap Retry. Ads keep this course free for everyone.</p>
+    </div>
+  </div>
 </div>
 
 <script>
@@ -172,8 +210,6 @@
   const targetUrl = params.get('url');
   const contentType = params.get('type') || 'video';
 
-  let step = 0; // 0 = nothing watched, 1 = ad1 done, 2 = both done
-
   const step1El = document.getElementById('step1');
   const step2El = document.getElementById('step2');
   const step1Status = document.getElementById('step1Status');
@@ -183,6 +219,7 @@
   const titleText = document.getElementById('titleText');
   const subText = document.getElementById('subText');
   const noteText = document.getElementById('noteText');
+  const blockerBanner = document.getElementById('blockerBanner');
 
   if (!targetUrl) {
     titleText.textContent = "Something went wrong";
@@ -202,6 +239,7 @@
 
   function goToContent() {
     if (!targetUrl) return;
+    blockerBanner.classList.remove('show');
     titleText.textContent = "All set!";
     subText.textContent = "Opening your " + (contentType === 'pdf' ? 'PDF' : 'video') + " now...";
     noteText.textContent = "If it doesn't open automatically, tap the button below.";
@@ -213,55 +251,85 @@
     setTimeout(() => { window.location.replace(targetUrl); }, 900);
   }
 
+  // ---------------------------------------------------------
+  // STRICT ENFORCEMENT: content is only unlocked if both ads
+  // genuinely ran. If the Monetag SDK didn't load, or a call
+  // fails/errors, we treat that as an ad-blocker / DNS-blocker
+  // and show a blocking message + Retry — we never silently
+  // let the user through. Retry re-checks from scratch every
+  // time, on any device/platform.
+  // ---------------------------------------------------------
+  function isSdkAvailable() {
+    return typeof show_11673534 === "function";
+  }
+
+  function showBlockedMessage(stepRetryFn) {
+    blockerBanner.classList.add('show');
+    setButtonLoading(false, "Retry");
+    actionBtn.className = "btn btn-primary";
+    actionBtn.onclick = stepRetryFn;
+  }
+
   function watchAd1() {
-    if (typeof show_11673534 !== 'function') {
-      // SDK failed to load (ad blocker, offline, etc.) — don't block the
-      // user's access to free educational content indefinitely.
-      step1El.classList.add('done');
-      step1Status.textContent = 'Done';
-      advanceToStep2();
+    blockerBanner.classList.remove('show');
+
+    if (!isSdkAvailable()) {
+      showBlockedMessage(watchAd1);
       return;
     }
+
     setButtonLoading(true, 'Loading ad...');
+    let settled = false;
+
+    // If the SDK function exists but never actually calls back (some
+    // blockers let the script load but silently no-op the call), treat
+    // a long hang as a block too, instead of leaving the user stuck.
+    const hangTimeout = setTimeout(() => {
+      if (settled) return;
+      settled = true;
+      showBlockedMessage(watchAd1);
+    }, 15000);
+
     show_11673534().then(() => {
+      if (settled) return;
+      settled = true;
+      clearTimeout(hangTimeout);
       step1El.classList.add('done');
       step1Status.textContent = 'Done';
       advanceToStep2();
     }).catch(() => {
-      // Ad failed to show/load — still let the user proceed so a broken
-      // ad slot never blocks access to the course.
-      step1El.classList.add('done');
-      step1Status.textContent = 'Done';
-      advanceToStep2();
+      if (settled) return;
+      settled = true;
+      clearTimeout(hangTimeout);
+      showBlockedMessage(watchAd1);
     });
   }
 
   function advanceToStep2() {
-    step = 1;
     step2Status.textContent = 'Tap to start';
     setButtonLoading(false, 'Watch Ad 2');
     actionBtn.onclick = watchAd2;
   }
 
   function watchAd2() {
-    if (typeof show_11673534 !== 'function') {
-      step2El.classList.add('done');
-      step2Status.textContent = 'Done';
-      goToContent();
+    blockerBanner.classList.remove('show');
+
+    if (!isSdkAvailable()) {
+      showBlockedMessage(watchAd2);
       return;
     }
 
-    // The Rewarded Popup format opens a new tab and resolves instantly,
-    // regardless of whether the user actually looked at the ad. To make
-    // this a real ad-view (not a free instant-skip), we enforce our own
-    // minimum wait on this page before letting the user continue —
-    // this runs independently of Monetag's own promise timing.
+    // The Rewarded Popup format opens a new tab. To make this a real
+    // ad-view (not an instant skip) we also enforce our own minimum
+    // wait on this page, independent of Monetag's own promise timing.
     setButtonLoading(true, 'Loading ad...');
     let monetagDone = false;
     let minWaitDone = false;
+    let blocked = false;
     const WAIT_SECONDS = 8;
 
     const tryFinish = () => {
+      if (blocked) return;
       if (monetagDone && minWaitDone) {
         step2El.classList.add('done');
         step2Status.textContent = 'Done';
@@ -269,17 +337,26 @@
       }
     };
 
+    const hangTimeout = setTimeout(() => {
+      if (monetagDone) return;
+      blocked = true;
+      showBlockedMessage(watchAd2);
+    }, 15000);
+
     show_11673534('pop').then(() => {
       monetagDone = true;
+      clearTimeout(hangTimeout);
       tryFinish();
     }).catch(() => {
-      monetagDone = true;
-      tryFinish();
+      clearTimeout(hangTimeout);
+      blocked = true;
+      showBlockedMessage(watchAd2);
     });
 
     let remaining = WAIT_SECONDS;
     step2Status.textContent = remaining + 's remaining...';
     const countdown = setInterval(() => {
+      if (blocked) { clearInterval(countdown); return; }
       remaining--;
       if (remaining > 0) {
         step2Status.textContent = remaining + 's remaining...';
