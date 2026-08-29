@@ -464,12 +464,35 @@ async function saveData() {
         15000
       );
       setCloudStatus(true);
+      backupDataSnapshot();
     } catch (e) {
       console.warn("Supabase save failed", e);
       setCloudStatus(false);
       showToast("⚠️ Cloud sync failed, data saved locally");
     }
   }
+}
+
+// Keeps a rolling history of the last 20 saves in a separate table, so
+// content can be manually recovered from Supabase's Table Editor if
+// anything is ever accidentally overwritten again.
+function backupDataSnapshot() {
+  if (!sbClient) return;
+  (async () => {
+    try {
+      await sbClient.from("app_data_backups").insert({ value: APP_DATA });
+      const { data: rows } = await sbClient
+        .from("app_data_backups")
+        .select("id")
+        .order("created_at", { ascending: false });
+      if (rows && rows.length > 20) {
+        const idsToDelete = rows.slice(20).map(r => r.id);
+        await sbClient.from("app_data_backups").delete().in("id", idsToDelete);
+      }
+    } catch (e) {
+      console.warn("backup snapshot failed (non-critical)", e);
+    }
+  })();
 }
 
 function setCloudStatus(connected) {
