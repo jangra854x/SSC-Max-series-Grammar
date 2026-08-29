@@ -124,18 +124,18 @@ function finishBoot() {
 }
 
 /* ---------------------------------------------------------
-   APP-OPEN AD GATE (mandatory, every app open — except admin)
-   Same strict enforcement as watch.html: if the Monetag SDK
-   didn't load or a call fails, treat it as an ad/DNS blocker
-   and show a blocking message + Retry. No silent bypass.
+   AD GATE (reusable) — shows one or more Rewarded Interstitial
+   ads in sequence, in-app. Strict: if the SDK is missing or a
+   call fails, shows a blocking message + Retry, no silent
+   bypass. Works for both the app-open gate and the per-video
+   gate below.
 --------------------------------------------------------- */
-function startAppOpenAdGate(onDone) {
-  showScreen("appAdScreen");
-
-  const titleEl = document.getElementById("appAdTitle");
-  const subEl = document.getElementById("appAdSub");
-  const btn = document.getElementById("appAdActionBtn");
-  const banner = document.getElementById("appAdBlockerBanner");
+function runAdChain(count, screenIds, onDone) {
+  const titleEl = document.getElementById(screenIds.title);
+  const subEl = document.getElementById(screenIds.sub);
+  const btn = document.getElementById(screenIds.btn);
+  const banner = document.getElementById(screenIds.banner);
+  let adsWatched = 0;
 
   function setLoading(isLoading, label) {
     btn.disabled = isLoading;
@@ -174,9 +174,17 @@ function startAppOpenAdGate(onDone) {
       if (settled) return;
       settled = true;
       clearTimeout(hangTimeout);
-      titleEl.textContent = "All set!";
-      subEl.textContent = "Taking you to the app...";
-      setTimeout(onDone, 400);
+      adsWatched++;
+      if (adsWatched < count) {
+        titleEl.textContent = "One more quick ad";
+        subEl.textContent = "Please watch this ad too, then you're all set.";
+        setLoading(false, "Watch Ad");
+        attemptAd();
+      } else {
+        titleEl.textContent = "All set!";
+        subEl.textContent = "Continuing...";
+        setTimeout(onDone, 400);
+      }
     }).catch(() => {
       if (settled) return;
       settled = true;
@@ -187,6 +195,16 @@ function startAppOpenAdGate(onDone) {
 
   btn.onclick = attemptAd;
   attemptAd();
+}
+
+function startAppOpenAdGate(onDone) {
+  showScreen("appAdScreen");
+  setText("appAdTitle", "Getting your content ready");
+  setText("appAdSub", 'Please watch a quick ad to continue. This helps us keep the course free for everyone. Tip: once the ad has played, tap the ✕ (close) button on it — don\'t tap "Continue" inside the ad itself.');
+  runAdChain(2, {
+    title: "appAdTitle", sub: "appAdSub",
+    btn: "appAdActionBtn", banner: "appAdBlockerBanner"
+  }, onDone);
 }
 
 /* ---------------------------------------------------------
@@ -994,22 +1012,41 @@ function buildVideoCard(video, topic) {
    ads before redirecting to the real content URL. Progress for
    that video is credited the moment this flow starts.
 --------------------------------------------------------- */
+/* ---------------------------------------------------------
+   AD-GATED CONTENT OPENING
+   Before opening any video/PDF, show one in-app Rewarded
+   Interstitial ad (same ad-gate screen/logic as app-open).
+   Once the ad is done, redirect straight to the real content
+   URL in the browser — no intermediate watch.html page.
+   Progress for that video is credited the moment this starts.
+--------------------------------------------------------- */
 function openWatchFlow(video, topic, type) {
   const url = type === "pdf" ? video.pdfUrl : video.url;
   if (!url) return;
 
   creditVideoProgress(video);
 
-  const watchUrl = "watch.html?type=" + encodeURIComponent(type) + "&url=" + encodeURIComponent(url);
-  try {
-    if (window.Telegram?.WebApp?.openLink) {
-      window.Telegram.WebApp.openLink(watchUrl);
-    } else {
-      window.open(watchUrl, "_blank");
+  showScreen("appAdScreen");
+  setText("appAdTitle", "Getting your content ready");
+  setText("appAdSub", 'Please watch a quick ad to continue. This helps us keep the course free for everyone. Tip: once the ad has played, tap the ✕ (close) button on it — don\'t tap "Continue" inside the ad itself.');
+
+  runAdChain(1, {
+    title: "appAdTitle", sub: "appAdSub",
+    btn: "appAdActionBtn", banner: "appAdBlockerBanner"
+  }, () => {
+    try {
+      if (window.Telegram?.WebApp?.openLink) {
+        window.Telegram.WebApp.openLink(url);
+      } else {
+        window.open(url, "_blank");
+      }
+    } catch (e) {
+      window.open(url, "_blank");
     }
-  } catch (e) {
-    window.open(watchUrl, "_blank");
-  }
+    // Bring the user back to the video list behind the scenes so the
+    // ad screen doesn't linger once their browser tab has opened.
+    showScreen("videoListScreen");
+  });
 }
 
 /* ---------------------------------------------------------
