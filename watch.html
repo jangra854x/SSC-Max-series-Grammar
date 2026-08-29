@@ -3,6 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+<meta name="referrer" content="no-referrer">
 <title>Please wait — Selection Batch 11.0</title>
 <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
 <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800;900&display=swap" rel="stylesheet">
@@ -208,8 +209,8 @@
     actionBtn.className = "btn btn-primary";
     actionBtnText.textContent = "Open Now";
     actionBtn.innerHTML = '<i class="fa-solid fa-arrow-up-right-from-square"></i> <span>Open Now</span>';
-    actionBtn.onclick = () => { window.location.href = targetUrl; };
-    setTimeout(() => { window.location.href = targetUrl; }, 900);
+    actionBtn.onclick = () => { window.location.replace(targetUrl); };
+    setTimeout(() => { window.location.replace(targetUrl); }, 900);
   }
 
   function watchAd1() {
@@ -249,16 +250,46 @@
       goToContent();
       return;
     }
+
+    // The Rewarded Popup format opens a new tab and resolves instantly,
+    // regardless of whether the user actually looked at the ad. To make
+    // this a real ad-view (not a free instant-skip), we enforce our own
+    // minimum wait on this page before letting the user continue —
+    // this runs independently of Monetag's own promise timing.
     setButtonLoading(true, 'Loading ad...');
+    let monetagDone = false;
+    let minWaitDone = false;
+    const WAIT_SECONDS = 8;
+
+    const tryFinish = () => {
+      if (monetagDone && minWaitDone) {
+        step2El.classList.add('done');
+        step2Status.textContent = 'Done';
+        goToContent();
+      }
+    };
+
     show_11673534('pop').then(() => {
-      step2El.classList.add('done');
-      step2Status.textContent = 'Done';
-      goToContent();
+      monetagDone = true;
+      tryFinish();
     }).catch(() => {
-      step2El.classList.add('done');
-      step2Status.textContent = 'Done';
-      goToContent();
+      monetagDone = true;
+      tryFinish();
     });
+
+    let remaining = WAIT_SECONDS;
+    step2Status.textContent = remaining + 's remaining...';
+    const countdown = setInterval(() => {
+      remaining--;
+      if (remaining > 0) {
+        step2Status.textContent = remaining + 's remaining...';
+      } else {
+        clearInterval(countdown);
+        minWaitDone = true;
+        step2Status.textContent = 'Finishing up...';
+        tryFinish();
+      }
+    }, 1000);
   }
 
   if (targetUrl) {
