@@ -124,11 +124,11 @@ function finishBoot() {
 }
 
 /* ---------------------------------------------------------
-   AD GATE (reusable) — shows one or more AdsGram Reward ads
-   in sequence, in-app. Strict: if the SDK is missing or a
-   call fails, shows a blocking message + Retry, no silent
-   bypass. Works for both the app-open gate and the per-video
-   gate below.
+   AD GATE (reusable) — tries to show one or more AdsGram
+   Reward ads in sequence, in-app, purely as a bonus revenue
+   attempt. It NEVER blocks the user: any failure (ad-blocker,
+   no fill, platform issue, timeout, anything) just moves on to
+   the content immediately, with no error shown.
 --------------------------------------------------------- */
 const ADSGRAM_BLOCK_ID = "45218";
 let adsgramController = null;
@@ -136,47 +136,37 @@ let adsgramController = null;
 function getAdsgramController() {
   if (adsgramController) return adsgramController;
   if (typeof window.Adsgram === "undefined") return null;
-  adsgramController = window.Adsgram.init({ blockId: ADSGRAM_BLOCK_ID });
+  try {
+    adsgramController = window.Adsgram.init({ blockId: ADSGRAM_BLOCK_ID });
+  } catch (e) {
+    return null;
+  }
   return adsgramController;
 }
 
 function runAdChain(count, screenIds, onDone) {
-  const titleEl = document.getElementById(screenIds.title);
-  const subEl = document.getElementById(screenIds.sub);
-  const btn = document.getElementById(screenIds.btn);
-  const banner = document.getElementById(screenIds.banner);
   let adsWatched = 0;
+  let finished = false;
 
-  function setLoading(isLoading, label) {
-    btn.disabled = isLoading;
-    btn.innerHTML = isLoading
-      ? '<span class="spinner-inline"></span> ' + label
-      : '<i class="fa-solid fa-play"></i> <span>' + label + '</span>';
-  }
-
-  function showBlocked() {
-    banner.classList.add("show");
-    setLoading(false, "Retry");
+  function finish() {
+    if (finished) return;
+    finished = true;
+    onDone();
   }
 
   function attemptAd() {
-    banner.classList.remove("show");
-
     const controller = getAdsgramController();
     if (!controller) {
-      // SDK itself failed to load — likely a genuine ad-blocker/DNS-blocker
-      showBlocked();
+      finish();
       return;
     }
 
-    setLoading(true, "Loading ad...");
     let settled = false;
-
     const hangTimeout = setTimeout(() => {
       if (settled) return;
       settled = true;
-      showBlocked();
-    }, 30000);
+      finish();
+    }, 4000);
 
     controller.show().then(() => {
       if (settled) return;
@@ -184,55 +174,23 @@ function runAdChain(count, screenIds, onDone) {
       clearTimeout(hangTimeout);
       adsWatched++;
       if (adsWatched < count) {
-        titleEl.textContent = "One more quick ad";
-        subEl.textContent = "Please watch this ad too, then you're all set.";
-        setLoading(false, "Watch Ad");
         attemptAd();
       } else {
-        titleEl.textContent = "All set!";
-        subEl.textContent = "Continuing...";
-        setTimeout(onDone, 400);
+        finish();
       }
-    }).catch((err) => {
+    }).catch(() => {
       if (settled) return;
       settled = true;
       clearTimeout(hangTimeout);
-
-      // AdsGram-side configuration issues (block not active, moderation
-      // pending, etc.) are our fault, not the user's — never lock a real
-      // user out of free content because of an ad-network setup problem.
-      // Only block on genuine blocker/network failures.
-      const errText = (err && (err.error || err.message || String(err))) || "";
-      const isPlatformIssue = /not active|moderation|no ads|no fill/i.test(errText);
-
-      if (isPlatformIssue) {
-        console.warn("AdsGram platform issue, letting user through:", errText);
-        adsWatched++;
-        if (adsWatched < count) {
-          attemptAd();
-        } else {
-          titleEl.textContent = "All set!";
-          subEl.textContent = "Continuing...";
-          setTimeout(onDone, 400);
-        }
-      } else {
-        showBlocked();
-      }
+      finish();
     });
   }
 
-  btn.onclick = attemptAd;
   attemptAd();
 }
 
 function startAppOpenAdGate(onDone) {
-  showScreen("appAdScreen");
-  setText("appAdTitle", "Getting your content ready");
-  setText("appAdSub", 'Please watch a quick ad to continue. This helps us keep the course free for everyone. Tip: once the ad has played, tap the ✕ (close) button on it — don\'t tap "Continue" inside the ad itself.');
-  runAdChain(2, {
-    title: "appAdTitle", sub: "appAdSub",
-    btn: "appAdActionBtn", banner: "appAdBlockerBanner"
-  }, onDone);
+  runAdChain(2, {}, onDone);
 }
 
 /* ---------------------------------------------------------
@@ -1120,19 +1078,9 @@ function openWatchFlow(video, topic, type) {
     return;
   }
 
-  showScreen("appAdScreen");
-  setText("appAdTitle", "Getting your content ready");
-  setText("appAdSub", 'Please watch a quick ad to continue. This helps us keep the course free for everyone. Tip: once the ad has played, tap the ✕ (close) button on it — don\'t tap "Continue" inside the ad itself.');
-
-  runAdChain(1, {
-    title: "appAdTitle", sub: "appAdSub",
-    btn: "appAdActionBtn", banner: "appAdBlockerBanner"
-  }, () => {
-    openContent();
-    // Bring the user back to the video list behind the scenes so the
-    // ad screen doesn't linger once their browser tab has opened.
-    showScreen("videoListScreen");
-  });
+  // Try to show one ad in the background (never blocks/shows errors),
+  // then open the content either way.
+  runAdChain(1, {}, openContent);
 }
 
 /* ---------------------------------------------------------
