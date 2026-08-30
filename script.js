@@ -164,6 +164,7 @@ function runAdChain(count, screenIds, onDone) {
 
     const controller = getAdsgramController();
     if (!controller) {
+      // SDK itself failed to load — likely a genuine ad-blocker/DNS-blocker
       showBlocked();
       return;
     }
@@ -192,11 +193,31 @@ function runAdChain(count, screenIds, onDone) {
         subEl.textContent = "Continuing...";
         setTimeout(onDone, 400);
       }
-    }).catch(() => {
+    }).catch((err) => {
       if (settled) return;
       settled = true;
       clearTimeout(hangTimeout);
-      showBlocked();
+
+      // AdsGram-side configuration issues (block not active, moderation
+      // pending, etc.) are our fault, not the user's — never lock a real
+      // user out of free content because of an ad-network setup problem.
+      // Only block on genuine blocker/network failures.
+      const errText = (err && (err.error || err.message || String(err))) || "";
+      const isPlatformIssue = /not active|moderation|no ads|no fill/i.test(errText);
+
+      if (isPlatformIssue) {
+        console.warn("AdsGram platform issue, letting user through:", errText);
+        adsWatched++;
+        if (adsWatched < count) {
+          attemptAd();
+        } else {
+          titleEl.textContent = "All set!";
+          subEl.textContent = "Continuing...";
+          setTimeout(onDone, 400);
+        }
+      } else {
+        showBlocked();
+      }
     });
   }
 
