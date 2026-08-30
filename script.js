@@ -124,12 +124,22 @@ function finishBoot() {
 }
 
 /* ---------------------------------------------------------
-   AD GATE (reusable) — shows one or more Rewarded Interstitial
-   ads in sequence, in-app. Strict: if the SDK is missing or a
+   AD GATE (reusable) — shows one or more AdsGram Reward ads
+   in sequence, in-app. Strict: if the SDK is missing or a
    call fails, shows a blocking message + Retry, no silent
    bypass. Works for both the app-open gate and the per-video
    gate below.
 --------------------------------------------------------- */
+const ADSGRAM_BLOCK_ID = "45218";
+let adsgramController = null;
+
+function getAdsgramController() {
+  if (adsgramController) return adsgramController;
+  if (typeof window.Adsgram === "undefined") return null;
+  adsgramController = window.Adsgram.init({ blockId: ADSGRAM_BLOCK_ID });
+  return adsgramController;
+}
+
 function runAdChain(count, screenIds, onDone) {
   const titleEl = document.getElementById(screenIds.title);
   const subEl = document.getElementById(screenIds.sub);
@@ -144,10 +154,6 @@ function runAdChain(count, screenIds, onDone) {
       : '<i class="fa-solid fa-play"></i> <span>' + label + '</span>';
   }
 
-  function isSdkAvailable() {
-    return typeof show_11673534 === "function";
-  }
-
   function showBlocked() {
     banner.classList.add("show");
     setLoading(false, "Retry");
@@ -156,7 +162,8 @@ function runAdChain(count, screenIds, onDone) {
   function attemptAd() {
     banner.classList.remove("show");
 
-    if (!isSdkAvailable()) {
+    const controller = getAdsgramController();
+    if (!controller) {
       showBlocked();
       return;
     }
@@ -170,7 +177,7 @@ function runAdChain(count, screenIds, onDone) {
       showBlocked();
     }, 30000);
 
-    show_11673534().then(() => {
+    controller.show().then(() => {
       if (settled) return;
       settled = true;
       clearTimeout(hangTimeout);
