@@ -9,8 +9,6 @@
 <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
 <link rel="stylesheet" href="style.css">
 <script src="https://telegram.org/js/telegram-web-app.js"></script>
-<script src="https://sad.adsgram.ai/js/sad.min.js"></script>
-<script src="https://sad.adsgram.ai/js/sad.min.js"></script>
 </head>
 <body>
 
@@ -39,28 +37,6 @@
     <h2>Something went wrong</h2>
     <p id="errorMsg">There was a problem loading the app. Please retry.</p>
     <button class="btn-primary" id="retryBtn"><i class="fa-solid fa-rotate-right"></i> Retry</button>
-  </div>
-</div>
-
-<!-- ===================== APP-OPEN AD SCREEN (mandatory, every open) ===================== -->
-<div id="appAdScreen" class="screen">
-  <div class="ad-gate-wrap">
-    <div class="icon-badge"><i class="fa-solid fa-play"></i></div>
-    <h1 id="appAdTitle">Getting your content ready</h1>
-    <p class="sub" id="appAdSub">Please watch a quick ad to continue. This helps us keep the course free for everyone. <b>Tip:</b> once the ad has played, tap the ✕ (close) button on it — don't tap "Continue" inside the ad itself.</p>
-
-    <button id="appAdActionBtn" class="btn-primary btn-buy">
-      <i class="fa-solid fa-play"></i> <span id="appAdActionBtnText">Watch Ad</span>
-    </button>
-
-    <div class="blocker-banner" id="appAdBlockerBanner">
-      <i class="fa-solid fa-triangle-exclamation"></i>
-      <div>
-        <b>Ad blocked — content locked</b>
-        <p>Please turn off any ad-blocker or DNS-based blocker (like AdGuard, NextDNS, or a "Private DNS" blocking ads) in your device or browser settings, then tap Retry. Ads keep this course free for everyone.</p>
-        <p>Need help? Contact <a href="https://t.me/pratibha0x" target="_blank" rel="noopener">@pratibha0x</a></p>
-      </div>
-    </div>
   </div>
 </div>
 
@@ -95,22 +71,68 @@
     </div>
 
     <div class="lead-form-card">
-      <label class="admin-label">Full Name</label>
-      <input id="leadName" class="admin-input" type="text" placeholder="Enter your full name" autocomplete="name">
+      <label class="admin-label">First Name</label>
+      <input id="leadFirstName" class="admin-input" type="text" placeholder="Enter your first name" autocomplete="given-name">
+
+      <label class="admin-label">Last Name (optional)</label>
+      <input id="leadLastName" class="admin-input" type="text" placeholder="Enter your last name" autocomplete="family-name">
 
       <label class="admin-label">Age</label>
       <input id="leadAge" class="admin-input" type="number" placeholder="Enter your age" min="10" max="60" inputmode="numeric">
 
-      <label class="admin-label">Mobile Number</label>
-      <input id="leadMobile" class="admin-input" type="tel" placeholder="10 digit mobile number" maxlength="10" inputmode="numeric">
+      <label class="admin-label">State</label>
+      <select id="leadState" class="admin-input">
+        <option value="">Select your state</option>
+        <option value="Andhra Pradesh">Andhra Pradesh</option>
+        <option value="Arunachal Pradesh">Arunachal Pradesh</option>
+        <option value="Assam">Assam</option>
+        <option value="Bihar">Bihar</option>
+        <option value="Chhattisgarh">Chhattisgarh</option>
+        <option value="Goa">Goa</option>
+        <option value="Gujarat">Gujarat</option>
+        <option value="Haryana">Haryana</option>
+        <option value="Himachal Pradesh">Himachal Pradesh</option>
+        <option value="Jharkhand">Jharkhand</option>
+        <option value="Karnataka">Karnataka</option>
+        <option value="Kerala">Kerala</option>
+        <option value="Madhya Pradesh">Madhya Pradesh</option>
+        <option value="Maharashtra">Maharashtra</option>
+        <option value="Manipur">Manipur</option>
+        <option value="Meghalaya">Meghalaya</option>
+        <option value="Mizoram">Mizoram</option>
+        <option value="Nagaland">Nagaland</option>
+        <option value="Odisha">Odisha</option>
+        <option value="Punjab">Punjab</option>
+        <option value="Rajasthan">Rajasthan</option>
+        <option value="Sikkim">Sikkim</option>
+        <option value="Tamil Nadu">Tamil Nadu</option>
+        <option value="Telangana">Telangana</option>
+        <option value="Tripura">Tripura</option>
+        <option value="Uttar Pradesh">Uttar Pradesh</option>
+        <option value="Uttarakhand">Uttarakhand</option>
+        <option value="West Bengal">West Bengal</option>
+        <option value="Andaman and Nicobar Islands">Andaman and Nicobar Islands</option>
+        <option value="Chandigarh">Chandigarh</option>
+        <option value="Dadra and Nagar Haveli and Daman and Diu">Dadra and Nagar Haveli and Daman and Diu</option>
+        <option value="Delhi">Delhi</option>
+        <option value="Jammu and Kashmir">Jammu and Kashmir</option>
+        <option value="Ladakh">Ladakh</option>
+        <option value="Lakshadweep">Lakshadweep</option>
+        <option value="Puducherry">Puducherry</option>
+        <option value="Other">Other</option>
+      </select>
 
       <label class="admin-label">Exam Target</label>
       <select id="leadExamTarget" class="admin-input">
-        <option value="">Select</option>
+        <option value="">Select your exam target</option>
         <option value="SSC CGL">SSC CGL</option>
         <option value="SSC CHSL">SSC CHSL</option>
         <option value="SSC MTS">SSC MTS</option>
         <option value="SSC GD">SSC GD</option>
+        <option value="SSC Steno">SSC Steno</option>
+        <option value="SSC JE">SSC JE</option>
+        <option value="SSC CPO">SSC CPO</option>
+        <option value="SSC Selection Post">SSC Selection Post</option>
         <option value="Other">Other</option>
       </select>
 

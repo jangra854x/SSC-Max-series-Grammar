@@ -102,132 +102,20 @@ function finishBoot() {
   try { trackUserVisit(); } catch (e) { console.error(e); }
 
   try {
-    if (IS_ADMIN || isPremiumUser(CURRENT_USER_ID)) {
+    if (IS_ADMIN || isUserAllowed(CURRENT_USER_ID)) {
       showScreen("homeScreen");
       renderHomeCards();
-    } else if (isUserAllowed(CURRENT_USER_ID)) {
-      // Returning user (already submitted the lead form) — show the
-      // mandatory app-open ad before letting them into the app.
-      startAppOpenAdGate(() => {
-        showScreen("homeScreen");
-        renderHomeCards();
-      });
+      // Progress may take a moment to arrive from the cloud — render again
+      // once it does, so the rings update to reflect any other device.
+      loadProgressFromCloud().then(() => renderHomeStatsRings());
     } else {
-      // New user — fill the lead form first, ad runs after submission
-      // (see handleLeadFormSubmit).
+      // New user — fill the lead form first, then straight into the app.
       showScreen("lockedScreen");
     }
   } catch (e) {
     console.error("Final render error", e);
     showErrorScreen("There was a problem displaying the app.");
   }
-}
-
-/* ---------------------------------------------------------
-   AD GATE (reusable) — tries to show AdsGram Reward ads.
-   Two distinct failure types are handled differently:
-   1) SDK never loaded at all (window.Adsgram undefined) -> this
-      is a genuine ad-blocker/DNS-blocker. The user is blocked
-      with a message + Retry + contact, exactly as requested.
-   2) SDK loaded but .show() itself failed (e.g. "block not
-      active", no fill, moderation) -> this is OUR platform-side
-      issue, not the user's fault, so it silently continues.
---------------------------------------------------------- */
-const ADSGRAM_BLOCK_ID = "45218";
-let adsgramController = null;
-let adsgramSdkCheckDone = false;
-let adsgramSdkAvailable = false;
-
-function checkAdsgramSdkAvailable() {
-  // window.Adsgram may take a moment to attach after the <script> tag
-  // finishes loading, so we don't just check once at boot — we check
-  // fresh every time an ad is about to run.
-  adsgramSdkAvailable = typeof window.Adsgram !== "undefined";
-  adsgramSdkCheckDone = true;
-  return adsgramSdkAvailable;
-}
-
-function getAdsgramController() {
-  if (adsgramController) return adsgramController;
-  if (!checkAdsgramSdkAvailable()) return null;
-  try {
-    adsgramController = window.Adsgram.init({ blockId: ADSGRAM_BLOCK_ID });
-  } catch (e) {
-    return null;
-  }
-  return adsgramController;
-}
-
-function runAdChain(count, screenIds, onDone, onBlocked) {
-  let adsWatched = 0;
-  let finished = false;
-
-  function finish() {
-    if (finished) return;
-    finished = true;
-    onDone();
-  }
-
-  function attemptAd() {
-    // Case 1: SDK script never loaded/attached -> genuine blocker.
-    if (!checkAdsgramSdkAvailable()) {
-      if (onBlocked) onBlocked(attemptAd);
-      return;
-    }
-
-    const controller = getAdsgramController();
-    if (!controller) {
-      // Controller init threw -> treat as blocker too (SDK present but broken/blocked)
-      if (onBlocked) onBlocked(attemptAd);
-      return;
-    }
-
-    let settled = false;
-    const hangTimeout = setTimeout(() => {
-      if (settled) return;
-      settled = true;
-      finish(); // timeout on a loaded SDK is a platform issue, not a blocker
-    }, 6000);
-
-    controller.show().then(() => {
-      if (settled) return;
-      settled = true;
-      clearTimeout(hangTimeout);
-      adsWatched++;
-      if (adsWatched < count) {
-        attemptAd();
-      } else {
-        finish();
-      }
-    }).catch(() => {
-      if (settled) return;
-      settled = true;
-      clearTimeout(hangTimeout);
-      // Case 2: SDK loaded, ad call failed (not active/no fill/etc.) ->
-      // our platform issue, never the user's fault -> continue silently.
-      finish();
-    });
-  }
-
-  attemptAd();
-}
-
-function startAppOpenAdGate(onDone) {
-  runAdChain(2, {}, onDone, (retryFn) => {
-    showScreen("appAdScreen");
-    setText("appAdTitle", "Ads are blocked");
-    setText("appAdSub", "We couldn't detect an ad service on your device. Please turn off any ad-blocker or DNS-based blocker (like AdGuard, NextDNS, or a \"Private DNS\" blocking ads), then tap Retry.");
-    const banner = document.getElementById("appAdBlockerBanner");
-    if (banner) banner.classList.add("show");
-    const btn = document.getElementById("appAdActionBtn");
-    if (btn) {
-      btn.innerHTML = '<i class="fa-solid fa-rotate-right"></i> <span>Retry</span>';
-      btn.onclick = () => {
-        btn.innerHTML = '<span class="spinner-inline"></span> Checking...';
-        setTimeout(retryFn, 300);
-      };
-    }
-  });
 }
 
 /* ---------------------------------------------------------
@@ -769,16 +657,6 @@ function safeBind(id, event, handler) {
 /* ---------------------------------------------------------
    LEAD FORM (one-time, compulsory — replaces old paywall)
 --------------------------------------------------------- */
-function validateIndianMobile(num) {
-  if (!/^[0-9]{10}$/.test(num)) return false;
-  if (!/^[6-9]/.test(num)) return false; // valid Indian mobile prefixes
-  if (/^(\d)\1{9}$/.test(num)) return false; // e.g. 9999999999
-  const sequential = "0123456789";
-  const seqRev = "9876543210";
-  if (sequential.includes(num) || seqRev.includes(num)) return false;
-  return true;
-}
-
 async function handleLeadFormSubmit() {
   const errEl = document.getElementById("leadFormError");
   const showErr = (msg) => {
@@ -786,22 +664,25 @@ async function handleLeadFormSubmit() {
   };
   if (errEl) errEl.classList.add("hidden");
 
-  const name = document.getElementById("leadName").value.trim();
+  const firstName = document.getElementById("leadFirstName").value.trim();
+  const lastName = document.getElementById("leadLastName").value.trim();
   const age = document.getElementById("leadAge").value.trim();
-  const mobile = document.getElementById("leadMobile").value.trim();
+  const state = document.getElementById("leadState").value;
   const examTarget = document.getElementById("leadExamTarget").value;
 
-  if (!name || name.length < 2) { showErr("⚠️ Please enter a valid name"); return; }
+  if (!firstName || firstName.length < 2) { showErr("⚠️ Please enter a valid first name"); return; }
   const ageNum = parseInt(age);
   if (!age || isNaN(ageNum) || ageNum < 10 || ageNum > 60) { showErr("⚠️ Please enter a valid age"); return; }
-  if (!validateIndianMobile(mobile)) { showErr("⚠️ Please enter a valid 10-digit mobile number (must start with 6-9, no fake numbers)"); return; }
+  if (!state) { showErr("⚠️ Please select your state"); return; }
   if (!examTarget) { showErr("⚠️ Please select an exam target"); return; }
 
   const btn = document.getElementById("leadFormSubmitBtn");
   if (btn) { btn.disabled = true; btn.style.opacity = "0.6"; }
 
+  const fullName = lastName ? (firstName + " " + lastName) : firstName;
   const leadEntry = {
-    id: String(CURRENT_USER_ID), name, age: ageNum, mobile, examTarget,
+    id: String(CURRENT_USER_ID), name: fullName, firstName, lastName,
+    age: ageNum, state, examTarget,
     submittedAt: Date.now()
   };
 
@@ -815,17 +696,19 @@ async function handleLeadFormSubmit() {
     console.warn("lead save failed", e);
   }
 
-  // Also save into the dedicated "app_leads" table (readable columns:
-  // name, age, mobile, exam_target) so it's easy to browse in Supabase
-  // Table Editor, separate from the big JSON blob.
+  // Also save into the dedicated "app_leads" table (readable columns)
+  // so it's easy to browse in Supabase Table Editor, separate from the
+  // big JSON blob.
   if (sbClient) {
     try {
       await withTimeout(
         sbClient.from("app_leads").upsert({
           user_id: leadEntry.id,
           name: leadEntry.name,
+          first_name: leadEntry.firstName,
+          last_name: leadEntry.lastName,
           age: leadEntry.age,
-          mobile: leadEntry.mobile,
+          state: leadEntry.state,
           exam_target: leadEntry.examTarget,
           is_legacy: false,
           submitted_at: new Date(leadEntry.submittedAt).toISOString()
@@ -839,8 +722,6 @@ async function handleLeadFormSubmit() {
 
   if (btn) { btn.disabled = false; btn.style.opacity = "1"; }
 
-  // First-time users skip the app-open ad right after registering —
-  // ads start from their next app open onward.
   showScreen("homeScreen");
   renderHomeCards();
 }
@@ -882,25 +763,72 @@ function openBatchScreen() {
    Progress = how many of this subject's videos the user has
    opened at least once, out of the subject's total video count.
    Each video is worth an equal share (100 / total videos).
+
+   Stored in Supabase (app_user_progress table) keyed by the
+   user's Telegram ID, so progress survives switching devices —
+   localStorage is only used as an instant-load local cache.
 --------------------------------------------------------- */
 const WATCHED_VIDEOS_KEY = "sw_batch_watched_videos_v1";
+let watchedVideoIdsCache = null;
+let progressLoadedFromCloud = false;
 
 function getWatchedVideoIds() {
+  if (watchedVideoIdsCache) return watchedVideoIdsCache;
   try {
     const raw = localStorage.getItem(WATCHED_VIDEOS_KEY);
     const arr = raw ? JSON.parse(raw) : [];
-    return new Set(Array.isArray(arr) ? arr : []);
+    watchedVideoIdsCache = new Set(Array.isArray(arr) ? arr : []);
   } catch (e) {
-    return new Set();
+    watchedVideoIdsCache = new Set();
+  }
+  return watchedVideoIdsCache;
+}
+
+function saveWatchedVideoIdsLocal(set) {
+  try {
+    localStorage.setItem(WATCHED_VIDEOS_KEY, JSON.stringify([...set]));
+  } catch (e) {
+    console.warn("could not save watched-video progress locally", e);
+  }
+}
+
+// Pulls this user's watched-video list from Supabase (source of truth)
+// and merges it with anything already cached locally, so nothing is
+// lost either way. Called once during boot.
+async function loadProgressFromCloud() {
+  if (!sbClient || !CURRENT_USER_ID) return;
+  try {
+    const { data, error } = await withTimeout(
+      sbClient.from("app_user_progress").select("watched_video_ids").eq("user_id", String(CURRENT_USER_ID)).maybeSingle(),
+      10000
+    );
+    if (error) throw error;
+
+    const cloudIds = (data && Array.isArray(data.watched_video_ids)) ? data.watched_video_ids : [];
+    const local = getWatchedVideoIds();
+    cloudIds.forEach(id => local.add(id));
+    watchedVideoIdsCache = local;
+    saveWatchedVideoIdsLocal(local);
+    progressLoadedFromCloud = true;
+  } catch (e) {
+    console.warn("loadProgressFromCloud failed, using local cache only", e);
   }
 }
 
 function saveWatchedVideoIds(set) {
-  try {
-    localStorage.setItem(WATCHED_VIDEOS_KEY, JSON.stringify([...set]));
-  } catch (e) {
-    console.warn("could not save watched-video progress", e);
-  }
+  saveWatchedVideoIdsLocal(set);
+
+  if (!sbClient || !CURRENT_USER_ID) return;
+  (async () => {
+    try {
+      await sbClient.from("app_user_progress").upsert({
+        user_id: String(CURRENT_USER_ID),
+        watched_video_ids: [...set]
+      }, { onConflict: "user_id" });
+    } catch (e) {
+      console.warn("cloud progress save failed (kept locally)", e);
+    }
+  })();
 }
 
 // Called the moment a user opens a video/PDF (see openWatchFlow). Credits
@@ -1110,29 +1038,7 @@ function openWatchFlow(video, topic, type) {
     }
   };
 
-  if (IS_ADMIN || isPremiumUser(CURRENT_USER_ID)) {
-    openContent();
-    return;
-  }
-
-  // One ad attempt before opening content. If the SDK never loaded at
-  // all (genuine blocker), the user is stopped and asked to disable it —
-  // any other failure (platform-side) silently continues to the content.
-  runAdChain(1, {}, openContent, (retryFn) => {
-    showScreen("appAdScreen");
-    setText("appAdTitle", "Ads are blocked");
-    setText("appAdSub", "We couldn't detect an ad service on your device. Please turn off any ad-blocker or DNS-based blocker (like AdGuard, NextDNS, or a \"Private DNS\" blocking ads), then tap Retry.");
-    const banner = document.getElementById("appAdBlockerBanner");
-    if (banner) banner.classList.add("show");
-    const btn = document.getElementById("appAdActionBtn");
-    if (btn) {
-      btn.innerHTML = '<i class="fa-solid fa-rotate-right"></i> <span>Retry</span>';
-      btn.onclick = () => {
-        btn.innerHTML = '<span class="spinner-inline"></span> Checking...';
-        setTimeout(retryFn, 300);
-      };
-    }
-  });
+  openContent();
 }
 
 /* ---------------------------------------------------------
@@ -1515,7 +1421,7 @@ function renderLeadsList() {
   if (query) {
     leads = leads.filter(l =>
       (l.name || "").toLowerCase().includes(query) ||
-      (l.mobile || "").includes(query) ||
+      (l.state || "").toLowerCase().includes(query) ||
       (l.id || "").includes(query)
     );
   }
@@ -1530,30 +1436,17 @@ function renderLeadsList() {
     card.className = "user-stats-card";
     card.innerHTML = `
       <div class="user-stats-top">
-        <span class="user-stats-name">${escapeHtml(lead.name || "—")}${lead.legacy ? ' <small style="color:var(--text-faint);">(legacy)</small>' : ""}${lead.premium ? ' <small style="color:var(--gold);">★ Premium</small>' : ""}</span>
+        <span class="user-stats-name">${escapeHtml(lead.name || "—")}${lead.legacy ? ' <small style="color:var(--text-faint);">(legacy)</small>' : ""}</span>
         <span class="user-stats-id">ID: ${escapeHtml(lead.id)}</span>
       </div>
       <div class="user-stats-first">Submitted: ${lead.submittedAt ? formatDateTime(new Date(lead.submittedAt).toISOString()) : "—"}</div>
       <div class="user-stats-times">
+        <div class="user-stats-time-row"><span>Age</span><b>${escapeHtml(String(lead.age || "—"))}</b></div>
+        <div class="user-stats-time-row"><span>State</span><b>${escapeHtml(lead.state || "—")}</b></div>
         <div class="user-stats-time-row"><span>Exam Target</span><b>${escapeHtml(lead.examTarget || "—")}</b></div>
       </div>
-      <button class="struct-icon-btn edit" data-action="toggle-premium" data-id="${escapeHtml(lead.id)}" style="margin-top:8px; width:auto; padding:0 12px; height:32px;">
-        <i class="fa-solid fa-star"></i> ${lead.premium ? "Remove Premium" : "Grant Premium (no ads)"}
-      </button>
     `;
     container.appendChild(card);
-  });
-
-  container.querySelectorAll('[data-action="toggle-premium"]').forEach(btn => {
-    btn.addEventListener("click", () => {
-      const id = btn.dataset.id;
-      const lead = APP_DATA.leads.find(l => l.id === id);
-      if (!lead) return;
-      lead.premium = !lead.premium;
-      saveData();
-      renderLeadsList();
-      showToast(lead.premium ? "✅ Premium granted" : "Premium removed");
-    });
   });
 }
 
