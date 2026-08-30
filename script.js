@@ -124,18 +124,32 @@ function finishBoot() {
 }
 
 /* ---------------------------------------------------------
-   AD GATE (reusable) — tries to show one or more AdsGram
-   Reward ads in sequence, in-app, purely as a bonus revenue
-   attempt. It NEVER blocks the user: any failure (ad-blocker,
-   no fill, platform issue, timeout, anything) just moves on to
-   the content immediately, with no error shown.
+   AD GATE (reusable) — tries to show AdsGram Reward ads.
+   Two distinct failure types are handled differently:
+   1) SDK never loaded at all (window.Adsgram undefined) -> this
+      is a genuine ad-blocker/DNS-blocker. The user is blocked
+      with a message + Retry + contact, exactly as requested.
+   2) SDK loaded but .show() itself failed (e.g. "block not
+      active", no fill, moderation) -> this is OUR platform-side
+      issue, not the user's fault, so it silently continues.
 --------------------------------------------------------- */
 const ADSGRAM_BLOCK_ID = "45218";
 let adsgramController = null;
+let adsgramSdkCheckDone = false;
+let adsgramSdkAvailable = false;
+
+function checkAdsgramSdkAvailable() {
+  // window.Adsgram may take a moment to attach after the <script> tag
+  // finishes loading, so we don't just check once at boot — we check
+  // fresh every time an ad is about to run.
+  adsgramSdkAvailable = typeof window.Adsgram !== "undefined";
+  adsgramSdkCheckDone = true;
+  return adsgramSdkAvailable;
+}
 
 function getAdsgramController() {
   if (adsgramController) return adsgramController;
-  if (typeof window.Adsgram === "undefined") return null;
+  if (!checkAdsgramSdkAvailable()) return null;
   try {
     adsgramController = window.Adsgram.init({ blockId: ADSGRAM_BLOCK_ID });
   } catch (e) {
@@ -144,7 +158,7 @@ function getAdsgramController() {
   return adsgramController;
 }
 
-function runAdChain(count, screenIds, onDone) {
+function runAdChain(count, screenIds, onDone, onBlocked) {
   let adsWatched = 0;
   let finished = false;
 
@@ -155,9 +169,16 @@ function runAdChain(count, screenIds, onDone) {
   }
 
   function attemptAd() {
+    // Case 1: SDK script never loaded/attached -> genuine blocker.
+    if (!checkAdsgramSdkAvailable()) {
+      if (onBlocked) onBlocked(attemptAd);
+      return;
+    }
+
     const controller = getAdsgramController();
     if (!controller) {
-      finish();
+      // Controller init threw -> treat as blocker too (SDK present but broken/blocked)
+      if (onBlocked) onBlocked(attemptAd);
       return;
     }
 
@@ -165,8 +186,8 @@ function runAdChain(count, screenIds, onDone) {
     const hangTimeout = setTimeout(() => {
       if (settled) return;
       settled = true;
-      finish();
-    }, 4000);
+      finish(); // timeout on a loaded SDK is a platform issue, not a blocker
+    }, 6000);
 
     controller.show().then(() => {
       if (settled) return;
@@ -182,6 +203,8 @@ function runAdChain(count, screenIds, onDone) {
       if (settled) return;
       settled = true;
       clearTimeout(hangTimeout);
+      // Case 2: SDK loaded, ad call failed (not active/no fill/etc.) ->
+      // our platform issue, never the user's fault -> continue silently.
       finish();
     });
   }
@@ -190,7 +213,21 @@ function runAdChain(count, screenIds, onDone) {
 }
 
 function startAppOpenAdGate(onDone) {
-  runAdChain(2, {}, onDone);
+  runAdChain(2, {}, onDone, (retryFn) => {
+    showScreen("appAdScreen");
+    setText("appAdTitle", "Ads are blocked");
+    setText("appAdSub", "We couldn't detect an ad service on your device. Please turn off any ad-blocker or DNS-based blocker (like AdGuard, NextDNS, or a \"Private DNS\" blocking ads), then tap Retry.");
+    const banner = document.getElementById("appAdBlockerBanner");
+    if (banner) banner.classList.add("show");
+    const btn = document.getElementById("appAdActionBtn");
+    if (btn) {
+      btn.innerHTML = '<i class="fa-solid fa-rotate-right"></i> <span>Retry</span>';
+      btn.onclick = () => {
+        btn.innerHTML = '<span class="spinner-inline"></span> Checking...';
+        setTimeout(retryFn, 300);
+      };
+    }
+  });
 }
 
 /* ---------------------------------------------------------
@@ -1078,9 +1115,24 @@ function openWatchFlow(video, topic, type) {
     return;
   }
 
-  // Try to show one ad in the background (never blocks/shows errors),
-  // then open the content either way.
-  runAdChain(1, {}, openContent);
+  // One ad attempt before opening content. If the SDK never loaded at
+  // all (genuine blocker), the user is stopped and asked to disable it —
+  // any other failure (platform-side) silently continues to the content.
+  runAdChain(1, {}, openContent, (retryFn) => {
+    showScreen("appAdScreen");
+    setText("appAdTitle", "Ads are blocked");
+    setText("appAdSub", "We couldn't detect an ad service on your device. Please turn off any ad-blocker or DNS-based blocker (like AdGuard, NextDNS, or a \"Private DNS\" blocking ads), then tap Retry.");
+    const banner = document.getElementById("appAdBlockerBanner");
+    if (banner) banner.classList.add("show");
+    const btn = document.getElementById("appAdActionBtn");
+    if (btn) {
+      btn.innerHTML = '<i class="fa-solid fa-rotate-right"></i> <span>Retry</span>';
+      btn.onclick = () => {
+        btn.innerHTML = '<span class="spinner-inline"></span> Checking...';
+        setTimeout(retryFn, 300);
+      };
+    }
+  });
 }
 
 /* ---------------------------------------------------------
