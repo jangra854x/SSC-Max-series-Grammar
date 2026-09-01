@@ -161,6 +161,14 @@
   </div>
 
   <div class="scroll-area">
+    <div class="search-bar-wrap">
+      <i class="fa-solid fa-magnifying-glass"></i>
+      <input id="globalSearchInput" type="text" placeholder="Search videos (e.g. Percentage, Tenses)...">
+      <i class="fa-solid fa-xmark search-clear-btn hidden" id="globalSearchClear"></i>
+    </div>
+    <div id="globalSearchResults" class="video-list hidden"></div>
+
+    <div id="homeMainContent">
     <div class="section-label">Your Progress</div>
     <div class="stats-ring-row" id="homeStatsRingRow"></div>
 
@@ -178,6 +186,7 @@
         </div>
         <div class="main-card-lock"><i class="fa-solid fa-lock"></i></div>
       </div>
+    </div>
     </div>
 
     <div class="bottom-space"></div>

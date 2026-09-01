@@ -603,6 +603,13 @@ function bindEvents() {
     showToast("🔒 TB Mocks is coming soon — not available yet.");
   });
 
+  // Global search
+  safeBind("globalSearchInput", "input", handleGlobalSearch);
+  safeBind("globalSearchClear", "click", () => {
+    const input = document.getElementById("globalSearchInput");
+    if (input) { input.value = ""; handleGlobalSearch(); }
+  });
+
   // Lead form (one-time, compulsory)
   safeBind("leadFormSubmitBtn", "click", handleLeadFormSubmit);
 
@@ -743,6 +750,58 @@ function setText(id, val) {
 /* ---------------------------------------------------------
    RENDER: HOME LANDING CARDS
 --------------------------------------------------------- */
+/* ---------------------------------------------------------
+   GLOBAL SEARCH (across all subjects/topics/videos)
+--------------------------------------------------------- */
+function handleGlobalSearch() {
+  const input = document.getElementById("globalSearchInput");
+  const clearBtn = document.getElementById("globalSearchClear");
+  const resultsEl = document.getElementById("globalSearchResults");
+  const mainContentEl = document.getElementById("homeMainContent");
+  const query = (input ? input.value : "").trim().toLowerCase();
+
+  if (clearBtn) clearBtn.classList.toggle("hidden", !query);
+
+  if (!query) {
+    if (resultsEl) resultsEl.classList.add("hidden");
+    if (mainContentEl) mainContentEl.classList.remove("hidden");
+    return;
+  }
+
+  if (mainContentEl) mainContentEl.classList.add("hidden");
+  if (resultsEl) resultsEl.classList.remove("hidden");
+  if (!resultsEl) return;
+
+  const matches = [];
+  APP_DATA.subjects.forEach(subject => {
+    subject.topics.forEach(topic => {
+      topic.videos.forEach(video => {
+        if (video.title.toLowerCase().includes(query)) {
+          matches.push({ video, topic, subject });
+        }
+      });
+    });
+  });
+
+  resultsEl.innerHTML = "";
+  if (matches.length === 0) {
+    resultsEl.innerHTML = `<div class="empty-state" style="padding:30px 10px;">No videos found for "${escapeHtml(input.value)}"</div>`;
+    return;
+  }
+
+  matches.slice(0, 50).forEach(({ video, topic, subject }) => {
+    const card = buildVideoCard(video, topic);
+    // Add subject/topic context under the description since search
+    // results can span multiple subjects.
+    const descEl = card.querySelector(".video-desc");
+    if (descEl) {
+      descEl.insertAdjacentHTML("afterend",
+        `<div class="video-search-context">${escapeHtml(subject.name)} • ${escapeHtml(topic.name)}</div>`);
+    }
+    resultsEl.appendChild(card);
+  });
+}
+
 function renderHomeCards() {
   renderHomeStatsRings();
   renderSubjects();
@@ -952,7 +1011,7 @@ function openTopic(topicId) {
 }
 
 /* ---------------------------------------------------------
-   RENDER: VIDEOS
+   RENDER: VIDEOS (with sub-topic folders + watched checkmarks)
 --------------------------------------------------------- */
 function renderVideos(topic) {
   const list = document.getElementById("videoList");
@@ -964,11 +1023,42 @@ function renderVideos(topic) {
     return;
   }
 
-  // User-facing list stays in original upload order (oldest -> newest),
-  // exactly like before. Only the admin's "Manage Structure" view shows
-  // the newest video first, to make new uploads easy to double-check.
-  topic.videos.forEach(video => {
+  const subTopics = Array.isArray(topic.subTopics) ? topic.subTopics : [];
+  const videosWithoutSubTopic = topic.videos.filter(v => !v.subTopicId);
+
+  // Videos directly in the topic (no sub-topic) render first, in
+  // original upload order — exactly like before.
+  videosWithoutSubTopic.forEach(video => {
     list.appendChild(buildVideoCard(video, topic));
+  });
+
+  // Sub-topics render as expandable folders, each containing its videos.
+  subTopics.forEach(st => {
+    const videosInSubTopic = topic.videos.filter(v => v.subTopicId === st.id);
+    if (videosInSubTopic.length === 0) return;
+
+    const folder = document.createElement("div");
+    folder.className = "subtopic-folder";
+    folder.innerHTML = `
+      <div class="subtopic-folder-head">
+        <i class="fa-solid fa-folder"></i>
+        <span class="subtopic-folder-name">${escapeHtml(st.name)}</span>
+        <span class="subtopic-folder-count">${videosInSubTopic.length}</span>
+        <i class="fa-solid fa-chevron-right chev"></i>
+      </div>
+      <div class="subtopic-folder-videos"></div>
+    `;
+
+    const videosWrap = folder.querySelector(".subtopic-folder-videos");
+    videosInSubTopic.forEach(video => {
+      videosWrap.appendChild(buildVideoCard(video, topic));
+    });
+
+    folder.querySelector(".subtopic-folder-head").addEventListener("click", () => {
+      folder.classList.toggle("open");
+    });
+
+    list.appendChild(folder);
   });
 }
 
@@ -979,17 +1069,19 @@ function getSortedVideos(topic) {
 }
 
 function buildVideoCard(video, topic) {
+  const watched = getWatchedVideoIds().has(video.id);
   const card = document.createElement("div");
   card.className = "video-card";
   card.innerHTML = `
-    <div class="video-thumb"><i class="fa-solid fa-play"></i></div>
+    <div class="video-thumb">${watched ? '<i class="fa-solid fa-check"></i>' : '<i class="fa-solid fa-play"></i>'}</div>
     <div class="video-info">
-      <div class="video-title">${escapeHtml(video.title)}</div>
+      <div class="video-title">${escapeHtml(video.title)}${watched ? ' <i class="fa-solid fa-circle-check video-watched-tick"></i>' : ''}</div>
       <div class="video-desc">${escapeHtml(video.desc || "")}</div>
       ${video.pdfUrl ? `<div class="video-pdf-tag"><i class="fa-solid fa-file-pdf"></i> PDF available</div>` : ``}
     </div>
     <div class="video-play-badge"><i class="fa-solid fa-chevron-right"></i></div>
   `;
+  if (watched) card.classList.add("video-card-watched");
   card.addEventListener("click", () => openWatchFlow(video, topic, "video"));
   return card;
 }
