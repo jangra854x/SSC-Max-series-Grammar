@@ -518,7 +518,6 @@ function showErrorScreen(msg) {
 // Maps internal screen ids -> the "card" bucket used for time-tracking/stats
 const SCREEN_TO_CARD_KEY = {
   homeScreen: null, // landing itself isn't tracked as a card
-  batchScreen: "sw_batch",
   topicScreen: "sw_batch",
   videoListScreen: "sw_batch",
   playerScreen: "sw_batch",
@@ -600,16 +599,12 @@ function bindEvents() {
     renderAdminPanel();
   });
 
-  safeBind("openSwBatchCard", "click", openBatchScreen);
   safeBind("openTbMocksCard", "click", () => {
     showToast("🔒 TB Mocks is coming soon — not available yet.");
   });
 
   // Lead form (one-time, compulsory)
   safeBind("leadFormSubmitBtn", "click", handleLeadFormSubmit);
-  safeBind("leadMobile", "input", (e) => {
-    e.target.value = e.target.value.replace(/[^0-9]/g, "").slice(0, 10);
-  });
 
   // Edit video modal
   safeBind("editVideoCloseBtn", "click", closeEditVideoModal);
@@ -624,7 +619,6 @@ function bindEvents() {
       const target = btn.dataset.back;
       if (!target) return;
       showScreen(target);
-      if (target === "batchScreen") renderSubjects();
       if (target === "homeScreen") renderHomeCards();
     });
   });
@@ -751,10 +745,6 @@ function setText(id, val) {
 --------------------------------------------------------- */
 function renderHomeCards() {
   renderHomeStatsRings();
-}
-
-function openBatchScreen() {
-  showScreen("batchScreen");
   renderSubjects();
 }
 
